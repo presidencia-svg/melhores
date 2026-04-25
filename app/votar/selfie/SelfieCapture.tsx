@@ -14,7 +14,7 @@ import {
 
 type Phase = "loading" | "ready" | "challenges" | "preview" | "submitting" | "error";
 
-const CHALLENGE_HOLD_MS = 600;
+const CHALLENGE_HOLD_MS = 250;
 
 export function SelfieCapture() {
   const videoRef = useRef<HTMLVideoElement>(null);
