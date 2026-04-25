@@ -8,7 +8,6 @@ import {
   loadLandmarker,
   parseDetection,
   CHALLENGES,
-  pickChallenges,
   type ChallengeKey,
 } from "@/lib/face/liveness-detector";
 
@@ -67,8 +66,8 @@ export function SelfieCapture() {
           await videoRef.current.play();
         }
 
-        // 2) Pick challenges (apenas 1 — liveness leve)
-        const picked = pickChallenges(1);
+        // 2) Apenas sorriso — liveness mínimo
+        const picked: ChallengeKey[] = ["smile"];
         challengesRef.current = picked;
         setChallenges(picked);
         setChallengeIdx(0);
