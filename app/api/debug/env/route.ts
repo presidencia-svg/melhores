@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 
-// GET /api/debug/env?key=ALGUMA_CHAVE_SECRETA
-// Protegido por chave para não expor publicamente.
+// GET /api/debug/env — TEMPORÁRIO: remove após investigação.
+// Hardcoded debug token até descobrirmos as env vars.
+const DEBUG_TOKEN = "debug-cdlaju-melhores-2026-temp";
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const key = url.searchParams.get("key");
-  if (key !== process.env.JWT_SECRET) {
+  if (key !== DEBUG_TOKEN) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
