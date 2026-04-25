@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 type LogoProps = {
@@ -7,41 +8,22 @@ type LogoProps = {
 
 export function Logo({ className, variant = "full" }: LogoProps) {
   const isWhite = variant === "white";
-  const blue = isWhite ? "#FFFFFF" : "#1B3A7A";
-  const green = isWhite ? "#FFFFFF" : "#00A859";
-  const yellow = isWhite ? "#FFFFFF" : "#FFD700";
+  const isCompact = variant === "compact";
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      <svg
-        viewBox="0 0 80 80"
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-12 w-12 shrink-0"
-        aria-hidden="true"
-      >
-        <path
-          d="M8 12 C 14 8, 50 6, 60 10 L 60 64 C 50 70, 14 72, 8 68 Z"
-          fill={blue}
-        />
-        <path
-          d="M8 56 C 30 50, 50 56, 60 60 L 60 68 C 48 70, 28 70, 8 68 Z"
-          fill={green}
-        />
-        <path
-          d="M8 48 C 28 44, 48 50, 60 54 L 60 60 C 50 56, 30 50, 8 56 Z"
-          fill={yellow}
-        />
-      </svg>
-      {variant !== "compact" && (
-        <div className="flex flex-col leading-tight">
-          <span className="font-display text-xl font-bold tracking-tight" style={{ color: blue }}>
-            CDL
-          </span>
-          <span className="font-display text-sm font-semibold italic" style={{ color: green }}>
-            Aracaju
-          </span>
-        </div>
-      )}
+    <div className={cn("flex items-center", className)}>
+      <Image
+        src="/cdl-logo.png"
+        alt="CDL Aracaju"
+        width={isCompact ? 48 : 160}
+        height={isCompact ? 48 : 56}
+        className={cn(
+          "object-contain",
+          isCompact ? "h-12 w-12" : "h-12 w-auto",
+          isWhite && "brightness-0 invert"
+        )}
+        priority
+      />
     </div>
   );
 }
