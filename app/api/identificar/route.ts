@@ -9,6 +9,19 @@ import { getClientIp } from "@/lib/utils";
 const Body = z.object({ cpf: z.string() });
 
 export async function POST(req: Request) {
+  try {
+    return await handleIdentificar(req);
+  } catch (err) {
+    console.error("[identificar] uncaught:", err);
+    const detalhe = err instanceof Error ? err.message : "erro desconhecido";
+    return NextResponse.json(
+      { error: `Falha interna: ${detalhe}` },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleIdentificar(req: Request) {
   const json = await req.json().catch(() => ({}));
   const parsed = Body.safeParse(json);
   if (!parsed.success) {
