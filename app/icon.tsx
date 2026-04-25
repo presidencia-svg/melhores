@@ -18,7 +18,16 @@ export default function Icon() {
         }}
       >
         <svg width="22" height="22" viewBox="0 0 48 48" fill="#FFD700">
-          <path d="M24 2l5.5 13.5L44 17l-11 9.5L36 41l-12-7.5L12 41l3-14.5L4 17l14.5-1.5L24 2z" />
+          {/* Cup body */}
+          <path d="M14 8 L14 22 C14 28 18 30 24 30 C30 30 34 28 34 22 L34 8 Z" />
+          {/* Left handle */}
+          <path d="M12 10 C7 10 6 13 6 16 C6 19 8 21 13 21 L13 17 C10 17 10 16 10 15 C10 14 11 13 13 13 Z" />
+          {/* Right handle */}
+          <path d="M36 10 C41 10 42 13 42 16 C42 19 40 21 35 21 L35 17 C38 17 38 16 38 15 C38 14 37 13 35 13 Z" />
+          {/* Stem */}
+          <rect x="22" y="29" width="4" height="6" />
+          {/* Base */}
+          <rect x="14" y="35" width="20" height="5" rx="1" />
         </svg>
       </div>
     ),
