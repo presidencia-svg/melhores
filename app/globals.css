@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root {
+  --cdl-blue: #1B3A7A;
+  --cdl-blue-dark: #142D5F;
+  --cdl-blue-light: #2D5BAE;
+  --cdl-green: #00A859;
+  --cdl-green-dark: #007A40;
+  --cdl-yellow: #FFD700;
+  --cdl-yellow-dark: #E6C200;
+
+  --background: #FAFBFC;
+  --foreground: #0F172A;
+  --muted: #64748B;
+  --border: #E2E8F0;
+  --card: #FFFFFF;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-card: var(--card);
+
+  --color-cdl-blue: var(--cdl-blue);
+  --color-cdl-blue-dark: var(--cdl-blue-dark);
+  --color-cdl-blue-light: var(--cdl-blue-light);
+  --color-cdl-green: var(--cdl-green);
+  --color-cdl-green-dark: var(--cdl-green-dark);
+  --color-cdl-yellow: var(--cdl-yellow);
+  --color-cdl-yellow-dark: var(--cdl-yellow-dark);
+
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-poppins);
+}
+
+html, body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+
+.gradient-cdl {
+  background: linear-gradient(135deg, var(--cdl-blue) 0%, var(--cdl-blue-light) 100%);
+}
+
+.gradient-cdl-hero {
+  background: linear-gradient(135deg, var(--cdl-blue-dark) 0%, var(--cdl-blue) 50%, var(--cdl-blue-light) 100%);
+}
