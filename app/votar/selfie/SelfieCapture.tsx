@@ -14,7 +14,7 @@ import {
 
 type Phase = "loading" | "ready" | "challenges" | "preview" | "submitting" | "error";
 
-const CHALLENGE_HOLD_MS = 250;
+const CHALLENGE_HOLD_MS = 120;
 
 export function SelfieCapture() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -67,8 +67,8 @@ export function SelfieCapture() {
           await videoRef.current.play();
         }
 
-        // 2) Pick challenges
-        const picked = pickChallenges(2);
+        // 2) Pick challenges (apenas 1 — liveness leve)
+        const picked = pickChallenges(1);
         challengesRef.current = picked;
         setChallenges(picked);
         setChallengeIdx(0);

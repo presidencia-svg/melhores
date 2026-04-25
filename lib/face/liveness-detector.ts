@@ -71,24 +71,24 @@ export const CHALLENGES: Record<
   { label: string; emoji: string; check: (d: Detection) => boolean }
 > = {
   smile: {
-    label: "Sorria para a câmera",
+    label: "Sorria",
     emoji: "😊",
-    check: (d) => d.smile > 0.2,
+    check: (d) => d.smile > 0.12,
   },
   blink: {
-    label: "Pisque os dois olhos",
+    label: "Pisque",
     emoji: "👀",
-    check: (d) => d.blink > 0.35,
+    check: (d) => d.blink > 0.25,
   },
   turnLeft: {
-    label: "Vire o rosto para a esquerda",
+    label: "Vire um pouco para a esquerda",
     emoji: "⬅️",
-    check: (d) => d.yaw < -0.18,
+    check: (d) => d.yaw < -0.1,
   },
   turnRight: {
-    label: "Vire o rosto para a direita",
+    label: "Vire um pouco para a direita",
     emoji: "➡️",
-    check: (d) => d.yaw > 0.18,
+    check: (d) => d.yaw > 0.1,
   },
 };
 
