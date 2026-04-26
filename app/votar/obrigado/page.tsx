@@ -58,7 +58,7 @@ export default async function ObrigadoPage() {
             <p className="text-muted text-sm mt-5 leading-relaxed">
               Seu voto faz parte do prêmio
               <br />
-              <strong className="text-navy-800 font-display italic">Melhores do Ano CDL Aracaju 2026</strong>.
+              <strong className="text-navy-800 font-display italic">Melhores do Ano CDL Aracaju 2025</strong>.
             </p>
 
             <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold-500/15 border border-gold-500/30">
@@ -118,7 +118,7 @@ export default async function ObrigadoPage() {
 
 function ShareButton() {
   const url = "https://votar.cdlaju.com.br";
-  const text = `Vote nos Melhores do Ano CDL Aracaju 2026! 🏆\n${url}`;
+  const text = `Vote nos Melhores do Ano CDL Aracaju 2025! 🏆\n${url}`;
   const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
   return (
     <a

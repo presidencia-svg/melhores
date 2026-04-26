@@ -14,7 +14,7 @@ const SIZES = {
   lg: { kicker: 13, melhor: 92, ano: 56 },
 } as const;
 
-export function EventLogo({ className, ano = 2026, size = "md", align = "center" }: EventLogoProps) {
+export function EventLogo({ className, ano = 2025, size = "md", align = "center" }: EventLogoProps) {
   const s = SIZES[size];
   return (
     <div

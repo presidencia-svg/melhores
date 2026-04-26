@@ -25,10 +25,10 @@ const jetbrains = JetBrains_Mono({
 });
 
 // Bumping ?v= força browsers a re-fetch o favicon (cache agressivo)
-const ICON_VERSION = "3";
+const ICON_VERSION = "4";
 
 export const metadata: Metadata = {
-  title: "Melhores do Ano CDL Aracaju 2026",
+  title: "Melhores do Ano CDL Aracaju 2025",
   description:
     "Os Melhores de Aracaju são escolhidos por você. Vote agora — leva 3 minutos.",
   icons: {
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     shortcut: [`/icon.png?v=${ICON_VERSION}`],
   },
   openGraph: {
-    title: "Melhores do Ano CDL Aracaju 2026",
+    title: "Melhores do Ano CDL Aracaju 2025",
     description: "Sua opinião decide os melhores de Aracaju.",
     type: "website",
   },

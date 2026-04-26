@@ -23,11 +23,16 @@ export default async function CandidatosAdminPage() {
     .order("nome");
 
   // Lista plana pra usar no Mover (id + label "Categoria → Subcategoria")
-  const subsFlat = (subs ?? []).map((s) => ({
-    id: s.id,
-    nome: s.nome,
-    categoria: (s as unknown as { categoria: { nome: string } }).categoria.nome,
-  }));
+  const subsFlat = (subs ?? [])
+    .map((s) => ({
+      id: s.id,
+      nome: s.nome,
+      categoria: (s as unknown as { categoria: { nome: string } }).categoria.nome,
+    }))
+    .sort((a, b) => {
+      const c = a.categoria.localeCompare(b.categoria, "pt-BR");
+      return c !== 0 ? c : a.nome.localeCompare(b.nome, "pt-BR");
+    });
 
   const { data: candidatos } = await supabase
     .from("candidatos")
@@ -43,7 +48,14 @@ export default async function CandidatosAdminPage() {
         <p className="text-muted mt-1">{(candidatos ?? []).length} candidatos · importe via CSV ou gerencie abaixo</p>
       </header>
 
-      <CandidatosManager subcategorias={(subs ?? []) as unknown as { id: string; nome: string; categoria: { nome: string } }[]} />
+      <CandidatosManager
+        subcategorias={
+          [...((subs ?? []) as unknown as { id: string; nome: string; categoria: { nome: string } }[])].sort((a, b) => {
+            const c = a.categoria.nome.localeCompare(b.categoria.nome, "pt-BR");
+            return c !== 0 ? c : a.nome.localeCompare(b.nome, "pt-BR");
+          })
+        }
+      />
 
       <div className="mt-8">
         <CandidatosLista

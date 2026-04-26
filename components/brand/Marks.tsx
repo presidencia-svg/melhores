@@ -1,4 +1,4 @@
-// Reusable brand marks for Melhores do Ano CDL Aracaju 2026
+// Reusable brand marks for Melhores do Ano CDL Aracaju 2025
 // Adapted from /identidade-visual/ design system.
 
 import { cn } from "@/lib/utils";

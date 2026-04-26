@@ -3,7 +3,7 @@ import { Logo } from "@/components/brand/Logo";
 import { ArrowLeft, Mail } from "lucide-react";
 
 export const metadata = {
-  title: "Política de Privacidade — Melhores do Ano CDL Aracaju 2026",
+  title: "Política de Privacidade — Melhores do Ano CDL Aracaju 2025",
 };
 
 export default function PrivacidadePage() {

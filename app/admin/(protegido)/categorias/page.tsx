@@ -19,7 +19,7 @@ export default async function CategoriasAdminPage() {
     .from("categorias")
     .select("id, nome, slug, descricao, ordem, ativa, subcategorias(id, nome, slug, ordem, ativa)")
     .eq("edicao_id", edicao.id)
-    .order("ordem");
+    .order("nome");
 
   return (
     <div className="p-8">

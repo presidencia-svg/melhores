@@ -1,4 +1,4 @@
-# Melhores do Ano CDL Aracaju 2026 — Setup
+# Melhores do Ano CDL Aracaju 2025 — Setup
 
 Guia rápido pra colocar o sistema no ar.
 
@@ -7,7 +7,7 @@ Guia rápido pra colocar o sistema no ar.
 1. Crie projeto em https://supabase.com (plano Pro recomendado p/ 500k votos).
 2. No painel, vá em **SQL Editor** → **New Query**.
 3. Cole e rode o conteúdo de `supabase/schema.sql`.
-4. Cole e rode o conteúdo de `supabase/seed.sql` (cria edição 2026 + categorias-exemplo).
+4. Cole e rode o conteúdo de `supabase/seed.sql` (cria edição 2025 + categorias-exemplo).
 5. Em **Project Settings → API**, copie:
    - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
    - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`

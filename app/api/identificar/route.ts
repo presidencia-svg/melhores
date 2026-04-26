@@ -3,7 +3,7 @@ import { z } from "zod";
 import { hashCpf, isValidCpf, onlyDigits } from "@/lib/cpf";
 import { consultarCpfSpc } from "@/lib/spc/client";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { setVotanteSessao } from "@/lib/sessao";
+import { setPreCadastro } from "@/lib/sessao";
 import { getClientIp } from "@/lib/utils";
 import { verifyTurnstile } from "@/lib/turnstile";
 
@@ -184,28 +184,18 @@ async function handleIdentificar(req: Request) {
     }
   }
 
-  // Cria votante (sem selfie ainda)
-  const { data: votante, error: insertErr } = await supabase
-    .from("votantes")
-    .insert({
-      edicao_id: edicao.id,
-      cpf_hash: cpfHash,
-      cpf,
-      nome: nomeFinal,
-      nome_autodeclarado: nomeAutodeclarado,
-      spc_validado: spcValidado,
-      ip,
-      user_agent: userAgent,
-      device_fingerprint: fingerprint,
-    })
-    .select("id")
-    .single();
-
-  if (insertErr || !votante) {
-    return NextResponse.json({ error: "Falha ao registrar identificação" }, { status: 500 });
-  }
-
-  await setVotanteSessao(votante.id);
+  // Não persiste o votante ainda — só após a selfie ser validada (em /api/selfie).
+  // Guarda os dados num cookie httpOnly de curta duração.
+  void userAgent; // ip/userAgent são lidos novamente no momento da selfie
+  await setPreCadastro({
+    edicao_id: edicao.id,
+    cpf,
+    cpf_hash: cpfHash,
+    nome: nomeFinal,
+    nome_autodeclarado: nomeAutodeclarado,
+    spc_validado: spcValidado,
+    fingerprint,
+  });
 
   return NextResponse.json({ ok: true, nome: nomeFinal });
 }

@@ -65,7 +65,7 @@ export async function POST(req: Request) {
 
   // Envia via Z-API
   const mensagem =
-    `🏆 *Melhores do Ano CDL Aracaju 2026*\n\n` +
+    `🏆 *Melhores do Ano CDL Aracaju 2025*\n\n` +
     `Olá! Seu código de validação é:\n\n` +
     `*${codigo}*\n\n` +
     `Use esse código para confirmar seu WhatsApp e receber em primeira mão os campeões. ` +

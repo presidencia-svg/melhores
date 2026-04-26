@@ -102,7 +102,7 @@ export async function GET() {
               opacity: 0.95,
             }}
           >
-            do Ano CDL Aracaju 2026
+            do Ano CDL Aracaju 2025
           </div>
         </div>
 

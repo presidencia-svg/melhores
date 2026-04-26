@@ -43,7 +43,7 @@ export async function GET() {
             }}
           >
             <div style={{ width: 28, height: 1, background: "#d4a537" }} />
-            cdl aracaju · edição 2026
+            cdl aracaju · edição 2025
           </div>
 
           <div

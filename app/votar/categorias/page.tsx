@@ -36,7 +36,7 @@ export default async function CategoriasPage() {
     .select("id, nome, slug, descricao, icone, subcategorias(id, nome, slug, ordem)")
     .eq("edicao_id", edicao.id)
     .eq("ativa", true)
-    .order("ordem");
+    .order("nome");
 
   const { data: votos } = await supabase
     .from("votos")
@@ -75,7 +75,7 @@ export default async function CategoriasPage() {
 
         <div className="flex flex-col gap-4">
           {(categorias ?? []).map((cat) => {
-            const subs = (cat.subcategorias ?? []).slice().sort((a, b) => a.ordem - b.ordem);
+            const subs = (cat.subcategorias ?? []).slice().sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
             return (
               <Card key={cat.id}>
                 <CardContent className="!p-0">

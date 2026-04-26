@@ -136,7 +136,7 @@ export function CategoriasManager({ edicaoId, categorias }: { edicaoId: string; 
 
                 {expandida && (
                   <div className="mt-4 pl-8 flex flex-col gap-2 border-l-2 border-border">
-                    {cat.subcategorias.map((s) => (
+                    {[...cat.subcategorias].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")).map((s) => (
                       <div key={s.id} className="flex items-center gap-3 py-1">
                         <span className="flex-1 text-sm">{s.nome}</span>
                         <Button

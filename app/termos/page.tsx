@@ -3,7 +3,7 @@ import { Logo } from "@/components/brand/Logo";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata = {
-  title: "Termos de Uso — Melhores do Ano CDL Aracaju 2026",
+  title: "Termos de Uso — Melhores do Ano CDL Aracaju 2025",
 };
 
 export default function TermosPage() {
@@ -27,13 +27,13 @@ export default function TermosPage() {
 
           <Section titulo="1. Aceitação">
             <p>
-              Ao acessar a plataforma <strong>votar.cdlaju.com.br</strong> e participar da votação <em>Melhores do Ano CDL Aracaju 2026</em>, você concorda integralmente com estes Termos de Uso. Caso não concorde com algum dos itens, não utilize a plataforma.
+              Ao acessar a plataforma <strong>votar.cdlaju.com.br</strong> e participar da votação <em>Melhores do Ano CDL Aracaju 2025</em>, você concorda integralmente com estes Termos de Uso. Caso não concorde com algum dos itens, não utilize a plataforma.
             </p>
           </Section>
 
           <Section titulo="2. Sobre a votação">
             <p>
-              A votação <em>Melhores do Ano CDL Aracaju 2026</em> é uma iniciativa promovida pela <strong>Câmara de Dirigentes Lojistas de Aracaju (CDL Aracaju)</strong>, com o objetivo de reconhecer estabelecimentos, profissionais e empresas que se destacaram no comércio e nos serviços do município ao longo do ano.
+              A votação <em>Melhores do Ano CDL Aracaju 2025</em> é uma iniciativa promovida pela <strong>Câmara de Dirigentes Lojistas de Aracaju (CDL Aracaju)</strong>, com o objetivo de reconhecer estabelecimentos, profissionais e empresas que se destacaram no comércio e nos serviços do município ao longo do ano.
             </p>
             <p>
               A participação é <strong>voluntária, gratuita e aberta a qualquer pessoa</strong> com CPF válido.

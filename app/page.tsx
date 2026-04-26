@@ -39,7 +39,7 @@ export default function Home() {
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 py-16 sm:py-24 md:py-32">
           <div className="flex flex-col items-center text-center gap-5 sm:gap-6 animate-fade-in">
             <SmallCaps color="#d4a537" size={11}>
-              cdl aracaju · edição 2026
+              cdl aracaju · edição 2025
             </SmallCaps>
 
             <h1 className="font-display text-cream-100 max-w-4xl text-balance">
@@ -150,7 +150,7 @@ export default function Home() {
           </div>
 
           <SmallCaps color="var(--gold-700)" size={11}>
-            edição 2026 · aberta para votação
+            edição 2025 · aberta para votação
           </SmallCaps>
 
           <h2

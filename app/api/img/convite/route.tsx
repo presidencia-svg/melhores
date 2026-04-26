@@ -107,7 +107,7 @@ export async function GET() {
               marginTop: 8,
             }}
           >
-            edição 2026
+            edição 2025
           </div>
 
           <div

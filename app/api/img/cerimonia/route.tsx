@@ -37,7 +37,7 @@ export async function GET() {
           }}
         >
           <div style={{ width: 36, height: 1, background: "#d4a537" }} />
-          cerimônia · edição 2026
+          cerimônia · edição 2025
           <div style={{ width: 36, height: 1, background: "#d4a537" }} />
         </div>
 

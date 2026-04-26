@@ -1,16 +1,22 @@
 import { redirect } from "next/navigation";
 import { VotoLayout } from "@/components/voto/VotoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
-import { getVotanteSessao } from "@/lib/sessao";
+import { getPreCadastro, getVotanteSessao } from "@/lib/sessao";
 import { SelfieCapture } from "./SelfieCapture";
 import { SmallCaps } from "@/components/brand/Marks";
 
 export default async function SelfiePage() {
+  // Aceita dois estados:
+  // 1) sessão já existente (raro: votante voltou após registro completo)
+  // 2) pre-cadastro recém-criado em /api/identificar (caminho normal)
   const sessao = await getVotanteSessao();
-  if (!sessao) redirect("/votar");
-  if (sessao.selfie_url) redirect("/votar/categorias");
+  if (sessao?.selfie_url) redirect("/votar/categorias");
 
-  const primeiroNome = sessao.nome.split(" ")[0] ?? "votante";
+  const pre = sessao ? null : await getPreCadastro();
+  if (!sessao && !pre) redirect("/votar");
+
+  const nome = sessao?.nome ?? pre!.nome;
+  const primeiroNome = nome.split(" ")[0] ?? "votante";
 
   return (
     <VotoLayout step={2}>

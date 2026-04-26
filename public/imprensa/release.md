@@ -6,11 +6,11 @@
 
 ---
 
-## CDL Aracaju lança plataforma digital para a votação dos "Melhores do Ano 2026"
+## CDL Aracaju lança plataforma digital para a votação dos "Melhores do Ano 2025"
 
 ### Sergipanos vão eleger os destaques do comércio e dos serviços de Aracaju com tecnologia de validação biométrica e CPF, garantindo um voto único por pessoa
 
-**Aracaju (SE), 26 de abril de 2026** — A Câmara de Dirigentes Lojistas de Aracaju (CDL Aracaju) lança nesta semana a edição 2026 do prêmio **Melhores do Ano CDL Aracaju**, agora em formato 100% digital. A plataforma, disponível em [votar.cdlaju.com.br](https://votar.cdlaju.com.br), permite que qualquer cidadão escolha os destaques de Aracaju em dezenas de categorias — de restaurantes a profissionais liberais — em uma votação rápida, gratuita e segura.
+**Aracaju (SE), 26 de abril de 2026** — A Câmara de Dirigentes Lojistas de Aracaju (CDL Aracaju) lança nesta semana a edição 2025 do prêmio **Melhores do Ano CDL Aracaju**, agora em formato 100% digital. A plataforma, disponível em [votar.cdlaju.com.br](https://votar.cdlaju.com.br), permite que qualquer cidadão escolha os destaques de Aracaju em dezenas de categorias — de restaurantes a profissionais liberais — em uma votação rápida, gratuita e segura.
 
 A iniciativa moderniza um dos prêmios mais tradicionais do varejo sergipano, ampliando o alcance da participação popular e garantindo a integridade do processo por meio de validação por CPF, captura biométrica em tempo real e proteção contra fraudes automatizadas.
 

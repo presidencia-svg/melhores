@@ -40,7 +40,7 @@ export async function GET() {
               textTransform: "uppercase",
             }}
           >
-            cdl aracaju · 2026
+            cdl aracaju · 2025
           </div>
           <div style={{ width: 36, height: 1, background: "#d4a537" }} />
         </div>

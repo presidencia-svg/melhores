@@ -45,7 +45,7 @@ export async function GET() {
             }}
           >
             <div style={{ width: 36, height: 1, background: "#d4a537" }} />
-            edição 2026
+            edição 2025
             <div style={{ width: 36, height: 1, background: "#d4a537" }} />
           </div>
         </div>

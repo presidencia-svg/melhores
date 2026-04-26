@@ -17,8 +17,8 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "Como funciona — Melhores do Ano CDL Aracaju 2026",
-  description: "Saiba como participar da votação dos Melhores do Ano CDL Aracaju 2026.",
+  title: "Como funciona — Melhores do Ano CDL Aracaju 2025",
+  description: "Saiba como participar da votação dos Melhores do Ano CDL Aracaju 2025.",
 };
 
 export default function RegulamentoPage() {
@@ -53,7 +53,7 @@ export default function RegulamentoPage() {
             Como funciona o prêmio
           </h1>
           <p className="text-lg text-white/80 mt-4">
-            Tudo que você precisa saber pra participar dos Melhores do Ano CDL Aracaju 2026.
+            Tudo que você precisa saber pra participar dos Melhores do Ano CDL Aracaju 2025.
           </p>
         </div>
       </section>

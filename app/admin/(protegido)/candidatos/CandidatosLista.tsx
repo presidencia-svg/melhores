@@ -42,7 +42,7 @@ export function CandidatosLista({
   const categorias = useMemo(() => {
     const set = new Set<string>();
     candidatos.forEach((c) => set.add(c.subcategoria.categoria.nome));
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [candidatos]);
 
   // Subcategorias filtradas pela categoria selecionada
@@ -51,7 +51,7 @@ export function CandidatosLista({
     candidatos
       .filter((c) => !filtroCategoria || c.subcategoria.categoria.nome === filtroCategoria)
       .forEach((c) => set.add(c.subcategoria.nome));
-    return Array.from(set).sort();
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [candidatos, filtroCategoria]);
 
   const filtrados = useMemo(() => {

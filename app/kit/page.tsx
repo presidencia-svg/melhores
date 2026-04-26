@@ -6,15 +6,15 @@ import { CopyButton } from "./CopyButton";
 import { SmallCaps } from "@/components/brand/Marks";
 
 export const metadata = {
-  title: "Kit de Mídia — Melhores do Ano CDL Aracaju 2026",
+  title: "Kit de Mídia — Melhores do Ano CDL Aracaju 2025",
   description: "Imagens e textos prontos para divulgação.",
   robots: "noindex, nofollow",
 };
 
 const WHATSAPP_TEXTS = {
-  associadas: `🏆 *MELHORES DO ANO CDL ARACAJU 2026*
+  associadas: `🏆 *MELHORES DO ANO CDL ARACAJU 2025*
 
-A CDL Aracaju lançou a votação oficial dos *Melhores do Ano 2026* e a sua participação faz toda a diferença!
+A CDL Aracaju lançou a votação oficial dos *Melhores do Ano 2025* e a sua participação faz toda a diferença!
 
 ✅ Vote em mais de 80 categorias
 ✅ É 100% online e gratuito
@@ -26,7 +26,7 @@ A CDL Aracaju lançou a votação oficial dos *Melhores do Ano 2026* e a sua par
 
   geral: `🏆 *VOTE NOS MELHORES DE ARACAJU!*
 
-Já estão abertas as votações dos *Melhores do Ano CDL Aracaju 2026*!
+Já estão abertas as votações dos *Melhores do Ano CDL Aracaju 2025*!
 
 Restaurantes, médicos, lojas, escolas, profissionais e muito mais — você decide os destaques da nossa cidade.
 
@@ -34,7 +34,7 @@ Restaurantes, médicos, lojas, escolas, profissionais e muito mais — você dec
 
 ⏱️ Leva 3 minutos · 🔒 Seguro · 🎯 Gratuito`,
 
-  apos_voto: `🏆 Eu acabei de votar nos *Melhores do Ano CDL Aracaju 2026*!
+  apos_voto: `🏆 Eu acabei de votar nos *Melhores do Ano CDL Aracaju 2025*!
 
 Vote você também e ajude a escolher os destaques da nossa cidade.
 

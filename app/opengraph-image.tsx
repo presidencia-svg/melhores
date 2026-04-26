@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { getLogoWhiteDataUrl, loadEditorialFonts } from "@/lib/marketing/og-helpers";
 
-export const alt = "Melhores do Ano CDL Aracaju 2026";
+export const alt = "Melhores do Ano CDL Aracaju 2025";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -43,7 +43,7 @@ export default async function OgImage() {
               fontSize: 20,
             }}
           >
-            cdl aracaju · edição 2026
+            cdl aracaju · edição 2025
           </div>
           <div style={{ width: 28, height: 1, background: "#d4a537" }} />
         </div>

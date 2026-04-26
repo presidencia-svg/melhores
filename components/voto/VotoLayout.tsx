@@ -17,7 +17,7 @@ export function VotoLayout({ step, children }: VotoLayoutProps) {
             <Logo />
           </Link>
           <SmallCaps color="var(--gold-700)" size={10} className="hidden sm:inline">
-            edição 2026
+            edição 2025
           </SmallCaps>
         </div>
       </header>
