@@ -12,9 +12,9 @@ export const metadata = {
 };
 
 const WHATSAPP_TEXTS = {
-  associadas: `🏆 *MELHORES DO ANO CDL ARACAJU 2025*
+  associadas: `🏆 MELHORES DO ANO CDL ARACAJU 2025
 
-A CDL Aracaju lançou a votação oficial dos *Melhores do Ano 2025* e a sua participação faz toda a diferença!
+A CDL Aracaju lançou a votação oficial dos Melhores do Ano 2025 e a sua participação faz toda a diferença!
 
 ✅ Vote em mais de 80 categorias
 ✅ É 100% online e gratuito
@@ -22,11 +22,11 @@ A CDL Aracaju lançou a votação oficial dos *Melhores do Ano 2025* e a sua par
 
 🌐 Acesse: https://votar.cdlaju.com.br
 
-*Compartilhe com seus amigos e clientes!*`,
+Compartilhe com seus amigos e clientes!`,
 
-  geral: `🏆 *VOTE NOS MELHORES DE ARACAJU!*
+  geral: `🏆 VOTE NOS MELHORES DE ARACAJU!
 
-Já estão abertas as votações dos *Melhores do Ano CDL Aracaju 2025*!
+Já estão abertas as votações dos Melhores do Ano CDL Aracaju 2025!
 
 Restaurantes, médicos, lojas, escolas, profissionais e muito mais — você decide os destaques da nossa cidade.
 
@@ -34,7 +34,7 @@ Restaurantes, médicos, lojas, escolas, profissionais e muito mais — você dec
 
 ⏱️ Leva 3 minutos · 🔒 Seguro · 🎯 Gratuito`,
 
-  apos_voto: `🏆 Eu acabei de votar nos *Melhores do Ano CDL Aracaju 2025*!
+  apos_voto: `🏆 Eu acabei de votar nos Melhores do Ano CDL Aracaju 2025!
 
 Vote você também e ajude a escolher os destaques da nossa cidade.
 

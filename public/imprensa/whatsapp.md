@@ -7,9 +7,9 @@ Copie e cole nos grupos. Os mesmos textos estão disponíveis com botão de cóp
 ## 1. Para grupos de associadas (formal, com call-to-action)
 
 ```
-🏆 *MELHORES DO ANO CDL ARACAJU 2025*
+🏆 MELHORES DO ANO CDL ARACAJU 2025
 
-A CDL Aracaju lançou a votação oficial dos *Melhores do Ano 2025* e a sua participação faz toda a diferença!
+A CDL Aracaju lançou a votação oficial dos Melhores do Ano 2025 e a sua participação faz toda a diferença!
 
 ✅ Vote em mais de 70 categorias
 ✅ É 100% online e gratuito
@@ -17,7 +17,7 @@ A CDL Aracaju lançou a votação oficial dos *Melhores do Ano 2025* e a sua par
 
 🌐 Acesse: https://votar.cdlaju.com.br
 
-*Compartilhe com seus amigos e clientes!*
+Compartilhe com seus amigos e clientes!
 ```
 
 ---
@@ -25,9 +25,9 @@ A CDL Aracaju lançou a votação oficial dos *Melhores do Ano 2025* e a sua par
 ## 2. Divulgação geral (versão pública mais leve)
 
 ```
-🏆 *VOTE NOS MELHORES DE ARACAJU!*
+🏆 VOTE NOS MELHORES DE ARACAJU!
 
-Já estão abertas as votações dos *Melhores do Ano CDL Aracaju 2025*!
+Já estão abertas as votações dos Melhores do Ano CDL Aracaju 2025!
 
 Restaurantes, médicos, lojas, escolas, profissionais e muito mais — você decide os destaques da nossa cidade.
 
@@ -41,7 +41,7 @@ Restaurantes, médicos, lojas, escolas, profissionais e muito mais — você dec
 ## 3. Após votar (pra eleitores compartilharem)
 
 ```
-🏆 Eu acabei de votar nos *Melhores do Ano CDL Aracaju 2025*!
+🏆 Eu acabei de votar nos Melhores do Ano CDL Aracaju 2025!
 
 Vote você também e ajude a escolher os destaques da nossa cidade. 🟢🟡🔵
 
@@ -55,7 +55,7 @@ Vote você também e ajude a escolher os destaques da nossa cidade. 🟢🟡🔵
 ```
 👋 Oi, [NOME]!
 
-A CDL Aracaju está com a votação aberta dos *Melhores do Ano 2025* — uma premiação que reconhece os destaques do comércio e dos serviços da nossa cidade.
+A CDL Aracaju está com a votação aberta dos Melhores do Ano 2025 — uma premiação que reconhece os destaques do comércio e dos serviços da nossa cidade.
 
 Você ajudaria a divulgar pra sua audiência? Tem imagens e textos prontos no kit:
 🌐 votar.cdlaju.com.br
@@ -79,7 +79,7 @@ Conta com a gente?
 ## 6. Lembrete (na reta final da votação)
 
 ```
-⏰ Faltam *X dias* para encerrar a votação dos Melhores do Ano CDL Aracaju 2025!
+⏰ Faltam X dias para encerrar a votação dos Melhores do Ano CDL Aracaju 2025!
 
 Já votou? 👀
 
@@ -93,7 +93,7 @@ Não deixe pra última hora.
 ## 7. Após o anúncio dos vencedores
 
 ```
-🏆 *Vencedores Melhores do Ano CDL Aracaju 2025*
+🏆 Vencedores Melhores do Ano CDL Aracaju 2025
 
 Saíram os campeões! Confira a lista completa:
 🌐 https://votar.cdlaju.com.br/resultados (link a definir)

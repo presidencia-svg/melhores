@@ -25,7 +25,7 @@ const jetbrains = JetBrains_Mono({
 });
 
 // Bumping ?v= força browsers a re-fetch o favicon (cache agressivo)
-const ICON_VERSION = "4";
+const ICON_VERSION = "5";
 
 export const metadata: Metadata = {
   title: "Melhores do Ano CDL Aracaju 2025",
