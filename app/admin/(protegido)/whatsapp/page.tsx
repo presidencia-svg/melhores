@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Download, MessageSquare } from "lucide-react";
 import { IncentivoSection } from "./IncentivoSection";
 import { ParcialSection } from "./ParcialSection";
+import { StatusBanner } from "./StatusBanner";
 
 export default async function WhatsAppPage() {
   const supabase = createSupabaseAdminClient();
@@ -58,6 +59,7 @@ export default async function WhatsAppPage() {
         </CardContent>
       </Card>
 
+      <StatusBanner />
       <IncentivoSection />
       <ParcialSection />
     </div>

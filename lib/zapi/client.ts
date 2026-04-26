@@ -47,3 +47,24 @@ export async function enviarMensagemTexto(numero: string, mensagem: string): Pro
 export function gerarCodigoVerificacao(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
+
+export type ZapiStatus = {
+  conectado: boolean;
+  detalhe?: string;
+  raw?: unknown;
+};
+
+export async function verificarStatus(): Promise<ZapiStatus> {
+  try {
+    const { data } = await axios.get(`${baseUrl()}/status`, {
+      headers: { "Client-Token": clientToken() },
+      timeout: 8000,
+    });
+    // Z-API retorna { connected: bool, ... }
+    const conectado = Boolean((data as { connected?: boolean })?.connected);
+    return { conectado, raw: data };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "erro desconhecido";
+    return { conectado: false, detalhe: message };
+  }
+}
