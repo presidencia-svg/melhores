@@ -31,12 +31,12 @@ export default async function OgImage() {
             display: "flex",
             background: "white",
             borderRadius: 20,
-            padding: "16px 28px",
+            padding: "22px 36px",
             marginBottom: 36,
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logoSrc} alt="CDL Aracaju" width={220} height={80} style={{ objectFit: "contain" }} />
+          <img src={logoSrc} alt="CDL Aracaju" width={460} height={138} style={{ objectFit: "contain" }} />
         </div>
 
         <div

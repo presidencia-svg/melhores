@@ -25,12 +25,12 @@ export async function GET() {
             display: "flex",
             background: "white",
             borderRadius: 28,
-            padding: "20px 36px",
+            padding: "30px 50px",
             marginBottom: 60,
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logoSrc} alt="CDL" width={280} height={100} style={{ objectFit: "contain" }} />
+          <img src={logoSrc} alt="CDL" width={580} height={174} style={{ objectFit: "contain" }} />
         </div>
 
         <div
