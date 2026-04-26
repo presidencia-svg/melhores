@@ -120,7 +120,7 @@ export default async function AdminDashboard() {
           <h1 className="font-display text-3xl font-bold text-cdl-blue">Visão geral</h1>
           {edicao ? (
             <p className="text-muted mt-1">
-              {edicao.nome} · até {new Date(edicao.fim_votacao).toLocaleString("pt-BR")}
+              {edicao.nome} · até {new Date(edicao.fim_votacao).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}
             </p>
           ) : (
             <p className="text-red-600 mt-1 font-medium">⚠ Nenhuma edição ativa configurada</p>
