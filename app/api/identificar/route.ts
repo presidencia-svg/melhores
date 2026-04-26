@@ -9,11 +9,28 @@ import { verifyTurnstile } from "@/lib/turnstile";
 
 const Body = z.object({
   cpf: z.string(),
+  nome: z.string().min(2).max(120),
   fingerprint: z.string().nullable().optional(),
   turnstileToken: z.string().nullable().optional(),
 });
 
 const MAX_CPFS_POR_DISPOSITIVO = 2;
+
+function deveConsultarSPC(): boolean {
+  const rate = parseFloat(process.env.SPC_SAMPLE_RATE ?? "0");
+  if (isNaN(rate) || rate <= 0) return false;
+  if (rate >= 1) return true;
+  return Math.random() < rate;
+}
+
+function normalizarNome(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
 
 export async function POST(req: Request) {
   try {
@@ -137,21 +154,34 @@ async function handleIdentificar(req: Request) {
     }
   }
 
-  // Consulta SPC
-  const lookup = await consultarCpfSpc(cpf);
-  if (!lookup.ok) {
-    const map = {
-      nao_encontrado: "CPF não localizado. Verifique e tente novamente.",
-      erro_externo: "Serviço temporariamente indisponível. Tente em instantes.",
-      credenciais: "Erro interno do sistema. Avisamos a equipe.",
-      rate_limit: "Estamos com muito acesso. Tente novamente em alguns minutos.",
-    } as const;
-    const userMessage = map[lookup.motivo];
-    // Em dev, expõe detalhe pra debug; em prod só a mensagem amigável
-    const debugDetail = process.env.NODE_ENV !== "production" && lookup.detalhe
-      ? ` [debug: ${lookup.detalhe}]`
-      : "";
-    return NextResponse.json({ error: userMessage + debugDetail }, { status: 502 });
+  const nomeAutodeclarado = parsed.data.nome.trim();
+
+  // Decide se este votante entra no sample SPC (auditoria)
+  const consultarSpc = deveConsultarSPC();
+  let nomeFinal = nomeAutodeclarado;
+  let spcValidado = false;
+
+  if (consultarSpc) {
+    const lookup = await consultarCpfSpc(cpf);
+    if (lookup.ok) {
+      // Se o nome SPC bater minimamente com o autodeclarado, valida.
+      // (Se não bater, ainda permite passar — sample é só auditorial, não bloqueante.)
+      nomeFinal = lookup.nome;
+      spcValidado = true;
+      const a = normalizarNome(lookup.nome);
+      const b = normalizarNome(nomeAutodeclarado);
+      const primeiroNomeA = a.split(" ")[0] ?? "";
+      const primeiroNomeB = b.split(" ")[0] ?? "";
+      if (primeiroNomeA && primeiroNomeB && primeiroNomeA !== primeiroNomeB) {
+        console.warn(
+          "[identificar] SPC mismatch:",
+          { autodeclarado: nomeAutodeclarado, spc: lookup.nome }
+        );
+      }
+    } else {
+      // Falha SPC não bloqueia — apenas registra como não validado
+      console.warn("[identificar] SPC falhou no sample:", lookup.motivo);
+    }
   }
 
   // Cria votante (sem selfie ainda)
@@ -161,7 +191,9 @@ async function handleIdentificar(req: Request) {
       edicao_id: edicao.id,
       cpf_hash: cpfHash,
       cpf,
-      nome: lookup.nome,
+      nome: nomeFinal,
+      nome_autodeclarado: nomeAutodeclarado,
+      spc_validado: spcValidado,
       ip,
       user_agent: userAgent,
       device_fingerprint: fingerprint,
@@ -175,5 +207,5 @@ async function handleIdentificar(req: Request) {
 
   await setVotanteSessao(votante.id);
 
-  return NextResponse.json({ ok: true, nome: lookup.nome });
+  return NextResponse.json({ ok: true, nome: nomeFinal });
 }

@@ -11,6 +11,7 @@ import { Turnstile } from "@/components/voto/Turnstile";
 
 export function CpfForm() {
   const router = useRouter();
+  const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [aceitou, setAceitou] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -19,7 +20,7 @@ export function CpfForm() {
 
   const turnstileRequired = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
-  function handleChange(value: string) {
+  function handleCpfChange(value: string) {
     const digits = onlyDigits(value).slice(0, 11);
     setCpf(digits.length > 0 ? formatCpf(digits) : "");
     if (error) setError(undefined);
@@ -28,6 +29,17 @@ export function CpfForm() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(undefined);
+
+    if (nome.trim().length < 2) {
+      setError("Informe seu nome.");
+      return;
+    }
+
+    const numeros = onlyDigits(cpf);
+    if (!isValidCpf(numeros)) {
+      setError("CPF inválido. Confira os números.");
+      return;
+    }
 
     if (!aceitou) {
       setError("Você precisa aceitar os Termos e a Política de Privacidade.");
@@ -39,24 +51,22 @@ export function CpfForm() {
       return;
     }
 
-    const numeros = onlyDigits(cpf);
-    if (!isValidCpf(numeros)) {
-      setError("CPF inválido. Confira os números.");
-      return;
-    }
-
     setLoading(true);
     try {
       const fingerprint = await getDeviceFingerprint().catch(() => null);
       const res = await fetch("/api/identificar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cpf: numeros, fingerprint, turnstileToken }),
+        body: JSON.stringify({
+          cpf: numeros,
+          nome: nome.trim(),
+          fingerprint,
+          turnstileToken,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Não foi possível continuar. Tente novamente.");
-        // Reseta Turnstile pra gerar token novo (single-use)
         if (typeof window !== "undefined" && window.__turnstileReset) {
           window.__turnstileReset();
         }
@@ -73,14 +83,23 @@ export function CpfForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Input
+        label="Nome completo"
+        name="nome"
+        placeholder="Como você se chama?"
+        value={nome}
+        onChange={(e) => setNome(e.target.value)}
+        autoComplete="name"
+        autoFocus
+      />
+
+      <Input
         label="CPF"
         name="cpf"
         inputMode="numeric"
         placeholder="000.000.000-00"
         value={cpf}
-        onChange={(e) => handleChange(e.target.value)}
+        onChange={(e) => handleCpfChange(e.target.value)}
         autoComplete="off"
-        autoFocus
         error={error}
         maxLength={14}
       />

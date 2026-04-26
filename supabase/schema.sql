@@ -77,6 +77,8 @@ create table if not exists votantes (
   cpf_hash text not null,
   cpf text not null,
   nome text not null,
+  nome_autodeclarado text,
+  spc_validado boolean not null default false,
   selfie_url text,
   ip text,
   user_agent text,
