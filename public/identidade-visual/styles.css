@@ -1,0 +1,53 @@
+/* Melhores do Ano CDL Aracaju 2026 — design tokens */
+:root {
+  --navy-900: #061d44;
+  --navy-800: #0a2a5e;
+  --navy-700: #133e85;
+  --navy-100: #e6ecf7;
+  --gold-600: #b88a2a;
+  --gold-500: #d4a537;
+  --gold-400: #e6bf5f;
+  --gold-200: #f3dfa3;
+  --green-700: #0a6a30;
+  --green-600: #0f8a3f;
+  --cream: #f5f1e8;
+  --paper: #fbf8f1;
+  --ink: #0c1530;
+
+  --font-display: "Fraunces", "Playfair Display", Georgia, serif;
+  --font-sans: "Sora", "Manrope", -apple-system, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-sans); color: var(--ink); }
+
+/* shared utilities used across artboards */
+.mda-grain {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.18; mix-blend-mode: overlay;
+  background-image: radial-gradient(rgba(255,255,255,0.5) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+
+.mda-rays {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    conic-gradient(from 210deg at 50% 110%,
+      transparent 0deg,
+      rgba(212,165,55,0.18) 8deg,
+      transparent 16deg,
+      rgba(212,165,55,0.12) 28deg,
+      transparent 38deg,
+      rgba(212,165,55,0.20) 52deg,
+      transparent 62deg,
+      rgba(212,165,55,0.10) 78deg,
+      transparent 90deg,
+      rgba(212,165,55,0.18) 110deg,
+      transparent 120deg,
+      rgba(212,165,55,0.10) 140deg,
+      transparent 150deg);
+}
+
+.mda-laurel-left, .mda-laurel-right {
+  position: absolute; pointer-events: none;
+}
