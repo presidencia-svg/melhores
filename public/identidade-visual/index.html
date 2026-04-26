@@ -5,130 +5,23 @@
 <meta name="robots" content="noindex, nofollow"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Identidade Visual — Melhores do Ano CDL Aracaju 2026</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css"/>
-<style>
-  body { background: #ece8df; }
-</style>
+
+<style>body { background: #ece8df; }</style>
 </head>
 <body>
 <div id="root"></div>
 
-<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<!-- React 18 production minified (UMD globals) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
 
-<script type="text/babel" src="design-canvas.jsx"></script>
-<script type="text/babel" src="marks.jsx"></script>
-<script type="text/babel" src="realizacao.jsx"></script>
-<script type="text/babel" src="feed-posts.jsx"></script>
-<script type="text/babel" src="stories.jsx"></script>
-<script type="text/babel" src="convite-cerimonia.jsx"></script>
-<script type="text/babel" src="pitch-deck.jsx"></script>
-<script type="text/babel" src="identidade.jsx"></script>
-
-<script type="text/babel">
-  const { useEffect } = React;
-
-  // Reasoning panel (shown above the canvas grid)
-  const Intro = () => (
-    <div style={{
-      width: 1500, padding: "40px 50px", margin: "0 auto", color: "#1a1612",
-      fontFamily: 'var(--font-sans)',
-    }}>
-      <div style={{
-        fontFamily: 'var(--font-display)', fontStyle: 'italic', fontWeight: 300,
-        fontSize: 64, lineHeight: 0.95, letterSpacing: '-0.02em', color: '#0a2a5e',
-      }}>
-        Melhores <span style={{ fontWeight: 800 }}>do Ano</span> · 2026
-      </div>
-      <div style={{
-        marginTop: 14, fontFamily: 'var(--font-sans)', fontSize: 16, lineHeight: 1.55,
-        maxWidth: 880, color: 'rgba(26,22,18,0.78)',
-      }}>
-        Redesenho do kit de mídia da CDL Aracaju para a 34ª edição do prêmio.
-        Mantém a essência da marca (azul-marinho, verde, dourado) mas eleva o tom para um clima editorial
-        de cerimônia: serif itálico no display, ouro como acento de honra, ornamentos discretos
-        (laurel, numerais 2026 em camadas), composição com muito ar.
-        <br/><br/>
-        <b>Sistema:</b> Fraunces (display itálico) · Sora (sans) · paleta navy + ouro + creme.
-        <b>Peças:</b> identidade visual, 3 feeds, 2 stories, "Eu Votei!", convite digital,
-        deck de patrocínio em 5 slides, e tela de premiação para o telão da cerimônia.
-        Arraste cada artboard para reordenar; clique no ícone para abrir em foco.
-      </div>
-    </div>
-  );
-
-  const App = () => (
-    <div>
-      <Intro/>
-      <DesignCanvas>
-        <DCSection id="identidade" title="01 · Identidade visual" subtitle="Sistema de cores, tipografia, marcas e princípios">
-          <DCArtboard id="brand" label="Brandboard" width={1600} height={1100}>
-            <IdentidadeVisual/>
-          </DCArtboard>
-        </DCSection>
-
-        <DCSection id="feeds" title="02 · Posts feed (1080×1080)" subtitle="3 direções para Instagram, Facebook, LinkedIn">
-          <DCArtboard id="feed-a" label="A · Editorial premium" width={1080} height={1080}>
-            <FeedA/>
-          </DCArtboard>
-          <DCArtboard id="feed-b" label="B · Display tipográfico" width={1080} height={1080}>
-            <FeedB/>
-          </DCArtboard>
-          <DCArtboard id="feed-c" label="C · Split assimétrico" width={1080} height={1080}>
-            <FeedC/>
-          </DCArtboard>
-        </DCSection>
-
-        <DCSection id="stories" title="03 · Stories (1080×1920)" subtitle="Stories Instagram, TikTok, Status WhatsApp">
-          <DCArtboard id="story-a" label="A · Premium vertical" width={1080} height={1920}>
-            <StoryA/>
-          </DCArtboard>
-          <DCArtboard id="story-b" label="B · Editorial split" width={1080} height={1920}>
-            <StoryB/>
-          </DCArtboard>
-          <DCArtboard id="eu-votei" label="Eu Votei! (1080×1080)" width={1080} height={1080}>
-            <EuVotei/>
-          </DCArtboard>
-        </DCSection>
-
-        <DCSection id="convite" title="04 · Convite digital (1080×1350)" subtitle="Convite para a cerimônia de premiação">
-          <DCArtboard id="convite" label="Convite · cerimônia" width={1080} height={1350}>
-            <ConviteDigital/>
-          </DCArtboard>
-        </DCSection>
-
-        <DCSection id="deck" title="05 · Pitch deck patrocinadores (1920×1080)" subtitle="5 slides para apresentar cotas">
-          <DCArtboard id="s1" label="01 · Capa" width={1920} height={1080}>
-            <Slide1Cover/>
-          </DCArtboard>
-          <DCArtboard id="s2" label="02 · O prêmio" width={1920} height={1080}>
-            <Slide2WhatIs/>
-          </DCArtboard>
-          <DCArtboard id="s3" label="03 · Alcance" width={1920} height={1080}>
-            <Slide3Audience/>
-          </DCArtboard>
-          <DCArtboard id="s4" label="04 · Cotas" width={1920} height={1080}>
-            <Slide4Tiers/>
-          </DCArtboard>
-          <DCArtboard id="s5" label="05 · Contato" width={1920} height={1080}>
-            <Slide5Contact/>
-          </DCArtboard>
-        </DCSection>
-
-        <DCSection id="cerimonia" title="06 · Cerimônia · Telão (1920×1080)" subtitle="Tela de anúncio do vencedor por categoria">
-          <DCArtboard id="winner" label="Anúncio do vencedor" width={1920} height={1080}>
-            <CerimoniaTela/>
-          </DCArtboard>
-        </DCSection>
-      </DesignCanvas>
-    </div>
-  );
-
-  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-</script>
+<!-- Bundle pre-compiled: design canvas + marks + feeds + stories + convite + deck + identidade + app -->
+<script src="bundle.js" defer></script>
 </body>
 </html>
