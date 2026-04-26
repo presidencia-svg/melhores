@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Download, MessageSquare } from "lucide-react";
+import { IncentivoSection } from "./IncentivoSection";
 
 export default async function WhatsAppPage() {
   const supabase = createSupabaseAdminClient();
@@ -56,6 +56,8 @@ export default async function WhatsAppPage() {
           </div>
         </CardContent>
       </Card>
+
+      <IncentivoSection />
     </div>
   );
 }
