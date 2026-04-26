@@ -76,18 +76,26 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual }: Props
         setSubmitting(false);
         return;
       }
-      // Resposta inclui candidatoId (existente ou novo) — registra voto direto
-      const votoRes = await fetch("/api/voto", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subcategoriaId, candidatoId: data.candidatoId }),
-      });
-      if (!votoRes.ok) {
-        const errData = await votoRes.json().catch(() => ({}));
-        setError(errData.error ?? "Falha ao registrar voto");
-        setSubmitting(false);
+
+      // Match com candidato existente → registra voto direto
+      if (data.match && data.candidatoId) {
+        const votoRes = await fetch("/api/voto", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subcategoriaId, candidatoId: data.candidatoId }),
+        });
+        if (!votoRes.ok) {
+          const errData = await votoRes.json().catch(() => ({}));
+          setError(errData.error ?? "Falha ao registrar voto");
+          setSubmitting(false);
+          return;
+        }
+        router.push("/votar/categorias");
         return;
       }
+
+      // Sugestão pendente — não vota, mostra confirmação e volta
+      alert(data.mensagem ?? "Sugestão registrada para análise da CDL.");
       router.push("/votar/categorias");
     } catch {
       setError("Erro ao sugerir. Tente novamente.");

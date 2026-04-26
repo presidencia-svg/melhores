@@ -28,6 +28,23 @@ export async function POST(req: Request) {
   const supabase = createSupabaseAdminClient();
   const ip = getClientIp(req.headers);
 
+  // Rate limit: 30 votos por sessão em 1 minuto (proteção contra flood)
+  const umMinuto = new Date(Date.now() - 60_000).toISOString();
+  const { count: tentativas } = await supabase
+    .from("rate_limit_ip")
+    .select("*", { head: true, count: "exact" })
+    .eq("ip", ip)
+    .eq("acao", `voto:${sessao.id}`)
+    .gte("criado_em", umMinuto);
+
+  if ((tentativas ?? 0) >= 30) {
+    return NextResponse.json(
+      { error: "Muitas requisições. Aguarde 1 minuto." },
+      { status: 429 }
+    );
+  }
+  await supabase.from("rate_limit_ip").insert({ ip, acao: `voto:${sessao.id}` });
+
   // Valida candidato pertence à subcategoria e está aprovado
   const { data: cand } = await supabase
     .from("candidatos")

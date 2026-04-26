@@ -62,9 +62,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Falha ao registrar sugestão" }, { status: 500 });
   }
 
-  // Sugeridos pendentes não recebem voto até serem aprovados — então aprova auto
-  // (decisão fuzzy+auto aprovar primeiro voto: muda quando admin moderar duplicatas)
-  await supabase.from("candidatos").update({ status: "aprovado" }).eq("id", novo.id);
-
-  return NextResponse.json({ ok: true, candidatoId: novo.id, match: false });
+  // Sugestão fica PENDENTE até admin moderar — anti-vandalismo
+  return NextResponse.json({
+    ok: true,
+    candidatoId: null,
+    match: false,
+    pendente: true,
+    mensagem: "Obrigado! Sua sugestão será analisada pela equipe da CDL antes de receber votos.",
+  });
 }
