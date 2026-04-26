@@ -21,10 +21,7 @@ export function Logo({ className, variant = "full" }: LogoProps) {
           "object-contain",
           isCompact ? "h-9 w-auto" : "h-16 w-auto md:h-20",
           // variante "white" (fundo escuro): inverte cores e torna a logo branca
-          isWhite
-            ? "brightness-0 invert"
-            // variantes claras: usa multiply pra eliminar o fundo branco do PNG
-            : "mix-blend-multiply"
+          isWhite && "brightness-0 invert"
         )}
         priority
       />
