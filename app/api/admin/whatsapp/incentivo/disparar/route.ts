@@ -43,7 +43,7 @@ function montarMensagem(e: Elegivel): string {
     "",
     `Você votou em ${e.candidato_perdendo_nome} para Melhor ${e.subcategoria_nome}. ${linhaDisputa}`,
     "",
-    `Compartilhe o link com seus contatos e ajude a virar o jogo:`,
+    `Compartilhe o link com seus contatos e ajude quem você votou:`,
     `🌐 https://votar.cdlaju.com.br`,
     "",
     `Cada voto faz diferença!`,

@@ -63,7 +63,7 @@ function montarMensagem(votanteNome: string, linhas: LinhaRpc[]): string | null 
     "",
     blocos.join("\n\n"),
     "",
-    `Compartilhe e ajude a virar:`,
+    `Compartilhe e ajude quem você votou:`,
     `🌐 votar.cdlaju.com.br`,
   ].join("\n");
 }
