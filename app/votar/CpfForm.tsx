@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { formatCpf, isValidCpf, onlyDigits } from "@/lib/cpf";
+import { getDeviceFingerprint } from "@/lib/fingerprint";
 
 export function CpfForm() {
   const router = useRouter();
@@ -30,10 +31,11 @@ export function CpfForm() {
 
     setLoading(true);
     try {
+      const fingerprint = await getDeviceFingerprint().catch(() => null);
       const res = await fetch("/api/identificar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cpf: numeros }),
+        body: JSON.stringify({ cpf: numeros, fingerprint }),
       });
       const data = await res.json();
       if (!res.ok) {

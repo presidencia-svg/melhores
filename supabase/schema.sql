@@ -80,6 +80,7 @@ create table if not exists votantes (
   selfie_url text,
   ip text,
   user_agent text,
+  device_fingerprint text,
   whatsapp text,
   whatsapp_validado boolean not null default false,
   criado_em timestamptz not null default now(),
@@ -88,6 +89,9 @@ create table if not exists votantes (
 
 create index if not exists idx_votantes_ip on votantes(ip, criado_em desc);
 create index if not exists idx_votantes_edicao on votantes(edicao_id);
+create index if not exists idx_votantes_fingerprint
+  on votantes(edicao_id, device_fingerprint)
+  where device_fingerprint is not null;
 
 -- --------------------------------------------------------------------------
 -- Cache SPC (CPF → nome) — evita consultar o mesmo CPF mais de uma vez

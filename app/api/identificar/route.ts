@@ -6,7 +6,12 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { setVotanteSessao } from "@/lib/sessao";
 import { getClientIp } from "@/lib/utils";
 
-const Body = z.object({ cpf: z.string() });
+const Body = z.object({
+  cpf: z.string(),
+  fingerprint: z.string().nullable().optional(),
+});
+
+const MAX_CPFS_POR_DISPOSITIVO = 2;
 
 export async function POST(req: Request) {
   try {
@@ -93,6 +98,25 @@ async function handleIdentificar(req: Request) {
     );
   }
 
+  // Limite por dispositivo (máx 2 CPFs por fingerprint)
+  const fingerprint = parsed.data.fingerprint ?? null;
+  if (fingerprint) {
+    const { count: usados } = await supabase
+      .from("votantes")
+      .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicao.id)
+      .eq("device_fingerprint", fingerprint);
+
+    if ((usados ?? 0) >= MAX_CPFS_POR_DISPOSITIVO) {
+      return NextResponse.json(
+        {
+          error: `Limite de ${MAX_CPFS_POR_DISPOSITIVO} votantes por dispositivo atingido. Use outro celular ou computador.`,
+        },
+        { status: 429 }
+      );
+    }
+  }
+
   // Consulta SPC
   const lookup = await consultarCpfSpc(cpf);
   if (!lookup.ok) {
@@ -120,6 +144,7 @@ async function handleIdentificar(req: Request) {
       nome: lookup.nome,
       ip,
       user_agent: userAgent,
+      device_fingerprint: fingerprint,
     })
     .select("id")
     .single();

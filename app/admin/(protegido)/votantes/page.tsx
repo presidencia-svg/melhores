@@ -17,18 +17,26 @@ export default async function VotantesPage({ searchParams }: Props) {
 
   const supabase = createSupabaseAdminClient();
 
-  const [{ data: votantes, count }, { data: votosPorVotante }] = await Promise.all([
+  const [{ data: votantes, count }, { data: votosPorVotante }, { data: todosFps }] = await Promise.all([
     supabase
       .from("votantes")
-      .select("id, cpf, nome, selfie_url, ip, user_agent, whatsapp, whatsapp_validado, criado_em", {
-        count: "exact",
-      })
+      .select(
+        "id, cpf, nome, selfie_url, ip, user_agent, device_fingerprint, whatsapp, whatsapp_validado, criado_em",
+        { count: "exact" }
+      )
       .order("criado_em", { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1),
-    supabase
-      .from("votos")
-      .select("votante_id"),
+    supabase.from("votos").select("votante_id"),
+    supabase.from("votantes").select("device_fingerprint").not("device_fingerprint", "is", null),
   ]);
+
+  // Conta quantas vezes cada fingerprint apareceu (pra detectar dispositivos compartilhados)
+  const fpCount = new Map<string, number>();
+  for (const v of todosFps ?? []) {
+    if (v.device_fingerprint) {
+      fpCount.set(v.device_fingerprint, (fpCount.get(v.device_fingerprint) ?? 0) + 1);
+    }
+  }
 
   // Conta votos por votante
   const votosMap = new Map<string, number>();
@@ -63,9 +71,10 @@ export default async function VotantesPage({ searchParams }: Props) {
           const votos = votosMap.get(v.id) ?? 0;
           const dispositivo = parseUserAgent(v.user_agent ?? "");
           const selfieUrl = selfieUrls.get(v.id);
+          const fpDuplicados = v.device_fingerprint ? (fpCount.get(v.device_fingerprint) ?? 1) : 1;
 
           return (
-            <Card key={v.id}>
+            <Card key={v.id} className={fpDuplicados >= 2 ? "ring-2 ring-orange-300/60" : ""}>
               <CardContent className="!p-4">
                 <div className="flex items-start gap-4">
                   {selfieUrl ? (
@@ -98,6 +107,11 @@ export default async function VotantesPage({ searchParams }: Props) {
                       >
                         🏆 {votos} {votos === 1 ? "voto" : "votos"}
                       </span>
+                      {fpDuplicados >= 2 && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-semibold" title="Mesmo dispositivo usado por outros votantes">
+                          📱 {fpDuplicados} no mesmo aparelho
+                        </span>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted">
