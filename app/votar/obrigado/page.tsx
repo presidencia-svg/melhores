@@ -82,7 +82,7 @@ export default async function ObrigadoPage() {
 }
 
 function ShareButton() {
-  const url = "https://cdlaju.com";
+  const url = "https://votar.cdlaju.com.br";
   const text = `Vote nos Melhores do Ano CDL Aracaju 2026! 🏆\n${url}`;
   const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
   return (
