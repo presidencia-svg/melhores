@@ -22,6 +22,13 @@ export default async function CandidatosAdminPage() {
     .eq("categoria.edicao_id", edicao.id)
     .order("nome");
 
+  // Lista plana pra usar no Mover (id + label "Categoria → Subcategoria")
+  const subsFlat = (subs ?? []).map((s) => ({
+    id: s.id,
+    nome: s.nome,
+    categoria: (s as unknown as { categoria: { nome: string } }).categoria.nome,
+  }));
+
   const { data: candidatos } = await supabase
     .from("candidatos")
     .select("id, nome, descricao, foto_url, origem, status, sugestoes_count, subcategoria:subcategorias!inner(id, nome, categoria:categorias!inner(nome, edicao_id))")
@@ -50,6 +57,7 @@ export default async function CandidatosAdminPage() {
             sugestoes_count: number;
             subcategoria: { id: string; nome: string; categoria: { nome: string } };
           }>}
+          todasSubcategorias={subsFlat}
         />
       </div>
     </div>

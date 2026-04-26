@@ -9,6 +9,7 @@ const PatchBody = z.object({
   descricao: z.string().max(280).nullable().optional(),
   foto_url: z.string().url().nullable().optional(),
   status: z.enum(["aprovado", "rejeitado", "pendente", "duplicado"]).optional(),
+  subcategoria_id: z.string().uuid().optional(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {

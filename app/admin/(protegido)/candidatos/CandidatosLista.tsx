@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Pencil, GitMerge, Trash2, Check, X } from "lucide-react";
+import { Pencil, GitMerge, Trash2, Check, X, ArrowRightLeft } from "lucide-react";
 
 type Candidato = {
   id: string;
@@ -18,7 +18,15 @@ type Candidato = {
   subcategoria: { id: string; nome: string; categoria: { nome: string } };
 };
 
-export function CandidatosLista({ candidatos }: { candidatos: Candidato[] }) {
+type SubFlat = { id: string; nome: string; categoria: string };
+
+export function CandidatosLista({
+  candidatos,
+  todasSubcategorias,
+}: {
+  candidatos: Candidato[];
+  todasSubcategorias: SubFlat[];
+}) {
   const router = useRouter();
   const [busca, setBusca] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState<string>("");
@@ -26,6 +34,7 @@ export function CandidatosLista({ candidatos }: { candidatos: Candidato[] }) {
   const [editando, setEditando] = useState<string | null>(null);
   const [novoNome, setNovoNome] = useState("");
   const [merging, setMerging] = useState<{ origem: Candidato; destino: string | null } | null>(null);
+  const [moving, setMoving] = useState<{ candidato: Candidato; destinoSub: string | null } | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -114,6 +123,25 @@ export function CandidatosLista({ candidatos }: { candidatos: Candidato[] }) {
       const d = await res.json().catch(() => ({}));
       setErro(d.error ?? "Falha ao excluir");
     } else {
+      router.refresh();
+    }
+    setLoading(null);
+  }
+
+  async function mover() {
+    if (!moving || !moving.destinoSub) return;
+    setLoading(moving.candidato.id);
+    setErro(null);
+    const res = await fetch(`/api/admin/candidatos/${moving.candidato.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subcategoria_id: moving.destinoSub }),
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setErro(d.error ?? "Falha ao mover");
+    } else {
+      setMoving(null);
       router.refresh();
     }
     setLoading(null);
@@ -289,6 +317,14 @@ export function CandidatosLista({ candidatos }: { candidatos: Candidato[] }) {
                     <Button
                       size="sm"
                       variant="ghost"
+                      onClick={() => setMoving({ candidato: c, destinoSub: null })}
+                      title="Mover para outra subcategoria"
+                    >
+                      <ArrowRightLeft className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       onClick={() => setMerging({ origem: c, destino: null })}
                       title="Mesclar com outro candidato"
                     >
@@ -309,6 +345,58 @@ export function CandidatosLista({ candidatos }: { candidatos: Candidato[] }) {
             );
           })}
         </div>
+
+        {moving && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="max-w-md w-full">
+              <CardContent>
+                <h3 className="font-display text-lg font-bold text-cdl-blue mb-2">
+                  Mover candidato
+                </h3>
+                <p className="text-sm text-muted mb-4">
+                  Mover <strong>{moving.candidato.nome}</strong> para outra subcategoria. Os votos
+                  permanecem com o candidato.
+                </p>
+                <p className="text-xs text-muted mb-3">
+                  Atual: {moving.candidato.subcategoria.categoria.nome} →{" "}
+                  {moving.candidato.subcategoria.nome}
+                </p>
+
+                <label className="text-sm font-medium block mb-2">Nova subcategoria:</label>
+                <select
+                  className="w-full h-11 px-3 rounded-xl border-2 border-border bg-white text-sm"
+                  value={moving.destinoSub ?? ""}
+                  onChange={(e) =>
+                    setMoving({ ...moving, destinoSub: e.target.value || null })
+                  }
+                >
+                  <option value="">— Escolher subcategoria —</option>
+                  {todasSubcategorias
+                    .filter((s) => s.id !== moving.candidato.subcategoria.id)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.categoria} → {s.nome}
+                      </option>
+                    ))}
+                </select>
+
+                <div className="flex gap-2 mt-4">
+                  <Button variant="outline" onClick={() => setMoving(null)} className="flex-1">
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={mover}
+                    disabled={!moving.destinoSub}
+                    loading={loading === moving.candidato.id}
+                    className="flex-1"
+                  >
+                    Mover
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {merging && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
