@@ -15,11 +15,11 @@ export function Logo({ className, variant = "full" }: LogoProps) {
       <Image
         src="/cdl-logo.png"
         alt="CDL Aracaju"
-        width={isCompact ? 80 : 200}
-        height={isCompact ? 24 : 60}
+        width={isCompact ? 120 : 280}
+        height={isCompact ? 36 : 84}
         className={cn(
           "object-contain",
-          isCompact ? "h-7 w-auto" : "h-12 w-auto md:h-14",
+          isCompact ? "h-9 w-auto" : "h-16 w-auto md:h-20",
           // variante "white" (fundo escuro): inverte cores e torna a logo branca
           isWhite
             ? "brightness-0 invert"
