@@ -10,6 +10,7 @@ const LOTE_MAX = 50;
 
 const Body = z.object({
   threshold: z.number().int().min(0).max(100).default(5),
+  cooldown: z.number().int().min(0).max(1440).default(30),
   votante_ids: z.array(z.string().uuid()).optional(),
 });
 
@@ -64,6 +65,7 @@ export async function POST(req: Request) {
   const supabase = createSupabaseAdminClient();
   const { data: elegiveis, error } = await supabase.rpc("incentivo_elegives", {
     p_threshold: parsed.data.threshold,
+    p_min_minutos_apos_voto: parsed.data.cooldown,
   });
   if (error) {
     return NextResponse.json(

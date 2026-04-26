@@ -23,6 +23,7 @@ type Elegivel = {
 
 export function IncentivoSection() {
   const [threshold, setThreshold] = useState(5);
+  const [cooldown, setCooldown] = useState(30);
   const [loading, setLoading] = useState<"preview" | "disparar" | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [elegiveis, setElegiveis] = useState<Elegivel[] | null>(null);
@@ -39,7 +40,7 @@ export function IncentivoSection() {
     setErro(null);
     setResultado(null);
     try {
-      const res = await fetch(`/api/admin/whatsapp/incentivo/preview?threshold=${threshold}`);
+      const res = await fetch(`/api/admin/whatsapp/incentivo/preview?threshold=${threshold}&cooldown=${cooldown}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Falha");
       setElegiveis(data.elegiveis);
@@ -66,6 +67,7 @@ export function IncentivoSection() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           threshold,
+          cooldown,
           votante_ids: Array.from(selecionados),
         }),
       });
@@ -119,7 +121,7 @@ export function IncentivoSection() {
           repetir.
         </p>
 
-        <div className="flex items-end gap-3 mb-4">
+        <div className="flex items-end gap-3 mb-4 flex-wrap">
           <div className="flex-1 max-w-[200px]">
             <label className="text-xs text-muted block mb-1">
               Diferença máxima (votos)
@@ -130,6 +132,18 @@ export function IncentivoSection() {
               max={100}
               value={threshold}
               onChange={(e) => setThreshold(Number.parseInt(e.target.value || "0", 10))}
+            />
+          </div>
+          <div className="flex-1 max-w-[200px]">
+            <label className="text-xs text-muted block mb-1">
+              Cooldown desde último voto (min)
+            </label>
+            <Input
+              type="number"
+              min={0}
+              max={1440}
+              value={cooldown}
+              onChange={(e) => setCooldown(Number.parseInt(e.target.value || "0", 10))}
             />
           </div>
           <Button onClick={calcular} loading={loading === "preview"}>
