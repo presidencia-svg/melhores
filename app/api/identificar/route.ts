@@ -5,10 +5,12 @@ import { consultarCpfSpc } from "@/lib/spc/client";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { setVotanteSessao } from "@/lib/sessao";
 import { getClientIp } from "@/lib/utils";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 const Body = z.object({
   cpf: z.string(),
   fingerprint: z.string().nullable().optional(),
+  turnstileToken: z.string().nullable().optional(),
 });
 
 const MAX_CPFS_POR_DISPOSITIVO = 2;
@@ -41,6 +43,15 @@ async function handleIdentificar(req: Request) {
   const supabase = createSupabaseAdminClient();
   const ip = getClientIp(req.headers);
   const userAgent = req.headers.get("user-agent") ?? "";
+
+  // Cloudflare Turnstile (se TURNSTILE_SECRET_KEY configurado)
+  const turnstileOk = await verifyTurnstile(parsed.data.turnstileToken, ip);
+  if (!turnstileOk) {
+    return NextResponse.json(
+      { error: "Falha na verificação anti-robô. Recarregue a página e tente novamente." },
+      { status: 403 }
+    );
+  }
 
   // Limita 5 tentativas por IP nas últimas 5min
   const cincoMin = new Date(Date.now() - 5 * 60_000).toISOString();

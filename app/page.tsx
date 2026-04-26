@@ -105,9 +105,12 @@ export default function Home() {
       <footer className="bg-cdl-blue-dark text-white/80 py-8">
         <div className="mx-auto max-w-6xl px-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <Logo variant="white" className="text-white" />
-          <p className="text-sm text-white/60">
-            © 2026 CDL Aracaju · Câmara de Dirigentes Lojistas de Aracaju
-          </p>
+          <div className="flex flex-col md:flex-row items-center gap-4 text-sm text-white/60">
+            <Link href="/regulamento" className="hover:text-white">Como funciona</Link>
+            <Link href="/termos" className="hover:text-white">Termos de Uso</Link>
+            <Link href="/privacidade" className="hover:text-white">Privacidade</Link>
+            <span>© 2026 CDL Aracaju</span>
+          </div>
         </div>
       </footer>
     </div>
