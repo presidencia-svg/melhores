@@ -1,8 +1,9 @@
 import { ImageResponse } from "next/og";
-import { getLogoDataUrl } from "@/lib/marketing/og-helpers";
+import { getLogoWhiteDataUrl, loadEditorialFonts } from "@/lib/marketing/og-helpers";
 
 export async function GET() {
-  const logoSrc = await getLogoDataUrl();
+  const logoSrc = await getLogoWhiteDataUrl();
+  const fonts = await loadEditorialFonts();
 
   const img = new ImageResponse(
     (
@@ -14,112 +15,149 @@ export async function GET() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "space-between",
-          background: "linear-gradient(180deg, #142D5F 0%, #1B3A7A 50%, #2D5BAE 100%)",
-          padding: 100,
+          background:
+            "linear-gradient(180deg, #061d44 0%, #0a2a5e 50%, #143b7a 100%)",
+          padding: "120px 80px",
+          color: "#fbf8f1",
           textAlign: "center",
         }}
       >
-        {/* Top — Logo */}
-        <div
-          style={{
-            display: "flex",
-            background: "white",
-            borderRadius: 32,
-            padding: "36px 56px",
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logoSrc} alt="CDL" width={680} height={204} style={{ objectFit: "contain" }} />
-        </div>
-
-        {/* Middle — Hero */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div
-            style={{
-              display: "flex",
-              color: "#FFD700",
-              fontSize: 40,
-              fontWeight: 700,
-              letterSpacing: 10,
-              textTransform: "uppercase",
-              marginBottom: 30,
-            }}
-          >
-            🏆 Edição 2026
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              color: "white",
-              fontSize: 130,
-              fontWeight: 900,
-              lineHeight: 0.95,
-              marginBottom: 16,
-            }}
-          >
-            VOTE NOS
-          </div>
-          <div
-            style={{
-              display: "flex",
-              color: "#FFD700",
-              fontSize: 150,
-              fontWeight: 900,
-              lineHeight: 0.95,
-              marginBottom: 30,
-            }}
-          >
-            MELHORES
-          </div>
-          <div
-            style={{
-              display: "flex",
-              color: "white",
-              fontSize: 50,
-              fontWeight: 600,
-            }}
-          >
-            de Aracaju
-          </div>
-        </div>
-
-        {/* Bottom — CTA */}
+        {/* Top — kicker + logo */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
+            gap: 28,
           }}
         >
           <div
             style={{
               display: "flex",
-              color: "rgba(255,255,255,0.85)",
-              fontSize: 36,
-              fontWeight: 500,
-              marginBottom: 22,
+              alignItems: "center",
+              gap: 16,
+              color: "#d4a537",
+              fontFamily: "Sora",
+              fontWeight: 700,
+              letterSpacing: 8,
+              textTransform: "uppercase",
+              fontSize: 24,
             }}
           >
-            Acesse agora
+            <div style={{ width: 36, height: 1, background: "#d4a537" }} />
+            edição 2026
+            <div style={{ width: 36, height: 1, background: "#d4a537" }} />
+          </div>
+        </div>
+
+        {/* Middle — Hero */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 110,
+              fontFamily: "Fraunces",
+              fontStyle: "italic",
+              fontWeight: 300,
+              lineHeight: 0.95,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Os melhores
+          </div>
+          <div
+            style={{
+              fontSize: 192,
+              fontFamily: "Fraunces",
+              fontStyle: "italic",
+              fontWeight: 800,
+              lineHeight: 0.85,
+              letterSpacing: "-0.03em",
+              color: "#e6bf5f",
+            }}
+          >
+            de Aracaju
           </div>
           <div
             style={{
               display: "flex",
-              background: "#00A859",
-              color: "white",
-              fontSize: 52,
-              fontWeight: 800,
-              padding: "32px 56px",
-              borderRadius: 120,
+              alignItems: "center",
+              gap: 18,
+              marginTop: 36,
+              color: "rgba(251,248,241,0.85)",
+            }}
+          >
+            <div style={{ width: 36, height: 1, background: "#d4a537" }} />
+            <span
+              style={{
+                fontSize: 36,
+                fontFamily: "Fraunces",
+                fontStyle: "italic",
+                fontWeight: 300,
+              }}
+            >
+              são escolhidos por você
+            </span>
+            <div style={{ width: 36, height: 1, background: "#d4a537" }} />
+          </div>
+        </div>
+
+        {/* Bottom — CTA + logo */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 32,
+          }}
+        >
+          <div
+            style={{
+              color: "rgba(251,248,241,0.7)",
+              fontFamily: "Sora",
+              fontWeight: 500,
+              fontSize: 28,
+              letterSpacing: 4,
+              textTransform: "uppercase",
+            }}
+          >
+            acesse agora
+          </div>
+          <div
+            style={{
+              display: "flex",
+              background: "#0f8a3f",
+              color: "#fbf8f1",
+              padding: "30px 50px",
+              borderRadius: 4,
+              fontFamily: "Sora",
+              fontWeight: 700,
+              fontSize: 44,
+              letterSpacing: 1,
             }}
           >
             votar.cdlaju.com.br
           </div>
+          <div style={{ display: "flex", marginTop: 20 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={logoSrc}
+              alt="CDL Aracaju"
+              width={300}
+              height={90}
+              style={{ objectFit: "contain" }}
+            />
+          </div>
         </div>
       </div>
     ),
-    { width: 1080, height: 1920 }
+    { width: 1080, height: 1920, fonts }
   );
 
   const headers = new Headers(img.headers);
