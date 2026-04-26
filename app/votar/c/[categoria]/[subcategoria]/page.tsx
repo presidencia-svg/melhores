@@ -63,7 +63,7 @@ export default async function VotarSubcategoriaPage({ params }: Params) {
     <VotoLayout step={3}>
       <div className="mx-auto max-w-2xl w-full pt-4 sm:pt-8 animate-fade-in">
         <Link
-          href="/votar/categorias"
+          href={`/votar/categorias#sub-${subcategoria.id}`}
           className="inline-flex items-center gap-2 text-xs text-muted hover:text-navy-800 mb-4 sm:mb-6 transition-colors kicker"
           style={{ fontSize: 10 }}
         >
@@ -97,7 +97,7 @@ export default async function VotarSubcategoriaPage({ params }: Params) {
         </Card>
 
         <div className="mt-6 text-center">
-          <Link href="/votar/categorias">
+          <Link href={`/votar/categorias#sub-${subcategoria.id}`}>
             <Button variant="ghost">Pular esta categoria →</Button>
           </Link>
         </div>

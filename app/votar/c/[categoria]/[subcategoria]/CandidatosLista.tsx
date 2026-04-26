@@ -50,7 +50,7 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual }: Props
         setSubmitting(false);
         return;
       }
-      router.push("/votar/categorias");
+      router.push(`/votar/categorias#sub-${subcategoriaId}`);
     } catch {
       setError("Erro de conexão. Tente novamente.");
       setSubmitting(false);
@@ -89,7 +89,7 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual }: Props
         setSubmitting(false);
         return;
       }
-      router.push("/votar/categorias");
+      router.push(`/votar/categorias#sub-${subcategoriaId}`);
     } catch {
       setError("Erro ao sugerir. Tente novamente.");
       setSubmitting(false);

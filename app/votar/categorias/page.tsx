@@ -96,8 +96,9 @@ export default async function CategoriasPage() {
                       return (
                         <Link
                           key={sub.id}
+                          id={`sub-${sub.id}`}
                           href={`/votar/c/${cat.slug}/${sub.slug}`}
-                          className="flex items-center gap-3 sm:gap-4 px-5 sm:px-7 py-3.5 sm:py-3 hover:bg-cream-200 active:bg-cream-200 transition-colors group min-h-[52px]"
+                          className="flex items-center gap-3 sm:gap-4 px-5 sm:px-7 py-3.5 sm:py-3 hover:bg-cream-200 active:bg-cream-200 transition-colors group min-h-[52px] scroll-mt-32"
                         >
                           <div
                             className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
