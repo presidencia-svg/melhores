@@ -21,22 +21,70 @@ type Candidato = {
 export function CandidatosLista({ candidatos }: { candidatos: Candidato[] }) {
   const router = useRouter();
   const [busca, setBusca] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState<string>("");
+  const [filtroSubcategoria, setFiltroSubcategoria] = useState<string>("");
   const [editando, setEditando] = useState<string | null>(null);
   const [novoNome, setNovoNome] = useState("");
   const [merging, setMerging] = useState<{ origem: Candidato; destino: string | null } | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
+  // Lista de categorias únicas
+  const categorias = useMemo(() => {
+    const set = new Set<string>();
+    candidatos.forEach((c) => set.add(c.subcategoria.categoria.nome));
+    return Array.from(set).sort();
+  }, [candidatos]);
+
+  // Subcategorias filtradas pela categoria selecionada
+  const subcategoriasDisp = useMemo(() => {
+    const set = new Set<string>();
+    candidatos
+      .filter((c) => !filtroCategoria || c.subcategoria.categoria.nome === filtroCategoria)
+      .forEach((c) => set.add(c.subcategoria.nome));
+    return Array.from(set).sort();
+  }, [candidatos, filtroCategoria]);
+
   const filtrados = useMemo(() => {
-    if (!busca) return candidatos;
-    const t = busca.toLowerCase();
-    return candidatos.filter(
-      (c) =>
-        c.nome.toLowerCase().includes(t) ||
-        c.subcategoria.nome.toLowerCase().includes(t) ||
-        c.subcategoria.categoria.nome.toLowerCase().includes(t)
-    );
-  }, [busca, candidatos]);
+    let lista = candidatos;
+    if (filtroCategoria) {
+      lista = lista.filter((c) => c.subcategoria.categoria.nome === filtroCategoria);
+    }
+    if (filtroSubcategoria) {
+      lista = lista.filter((c) => c.subcategoria.nome === filtroSubcategoria);
+    }
+    if (busca) {
+      const t = busca.toLowerCase();
+      lista = lista.filter(
+        (c) =>
+          c.nome.toLowerCase().includes(t) ||
+          c.subcategoria.nome.toLowerCase().includes(t) ||
+          c.subcategoria.categoria.nome.toLowerCase().includes(t)
+      );
+    }
+    return lista;
+  }, [busca, filtroCategoria, filtroSubcategoria, candidatos]);
+
+  // Detecta duplicados (mesmo nome normalizado na mesma subcategoria)
+  const duplicadosSet = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const c of candidatos) {
+      const key = `${c.subcategoria.id}::${c.nome.trim().toLowerCase()}`;
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    const dup = new Set<string>();
+    for (const c of candidatos) {
+      const key = `${c.subcategoria.id}::${c.nome.trim().toLowerCase()}`;
+      if ((map.get(key) ?? 0) > 1) dup.add(c.id);
+    }
+    return dup;
+  }, [candidatos]);
+
+  function limparFiltros() {
+    setBusca("");
+    setFiltroCategoria("");
+    setFiltroSubcategoria("");
+  }
 
   async function renomear(id: string) {
     if (!novoNome.trim() || novoNome.trim().length < 2) return;
@@ -101,25 +149,86 @@ export function CandidatosLista({ candidatos }: { candidatos: Candidato[] }) {
       )
     : [];
 
+  const totalDup = duplicadosSet.size;
+  const algumFiltroAtivo = busca || filtroCategoria || filtroSubcategoria;
+
   return (
     <Card>
       <CardContent>
-        <h2 className="font-display text-xl font-bold text-cdl-blue mb-4">Gerenciar candidatos</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-xl font-bold text-cdl-blue">Gerenciar candidatos</h2>
+          <span className="text-xs text-muted">
+            {filtrados.length} de {candidatos.length}
+            {totalDup > 0 && (
+              <span className="ml-2 text-orange-600 font-semibold">· {totalDup} duplicados</span>
+            )}
+          </span>
+        </div>
 
-        <Input
-          placeholder="Buscar por nome, categoria ou subcategoria..."
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          className="!h-11 mb-4"
-        />
+        {/* Filtros */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+          <select
+            value={filtroCategoria}
+            onChange={(e) => {
+              setFiltroCategoria(e.target.value);
+              setFiltroSubcategoria("");
+            }}
+            className="h-11 px-3 rounded-xl border-2 border-border bg-white text-sm font-medium focus:outline-none focus:border-cdl-blue"
+          >
+            <option value="">Todas as categorias</option>
+            {categorias.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={filtroSubcategoria}
+            onChange={(e) => setFiltroSubcategoria(e.target.value)}
+            disabled={!filtroCategoria && subcategoriasDisp.length > 30}
+            className="h-11 px-3 rounded-xl border-2 border-border bg-white text-sm font-medium focus:outline-none focus:border-cdl-blue disabled:opacity-50"
+          >
+            <option value="">Todas as subcategorias</option>
+            {subcategoriasDisp.map((sub) => (
+              <option key={sub} value={sub}>
+                {sub}
+              </option>
+            ))}
+          </select>
+
+          <div className="flex gap-2">
+            <Input
+              placeholder="Buscar por nome…"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="!h-11 flex-1"
+            />
+            {algumFiltroAtivo && (
+              <Button variant="ghost" size="sm" onClick={limparFiltros} title="Limpar filtros">
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {totalDup > 0 && !algumFiltroAtivo && (
+          <p className="text-xs text-orange-700 bg-orange-50 border border-orange-200 px-3 py-2 rounded-lg mb-3">
+            ⚠ Existem {totalDup} candidatos duplicados (mesmo nome na mesma subcategoria). Use o filtro pra encontrá-los e mesclar/excluir.
+          </p>
+        )}
 
         {erro && (
           <div className="mb-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{erro}</div>
         )}
 
-        <div className="max-h-[500px] overflow-y-auto divide-y divide-border">
+        <div className="max-h-[600px] overflow-y-auto divide-y divide-border">
           {filtrados.length === 0 && (
-            <p className="text-center text-muted py-12 text-sm">Nenhum candidato encontrado.</p>
+            <p className="text-center text-muted py-12 text-sm">
+              {algumFiltroAtivo
+                ? "Nenhum candidato encontrado com esses filtros."
+                : "Nenhum candidato cadastrado ainda."}
+            </p>
           )}
 
           {filtrados.map((c) => {
@@ -154,6 +263,11 @@ export function CandidatosLista({ candidatos }: { candidatos: Candidato[] }) {
                         {c.origem === "sugerido" && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-cdl-blue/10 text-cdl-blue font-semibold">
                             sugerido
+                          </span>
+                        )}
+                        {duplicadosSet.has(c.id) && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 font-semibold">
+                            duplicado
                           </span>
                         )}
                       </div>
