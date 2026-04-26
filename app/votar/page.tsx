@@ -15,12 +15,15 @@ export default async function VotarPage() {
 
   return (
     <VotoLayout step={1}>
-      <div className="mx-auto max-w-md w-full pt-8 animate-fade-in">
-        <div className="text-center mb-8">
+      <div className="mx-auto max-w-md w-full pt-4 sm:pt-8 animate-fade-in">
+        <div className="text-center mb-6 sm:mb-8">
           <SmallCaps color="var(--gold-700)" size={11}>
             passo 01 · identificação
           </SmallCaps>
-          <h1 className="font-display text-navy-800 mt-3" style={{ fontSize: 56, lineHeight: 1, fontWeight: 300 }}>
+          <h1
+            className="font-display text-navy-800 mt-3"
+            style={{ fontSize: "clamp(40px, 10vw, 56px)", lineHeight: 1, fontWeight: 300 }}
+          >
             Vamos <span className="font-display-bold">começar.</span>
           </h1>
           <p className="text-muted mt-3 text-sm">

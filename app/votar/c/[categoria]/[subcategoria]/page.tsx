@@ -61,23 +61,23 @@ export default async function VotarSubcategoriaPage({ params }: Params) {
 
   return (
     <VotoLayout step={3}>
-      <div className="mx-auto max-w-2xl w-full pt-8 animate-fade-in">
+      <div className="mx-auto max-w-2xl w-full pt-4 sm:pt-8 animate-fade-in">
         <Link
           href="/votar/categorias"
-          className="inline-flex items-center gap-2 text-xs text-muted hover:text-navy-800 mb-6 transition-colors kicker"
+          className="inline-flex items-center gap-2 text-xs text-muted hover:text-navy-800 mb-4 sm:mb-6 transition-colors kicker"
           style={{ fontSize: 10 }}
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           voltar às categorias
         </Link>
 
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <SmallCaps color="var(--gold-700)" size={11}>
             {categoria.nome}
           </SmallCaps>
           <h1
             className="font-display text-navy-800 mt-2"
-            style={{ fontSize: 56, lineHeight: 1, fontWeight: 300 }}
+            style={{ fontSize: "clamp(34px, 9vw, 56px)", lineHeight: 1, fontWeight: 300 }}
           >
             Melhor <span className="font-display-bold">{subcategoria.nome.toLowerCase()}</span>
           </h1>

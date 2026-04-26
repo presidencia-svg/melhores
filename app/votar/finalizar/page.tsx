@@ -24,7 +24,7 @@ export default async function FinalizarPage() {
 
   return (
     <VotoLayout step={4}>
-      <div className="mx-auto max-w-md w-full pt-8 animate-fade-in">
+      <div className="mx-auto max-w-md w-full pt-4 sm:pt-8 animate-fade-in">
         <Link
           href="/votar/categorias"
           className="inline-flex items-center gap-2 text-xs text-muted hover:text-navy-800 mb-4 transition-colors kicker"

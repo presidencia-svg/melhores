@@ -9,19 +9,18 @@ type LogoProps = {
 export function Logo({ className, variant = "full" }: LogoProps) {
   const isWhite = variant === "white";
   const isCompact = variant === "compact";
+  const src = isWhite ? "/cdl-logo-white.png" : "/cdl-logo.png";
 
   return (
     <div className={cn("flex items-center", className)}>
       <Image
-        src="/cdl-logo.png"
+        src={src}
         alt="CDL Aracaju"
         width={isCompact ? 120 : 280}
         height={isCompact ? 36 : 84}
         className={cn(
           "object-contain",
-          isCompact ? "h-9 w-auto" : "h-16 w-auto md:h-20",
-          // variante "white" (fundo escuro): inverte cores e torna a logo branca
-          isWhite && "brightness-0 invert"
+          isCompact ? "h-9 w-auto" : "h-14 w-auto md:h-20"
         )}
         priority
       />

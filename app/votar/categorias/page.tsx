@@ -49,12 +49,15 @@ export default async function CategoriasPage() {
 
   return (
     <VotoLayout step={3}>
-      <div className="mx-auto max-w-3xl w-full pt-8 animate-fade-in">
-        <div className="text-center mb-10">
+      <div className="mx-auto max-w-3xl w-full pt-4 sm:pt-8 animate-fade-in">
+        <div className="text-center mb-8 sm:mb-10">
           <SmallCaps color="var(--gold-700)" size={11}>
             passo 03 · escolha as categorias
           </SmallCaps>
-          <h1 className="font-display text-navy-800 mt-3" style={{ fontSize: 56, lineHeight: 1, fontWeight: 300 }}>
+          <h1
+            className="font-display text-navy-800 mt-3"
+            style={{ fontSize: "clamp(36px, 9vw, 56px)", lineHeight: 1, fontWeight: 300 }}
+          >
             Vote nas que <span className="font-display-bold">conhece.</span>
           </h1>
           <p className="text-muted mt-3 text-sm max-w-md mx-auto">
@@ -76,11 +79,14 @@ export default async function CategoriasPage() {
             return (
               <Card key={cat.id}>
                 <CardContent className="!p-0">
-                  <div className="px-7 pt-6 pb-3">
+                  <div className="px-5 sm:px-7 pt-5 sm:pt-6 pb-3">
                     <SmallCaps color="var(--gold-700)" size={10}>
                       {String(subs.length).padStart(2, "0")} subcategorias
                     </SmallCaps>
-                    <h2 className="font-display-bold text-navy-800 mt-1" style={{ fontSize: 28, lineHeight: 1.05 }}>
+                    <h2
+                      className="font-display-bold text-navy-800 mt-1"
+                      style={{ fontSize: "clamp(22px, 5vw, 28px)", lineHeight: 1.05 }}
+                    >
                       {cat.nome}
                     </h2>
                   </div>
@@ -91,7 +97,7 @@ export default async function CategoriasPage() {
                         <Link
                           key={sub.id}
                           href={`/votar/c/${cat.slug}/${sub.slug}`}
-                          className="flex items-center gap-4 px-7 py-3 hover:bg-cream-200 transition-colors group"
+                          className="flex items-center gap-3 sm:gap-4 px-5 sm:px-7 py-3.5 sm:py-3 hover:bg-cream-200 active:bg-cream-200 transition-colors group min-h-[52px]"
                         >
                           <div
                             className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${

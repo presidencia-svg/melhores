@@ -24,7 +24,7 @@ export default async function ObrigadoPage() {
 
   return (
     <VotoLayout step={4}>
-      <div className="mx-auto max-w-md w-full pt-8 animate-fade-in">
+      <div className="mx-auto max-w-md w-full pt-4 sm:pt-8 animate-fade-in">
         <Card className="relative overflow-hidden">
           <div className="absolute -left-4 top-0 opacity-10">
             <LaurelHalf size={120} color="var(--navy-800)" />

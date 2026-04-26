@@ -14,12 +14,15 @@ export default async function SelfiePage() {
 
   return (
     <VotoLayout step={2}>
-      <div className="mx-auto max-w-md w-full pt-8 animate-fade-in">
-        <div className="text-center mb-8">
+      <div className="mx-auto max-w-md w-full pt-4 sm:pt-8 animate-fade-in">
+        <div className="text-center mb-6 sm:mb-8">
           <SmallCaps color="var(--gold-700)" size={11}>
             passo 02 · validação ao vivo
           </SmallCaps>
-          <h1 className="font-display text-navy-800 mt-3" style={{ fontSize: 48, lineHeight: 1, fontWeight: 300 }}>
+          <h1
+            className="font-display text-navy-800 mt-3"
+            style={{ fontSize: "clamp(36px, 9vw, 48px)", lineHeight: 1, fontWeight: 300 }}
+          >
             Olá, <span className="font-display-bold">{primeiroNome}.</span>
           </h1>
           <p className="text-muted mt-3 text-sm">
