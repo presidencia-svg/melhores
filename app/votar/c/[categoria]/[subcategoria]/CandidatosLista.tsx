@@ -145,7 +145,6 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual }: Props
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-foreground truncate">{c.nome}</div>
-                {c.descricao && <div className="text-xs text-muted truncate">{c.descricao}</div>}
               </div>
             </button>
           );
