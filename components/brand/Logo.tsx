@@ -15,11 +15,11 @@ export function Logo({ className, variant = "full" }: LogoProps) {
       <Image
         src="/cdl-logo.png"
         alt="CDL Aracaju"
-        width={isCompact ? 80 : 240}
-        height={isCompact ? 24 : 72}
+        width={isCompact ? 80 : 200}
+        height={isCompact ? 24 : 60}
         className={cn(
           "object-contain",
-          isCompact ? "h-8 w-auto" : "h-14 w-auto md:h-16",
+          isCompact ? "h-7 w-auto" : "h-12 w-auto md:h-14",
           isWhite && "brightness-0 invert"
         )}
         priority

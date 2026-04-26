@@ -3,6 +3,7 @@ import { VotoLayout } from "@/components/voto/VotoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { getVotanteSessao } from "@/lib/sessao";
 import { SelfieCapture } from "./SelfieCapture";
+import { SmallCaps } from "@/components/brand/Marks";
 
 export default async function SelfiePage() {
   const sessao = await getVotanteSessao();
@@ -13,13 +14,16 @@ export default async function SelfiePage() {
 
   return (
     <VotoLayout step={2}>
-      <div className="mx-auto max-w-md w-full animate-fade-in">
-        <div className="text-center mb-6">
-          <h1 className="font-display text-3xl font-bold text-cdl-blue mb-2">
-            Olá, {primeiroNome}! 👋
+      <div className="mx-auto max-w-md w-full pt-8 animate-fade-in">
+        <div className="text-center mb-8">
+          <SmallCaps color="var(--gold-700)" size={11}>
+            passo 02 · validação ao vivo
+          </SmallCaps>
+          <h1 className="font-display text-navy-800 mt-3" style={{ fontSize: 48, lineHeight: 1, fontWeight: 300 }}>
+            Olá, <span className="font-display-bold">{primeiroNome}.</span>
           </h1>
-          <p className="text-muted">
-            Tire uma selfie rápida para validar sua participação
+          <p className="text-muted mt-3 text-sm">
+            Tire uma selfie rápida para validar sua participação.
           </p>
         </div>
 
@@ -29,8 +33,8 @@ export default async function SelfiePage() {
           </CardContent>
         </Card>
 
-        <p className="text-xs text-muted text-center mt-4">
-          A foto é usada apenas para registro de votação e não é exibida publicamente.
+        <p className="text-xs text-muted text-center mt-4 leading-relaxed">
+          A foto é registrada apenas para validação interna<br />e não é exibida publicamente.
         </p>
       </div>
     </VotoLayout>

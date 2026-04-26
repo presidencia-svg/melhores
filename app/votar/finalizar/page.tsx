@@ -3,10 +3,11 @@ import Link from "next/link";
 import { VotoLayout } from "@/components/voto/VotoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Trophy, MessageCircle, ArrowLeft } from "lucide-react";
+import { ArrowLeft, MessageCircle } from "lucide-react";
 import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { WhatsAppForm } from "./WhatsAppForm";
+import { SmallCaps, TrophyMark, Divider } from "@/components/brand/Marks";
 
 export default async function FinalizarPage() {
   const sessao = await getVotanteSessao();
@@ -23,42 +24,64 @@ export default async function FinalizarPage() {
 
   return (
     <VotoLayout step={4}>
-      <div className="mx-auto max-w-md w-full animate-fade-in">
+      <div className="mx-auto max-w-md w-full pt-8 animate-fade-in">
         <Link
           href="/votar/categorias"
-          className="inline-flex items-center gap-2 text-sm text-muted hover:text-cdl-blue mb-4 transition-colors"
+          className="inline-flex items-center gap-2 text-xs text-muted hover:text-navy-800 mb-4 transition-colors kicker"
+          style={{ fontSize: 10 }}
         >
-          <ArrowLeft className="w-4 h-4" />
-          Continuar votando
+          <ArrowLeft className="w-3.5 h-3.5" />
+          continuar votando
         </Link>
 
         <Card>
           <CardContent className="text-center">
-            <div className="w-16 h-16 mx-auto rounded-full bg-cdl-yellow/20 flex items-center justify-center mb-4">
-              <Trophy className="w-8 h-8 text-cdl-yellow-dark" />
+            <div className="flex justify-center mb-3">
+              <TrophyMark size={48} color="var(--gold-500)" />
             </div>
-            <h1 className="font-display text-2xl font-bold text-cdl-blue mb-1">
-              Quase lá!
+            <SmallCaps color="var(--gold-700)" size={11}>
+              quase lá
+            </SmallCaps>
+            <h1
+              className="font-display text-navy-800 mt-2"
+              style={{ fontSize: 40, lineHeight: 1, fontWeight: 300 }}
+            >
+              Você registrou
             </h1>
-            <p className="text-muted mb-2">
-              Você registrou <strong className="text-cdl-blue">{totalVotos}</strong> {totalVotos === 1 ? "voto" : "votos"}.
+            <div
+              className="font-display-bold text-navy-800"
+              style={{ fontSize: 80, lineHeight: 1, fontWeight: 800 }}
+            >
+              {totalVotos}
+            </div>
+            <p className="text-muted text-sm mt-2">
+              {totalVotos === 1 ? "voto" : "votos"} nas categorias do prêmio.
             </p>
-            <p className="text-sm text-muted">Antes de finalizar, uma última pergunta…</p>
+
+            <div className="mt-4 flex justify-center">
+              <Divider width={48} color="var(--gold-500)" />
+            </div>
           </CardContent>
         </Card>
 
         <Card className="mt-4">
           <CardContent>
-            <div className="flex items-start gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-cdl-green/10 flex items-center justify-center shrink-0">
-                <MessageCircle className="w-5 h-5 text-cdl-green" />
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-10 h-10 rounded-full bg-green-600/10 flex items-center justify-center shrink-0">
+                <MessageCircle className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <h2 className="font-display text-lg font-bold text-cdl-blue">
-                  Saiba os campeões em primeira mão
+                <SmallCaps color="var(--gold-700)" size={10}>
+                  opcional
+                </SmallCaps>
+                <h2
+                  className="font-display-bold text-navy-800 mt-1"
+                  style={{ fontSize: 22, lineHeight: 1.1 }}
+                >
+                  Saiba os campeões em primeira mão.
                 </h2>
-                <p className="text-sm text-muted">
-                  Receba no WhatsApp os vencedores antes do anúncio público. Opcional.
+                <p className="text-xs text-muted mt-1">
+                  Receba no WhatsApp os vencedores antes do anúncio público.
                 </p>
               </div>
             </div>
@@ -69,7 +92,9 @@ export default async function FinalizarPage() {
 
         <div className="mt-6 text-center">
           <Link href="/votar/obrigado">
-            <Button variant="ghost">Pular e finalizar →</Button>
+            <Button variant="ghost" size="sm">
+              Pular e finalizar →
+            </Button>
           </Link>
         </div>
       </div>

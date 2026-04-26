@@ -1,25 +1,52 @@
 import { cn } from "@/lib/utils";
+import { SmallCaps, Divider } from "./Marks";
 
 type EventLogoProps = {
   className?: string;
   ano?: number;
+  size?: "sm" | "md" | "lg";
+  align?: "left" | "center";
 };
 
-export function EventLogo({ className, ano = 2026 }: EventLogoProps) {
+const SIZES = {
+  sm: { kicker: 10, melhor: 32, ano: 22 },
+  md: { kicker: 11, melhor: 56, ano: 36 },
+  lg: { kicker: 13, melhor: 92, ano: 56 },
+} as const;
+
+export function EventLogo({ className, ano = 2026, size = "md", align = "center" }: EventLogoProps) {
+  const s = SIZES[size];
   return (
-    <div className={cn("flex flex-col items-center gap-2", className)}>
-      <div className="flex items-center gap-3">
-        <svg viewBox="0 0 48 48" className="h-10 w-10 text-cdl-yellow" fill="currentColor" aria-hidden="true">
-          <path d="M24 2l5.5 13.5L44 17l-11 9.5L36 41l-12-7.5L12 41l3-14.5L4 17l14.5-1.5L24 2z" />
-        </svg>
-        <div className="flex flex-col leading-none">
-          <span className="font-display text-xs font-semibold uppercase tracking-[0.3em] text-cdl-blue">
-            Melhores do Ano
-          </span>
-          <span className="font-display text-3xl font-extrabold text-cdl-blue">
-            CDL Aracaju <span className="text-cdl-green">{ano}</span>
-          </span>
-        </div>
+    <div
+      className={cn(
+        "flex flex-col gap-1",
+        align === "center" ? "items-center text-center" : "items-start text-left",
+        className
+      )}
+    >
+      <SmallCaps color="var(--gold-700)" size={s.kicker}>
+        cdl aracaju · {ano}
+      </SmallCaps>
+      <div
+        className="font-display text-navy-800 leading-[0.95]"
+        style={{ fontSize: s.melhor, fontWeight: 300 }}
+      >
+        Os melhores
+      </div>
+      <div
+        className="font-display-bold text-navy-800 leading-[0.85]"
+        style={{ fontSize: s.melhor * 1.25 }}
+      >
+        do ano
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <Divider width={32} color="var(--gold-500)" />
+        <span
+          className="font-display-bold text-gold-500"
+          style={{ fontSize: s.ano, fontWeight: 900 }}
+        >
+          {ano}
+        </span>
       </div>
     </div>
   );

@@ -3,9 +3,10 @@ import Link from "next/link";
 import { VotoLayout } from "@/components/voto/VotoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Check, ChevronRight, Sparkles } from "lucide-react";
+import { Check, ChevronRight } from "lucide-react";
 import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { SmallCaps, Divider } from "@/components/brand/Marks";
 
 export default async function CategoriasPage() {
   const sessao = await getVotanteSessao();
@@ -48,20 +49,24 @@ export default async function CategoriasPage() {
 
   return (
     <VotoLayout step={3}>
-      <div className="mx-auto max-w-3xl w-full animate-fade-in">
-        <div className="text-center mb-6">
-          <h1 className="font-display text-3xl font-bold text-cdl-blue mb-2">
-            Escolha as categorias
+      <div className="mx-auto max-w-3xl w-full pt-8 animate-fade-in">
+        <div className="text-center mb-10">
+          <SmallCaps color="var(--gold-700)" size={11}>
+            passo 03 · escolha as categorias
+          </SmallCaps>
+          <h1 className="font-display text-navy-800 mt-3" style={{ fontSize: 56, lineHeight: 1, fontWeight: 300 }}>
+            Vote nas que <span className="font-display-bold">conhece.</span>
           </h1>
-          <p className="text-muted">
-            Vote nas que você conhece. Você pode parar a qualquer momento.
+          <p className="text-muted mt-3 text-sm max-w-md mx-auto">
+            Não é obrigatório votar em todas. Você pode parar a qualquer momento.
           </p>
 
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-cdl-blue/10 px-4 py-2">
-            <Sparkles className="w-4 h-4 text-cdl-blue" />
-            <span className="text-sm font-semibold text-cdl-blue">
+          <div className="mt-5 inline-flex items-center gap-3 text-navy-800">
+            <Divider width={28} color="var(--gold-500)" />
+            <span className="font-display italic" style={{ fontSize: 18, fontWeight: 600 }}>
               {totalVotadas} de {totalSub} votos registrados
             </span>
+            <Divider width={28} color="var(--gold-500)" />
           </div>
         </div>
 
@@ -71,35 +76,42 @@ export default async function CategoriasPage() {
             return (
               <Card key={cat.id}>
                 <CardContent className="!p-0">
-                  <div className="px-6 pt-6 pb-3">
-                    <h2 className="font-display text-xl font-bold text-cdl-blue">{cat.nome}</h2>
-                    {cat.descricao && (
-                      <p className="text-sm text-muted mt-1">{cat.descricao}</p>
-                    )}
+                  <div className="px-7 pt-6 pb-3">
+                    <SmallCaps color="var(--gold-700)" size={10}>
+                      {String(subs.length).padStart(2, "0")} subcategorias
+                    </SmallCaps>
+                    <h2 className="font-display-bold text-navy-800 mt-1" style={{ fontSize: 28, lineHeight: 1.05 }}>
+                      {cat.nome}
+                    </h2>
                   </div>
-                  <div className="border-t border-border divide-y divide-border">
+                  <div className="border-t border-[rgba(10,42,94,0.08)] divide-y divide-[rgba(10,42,94,0.06)]">
                     {subs.map((sub) => {
                       const done = votadas.has(sub.id);
                       return (
                         <Link
                           key={sub.id}
                           href={`/votar/c/${cat.slug}/${sub.slug}`}
-                          className="flex items-center gap-3 px-6 py-4 hover:bg-cdl-blue/5 transition-colors group"
+                          className="flex items-center gap-4 px-7 py-3 hover:bg-cream-200 transition-colors group"
                         >
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                              done ? "bg-cdl-green text-white" : "bg-border text-muted"
+                            className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                              done
+                                ? "bg-green-600 text-cream-100"
+                                : "border border-[rgba(10,42,94,0.2)] text-navy-800/30"
                             }`}
                           >
-                            {done ? <Check className="w-4 h-4" /> : <span className="text-xs font-bold">·</span>}
+                            {done && <Check className="w-3.5 h-3.5" />}
                           </div>
-                          <div className="flex-1 font-medium text-foreground group-hover:text-cdl-blue">
+                          <div className="flex-1 font-medium text-foreground group-hover:text-navy-800">
                             {sub.nome}
                           </div>
-                          <span className="text-xs text-muted">
-                            {done ? "Votado" : "Votar"}
+                          <span
+                            className="kicker text-navy-800/50"
+                            style={{ fontSize: 9 }}
+                          >
+                            {done ? "votado" : "votar"}
                           </span>
-                          <ChevronRight className="w-4 h-4 text-muted" />
+                          <ChevronRight className="w-4 h-4 text-navy-800/40" />
                         </Link>
                       );
                     })}
@@ -110,9 +122,9 @@ export default async function CategoriasPage() {
           })}
         </div>
 
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link href="/votar/finalizar" className="w-full sm:w-auto">
-            <Button variant="secondary" size="lg" className="w-full font-bold">
+            <Button variant="primary" size="lg" className="w-full px-12">
               {totalVotadas > 0 ? "Finalizar votação" : "Pular e finalizar"}
             </Button>
           </Link>

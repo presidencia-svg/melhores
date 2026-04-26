@@ -1,21 +1,33 @@
 import type { Metadata } from "next";
-import { Inter, Poppins } from "next/font/google";
+import { Fraunces, Sora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
+  weight: ["300", "400", "700", "800", "900"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
-const poppins = Poppins({
-  variable: "--font-poppins",
-  weight: ["400", "500", "600", "700", "800"],
+const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
+
+const jetbrains = JetBrains_Mono({
+  variable: "--font-jetbrains",
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Melhores do Ano CDL Aracaju 2026",
-  description: "Vote nos melhores de Aracaju em 2026. Promovido pela CDL Aracaju.",
+  description:
+    "Os Melhores de Aracaju são escolhidos por você. Vote agora — leva 3 minutos.",
   openGraph: {
     title: "Melhores do Ano CDL Aracaju 2026",
     description: "Sua opinião decide os melhores de Aracaju.",
@@ -31,7 +43,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${inter.variable} ${poppins.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${sora.variable} ${jetbrains.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

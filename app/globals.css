@@ -1,19 +1,34 @@
 @import "tailwindcss";
 
 :root {
-  --cdl-blue: #1B3A7A;
-  --cdl-blue-dark: #142D5F;
-  --cdl-blue-light: #2D5BAE;
-  --cdl-green: #00A859;
-  --cdl-green-dark: #007A40;
-  --cdl-yellow: #FFD700;
-  --cdl-yellow-dark: #E6C200;
+  /* Paleta editorial */
+  --navy-900: #061d44;
+  --navy-800: #0a2a5e;
+  --navy-700: #143b7a;
+  --gold-500: #d4a537;
+  --gold-400: #e6bf5f;
+  --gold-700: #b88a2a;
+  --green-600: #0f8a3f;
+  --green-500: #14a851;
+  --cream-100: #fbf8f1;
+  --cream-200: #f5f1e8;
+  --cream-300: #ece8df;
+  --ink-900: #1a1612;
 
-  --background: #FAFBFC;
-  --foreground: #0F172A;
-  --muted: #64748B;
-  --border: #E2E8F0;
-  --card: #FFFFFF;
+  /* CDL legacy (compat) */
+  --cdl-blue: var(--navy-800);
+  --cdl-blue-dark: var(--navy-900);
+  --cdl-blue-light: var(--navy-700);
+  --cdl-green: var(--green-600);
+  --cdl-green-dark: #0a6f30;
+  --cdl-yellow: var(--gold-500);
+  --cdl-yellow-dark: var(--gold-700);
+
+  --background: var(--cream-300);
+  --foreground: var(--ink-900);
+  --muted: rgba(26, 22, 18, 0.6);
+  --border: rgba(10, 42, 94, 0.15);
+  --card: var(--cream-100);
 }
 
 @theme inline {
@@ -23,6 +38,19 @@
   --color-border: var(--border);
   --color-card: var(--card);
 
+  --color-navy-900: var(--navy-900);
+  --color-navy-800: var(--navy-800);
+  --color-navy-700: var(--navy-700);
+  --color-gold-500: var(--gold-500);
+  --color-gold-400: var(--gold-400);
+  --color-gold-700: var(--gold-700);
+  --color-green-600: var(--green-600);
+  --color-green-500: var(--green-500);
+  --color-cream-100: var(--cream-100);
+  --color-cream-200: var(--cream-200);
+  --color-cream-300: var(--cream-300);
+  --color-ink-900: var(--ink-900);
+
   --color-cdl-blue: var(--cdl-blue);
   --color-cdl-blue-dark: var(--cdl-blue-dark);
   --color-cdl-blue-light: var(--cdl-blue-light);
@@ -31,8 +59,9 @@
   --color-cdl-yellow: var(--cdl-yellow);
   --color-cdl-yellow-dark: var(--cdl-yellow-dark);
 
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-poppins);
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-sora);
+  --font-mono: var(--font-jetbrains);
 }
 
 html, body {
@@ -41,8 +70,50 @@ html, body {
 }
 
 body {
-  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.font-display {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-style: italic;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+.font-display-bold {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.kicker {
+  font-family: var(--font-sora), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+}
+
+.divider-gold {
+  display: inline-block;
+  width: 32px;
+  height: 1px;
+  background: var(--gold-500);
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  background-image: radial-gradient(1px 1px at 30% 20%, #000 0%, transparent 50%),
+                    radial-gradient(1px 1px at 70% 60%, #000 0%, transparent 50%),
+                    radial-gradient(1px 1px at 40% 80%, #000 0%, transparent 50%);
+  background-size: 3px 3px;
 }
 
 @keyframes fade-in {
@@ -51,13 +122,15 @@ body {
 }
 
 .animate-fade-in {
-  animation: fade-in 0.4s ease-out;
+  animation: fade-in 0.5s ease-out;
 }
 
 .gradient-cdl {
-  background: linear-gradient(135deg, var(--cdl-blue) 0%, var(--cdl-blue-light) 100%);
+  background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 100%);
 }
 
 .gradient-cdl-hero {
-  background: linear-gradient(135deg, var(--cdl-blue-dark) 0%, var(--cdl-blue) 50%, var(--cdl-blue-light) 100%);
+  background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 50%, var(--navy-700) 100%);
 }
+
+.text-balance { text-wrap: balance; }
