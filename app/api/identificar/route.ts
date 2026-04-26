@@ -45,10 +45,19 @@ async function handleIdentificar(req: Request) {
   const userAgent = req.headers.get("user-agent") ?? "";
 
   // Cloudflare Turnstile (se TURNSTILE_SECRET_KEY configurado)
-  const turnstileOk = await verifyTurnstile(parsed.data.turnstileToken, ip);
-  if (!turnstileOk) {
+  const turnstileResult = await verifyTurnstile(parsed.data.turnstileToken, ip);
+  if (!turnstileResult.ok) {
+    const codes = turnstileResult.errorCodes.join(",");
+    let userMessage = "Falha na verificação anti-robô. Recarregue a página e tente novamente.";
+    if (codes.includes("invalid-input-secret")) {
+      userMessage = "Erro de configuração do anti-robô. Avisamos a equipe.";
+    } else if (codes.includes("timeout-or-duplicate")) {
+      userMessage = "Token expirou. Recarregue a página e tente novamente.";
+    } else if (codes.includes("missing-input-response")) {
+      userMessage = "Aguarde a verificação anti-robô antes de continuar.";
+    }
     return NextResponse.json(
-      { error: "Falha na verificação anti-robô. Recarregue a página e tente novamente." },
+      { error: userMessage, debug: codes },
       { status: 403 }
     );
   }

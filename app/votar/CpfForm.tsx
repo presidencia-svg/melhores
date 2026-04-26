@@ -56,6 +56,10 @@ export function CpfForm() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Não foi possível continuar. Tente novamente.");
+        // Reseta Turnstile pra gerar token novo (single-use)
+        if (typeof window !== "undefined" && window.__turnstileReset) {
+          window.__turnstileReset();
+        }
         return;
       }
       router.push("/votar/selfie");

@@ -1,6 +1,6 @@
 // Verifica token do Cloudflare Turnstile no servidor.
-// Retorna true se token válido, false caso contrário.
-// Se TURNSTILE_SECRET_KEY não estiver configurado, retorna true (modo desativado).
+// Retorna { ok: true } se válido, ou { ok: false, errorCodes } se falhar.
+// Se TURNSTILE_SECRET_KEY não estiver configurado, considera desativado (ok: true).
 
 type TurnstileResponse = {
   success: boolean;
@@ -9,11 +9,22 @@ type TurnstileResponse = {
   hostname?: string;
 };
 
-export async function verifyTurnstile(token: string | null | undefined, ip: string): Promise<boolean> {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true; // desativado
+export type TurnstileResult =
+  | { ok: true; cached?: boolean; reason?: "disabled" }
+  | { ok: false; errorCodes: string[] };
 
-  if (!token) return false;
+export async function verifyTurnstile(
+  token: string | null | undefined,
+  ip: string
+): Promise<TurnstileResult> {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) {
+    return { ok: true, reason: "disabled" };
+  }
+
+  if (!token) {
+    return { ok: false, errorCodes: ["missing-input-response"] };
+  }
 
   try {
     const body = new URLSearchParams({
@@ -22,15 +33,25 @@ export async function verifyTurnstile(token: string | null | undefined, ip: stri
       remoteip: ip,
     });
 
-    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: body.toString(),
-    });
+    const res = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body.toString(),
+      }
+    );
 
     const data = (await res.json()) as TurnstileResponse;
-    return data.success === true;
-  } catch {
-    return false;
+
+    if (data.success) return { ok: true };
+
+    const errorCodes = data["error-codes"] ?? ["unknown"];
+    console.error("[turnstile] verification failed:", errorCodes, "hostname:", data.hostname);
+    return { ok: false, errorCodes };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "unknown";
+    console.error("[turnstile] fetch failed:", message);
+    return { ok: false, errorCodes: [`fetch-error:${message}`] };
   }
 }

@@ -20,6 +20,7 @@ declare global {
       remove: (id?: string) => void;
     };
     onTurnstileReady?: () => void;
+    __turnstileReset?: () => void;
   }
 }
 
@@ -46,9 +47,18 @@ export function Turnstile({
         sitekey,
         callback: onToken,
         "expired-callback": () => onExpired?.(),
+        "error-callback": () => onExpired?.(),
         size: "normal",
         theme: "light",
       });
+    };
+
+    // Expose reset globally so the form can call it after a failed submit
+    window.__turnstileReset = () => {
+      if (widgetIdRef.current && window.turnstile) {
+        window.turnstile.reset(widgetIdRef.current);
+        onExpired?.();
+      }
     };
 
     if (window.turnstile) {
