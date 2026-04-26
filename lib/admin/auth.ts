@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 const COOKIE = "mda_admin";
-const MAX_AGE = 60 * 60 * 8; // 8h
+const MAX_AGE = 60 * 60 * 24; // 24h
 
 function sign(value: string): string {
   const secret = process.env.JWT_SECRET ?? "fallback-dev-secret";
