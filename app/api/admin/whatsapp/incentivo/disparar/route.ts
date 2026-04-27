@@ -4,6 +4,11 @@ import { isAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { enviarMensagemTexto, verificarStatus } from "@/lib/zapi/client";
 import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
+import { enviarTemplate, metaConfigurada } from "@/lib/meta-whatsapp/client";
+
+const META_TEMPLATE_INCENTIVO =
+  process.env.META_TEMPLATE_INCENTIVO ?? "incentivo_voto_2025";
+const META_TEMPLATE_LANG = process.env.META_TEMPLATE_LANG ?? "pt_BR";
 
 // Pacing 2-5s significa ~50 envios em ~5min (limite do Vercel Pro).
 export const maxDuration = 300;
@@ -104,26 +109,54 @@ export async function POST(req: Request) {
   const finalAlvos = todosAlvos.slice(0, LOTE_MAX);
   const restantes = Math.max(0, todosAlvos.length - finalAlvos.length);
 
-  // Decide canal: tenta WhatsApp; se Z-API offline e Zenvia configurada, vai pra SMS
-  const status = await verificarStatus();
-  const usarSms = !status.conectado && zenviaConfigurada();
-  if (!status.conectado && !zenviaConfigurada()) {
+  // Decide canal: Meta WhatsApp Cloud API > Z-API > SMS Zenvia.
+  // Meta exige template aprovado; Z-API permite mensagem livre; SMS é fallback curto.
+  const usarMeta = metaConfigurada();
+  let usarZapi = false;
+  let usarSms = false;
+  if (!usarMeta) {
+    const status = await verificarStatus();
+    usarZapi = status.conectado;
+    if (!usarZapi) {
+      usarSms = zenviaConfigurada();
+    }
+  }
+  if (!usarMeta && !usarZapi && !usarSms) {
     return NextResponse.json(
       {
         error:
-          "Z-API desconectada e Zenvia (SMS) não configurada. Reconecte o WhatsApp ou configure ZENVIA_API_TOKEN/ZENVIA_FROM.",
+          "Nenhum canal disponível. Configure META_WHATSAPP_TOKEN/META_WHATSAPP_PHONE_IDS, reconecte a Z-API ou configure Zenvia.",
       },
       { status: 503 }
     );
   }
+  const canal = usarMeta ? "meta" : usarZapi ? "zapi" : "sms";
 
   let enviados = 0;
   const falhas: { votante_id: string; nome: string; motivo: string }[] = [];
 
   for (const e of finalAlvos) {
-    const r = usarSms
-      ? await enviarSmsZenvia(e.whatsapp, montarSms(e))
-      : await enviarMensagemTexto(e.whatsapp, montarMensagem(e));
+    const primeiroNome = (e.votante_nome.split(" ")[0] ?? "").trim() || "amigo(a)";
+    const diff =
+      e.diferenca === 0
+        ? "(empatado)"
+        : e.diferenca === 1
+          ? "1 voto"
+          : `${e.diferenca} votos`;
+    let r;
+    if (canal === "meta") {
+      r = await enviarTemplate(e.whatsapp, META_TEMPLATE_INCENTIVO, META_TEMPLATE_LANG, [
+        primeiroNome,
+        e.candidato_perdendo_nome,
+        e.subcategoria_nome,
+        e.candidato_lider_nome,
+        diff,
+      ]);
+    } else if (canal === "zapi") {
+      r = await enviarMensagemTexto(e.whatsapp, montarMensagem(e));
+    } else {
+      r = await enviarSmsZenvia(e.whatsapp, montarSms(e));
+    }
     if (r.ok) {
       enviados += 1;
       await supabase
@@ -150,6 +183,6 @@ export async function POST(req: Request) {
     detalhes_falhas: falhas,
     restantes,
     lote_max: LOTE_MAX,
-    canal: usarSms ? "sms" : "whatsapp",
+    canal,
   });
 }

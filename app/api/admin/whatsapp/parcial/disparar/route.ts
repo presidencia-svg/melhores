@@ -4,6 +4,11 @@ import { isAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { enviarMensagemTexto, verificarStatus } from "@/lib/zapi/client";
 import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
+import { enviarTemplate, metaConfigurada } from "@/lib/meta-whatsapp/client";
+
+const META_TEMPLATE_PARCIAL =
+  process.env.META_TEMPLATE_PARCIAL ?? "parcial_voto_2025";
+const META_TEMPLATE_LANG = process.env.META_TEMPLATE_LANG ?? "pt_BR";
 
 // Pacing 2-5s significa ~50 envios em ~5min.
 export const maxDuration = 300;
@@ -110,18 +115,27 @@ export async function POST(req: Request) {
     (v) => v.whatsapp_validado && v.whatsapp && !v.parcial_enviada_em
   );
 
-  // Decide canal: WhatsApp se Z-API conectada; senão SMS via Zenvia (se configurada).
-  const status = await verificarStatus();
-  const usarSms = !status.conectado && zenviaConfigurada();
-  if (!status.conectado && !zenviaConfigurada()) {
+  // Decide canal: Meta WhatsApp Cloud API > Z-API > SMS Zenvia.
+  const usarMeta = metaConfigurada();
+  let usarZapi = false;
+  let usarSms = false;
+  if (!usarMeta) {
+    const status = await verificarStatus();
+    usarZapi = status.conectado;
+    if (!usarZapi) {
+      usarSms = zenviaConfigurada();
+    }
+  }
+  if (!usarMeta && !usarZapi && !usarSms) {
     return NextResponse.json(
       {
         error:
-          "Z-API desconectada e Zenvia (SMS) não configurada. Reconecte o WhatsApp ou configure ZENVIA_API_TOKEN/ZENVIA_FROM.",
+          "Nenhum canal disponível. Configure META_WHATSAPP_TOKEN/META_WHATSAPP_PHONE_IDS, reconecte a Z-API ou configure Zenvia.",
       },
       { status: 503 }
     );
   }
+  const canal = usarMeta ? "meta" : usarZapi ? "zapi" : "sms";
 
   let enviados = 0;
   const falhas: { votante_id: string; nome: string; motivo: string }[] = [];
@@ -141,17 +155,47 @@ export async function POST(req: Request) {
     }
 
     const linhasTip = (linhas ?? []) as LinhaRpc[];
-    const mensagem = usarSms
-      ? montarSms(v.nome, linhasTip)
-      : montarMensagem(v.nome, linhasTip);
-    if (!mensagem) {
+    if (linhasTip.length === 0) {
       falhas.push({ votante_id: v.id, nome: v.nome, motivo: "sem dados de parcial" });
       continue;
     }
 
-    const r = usarSms
-      ? await enviarSmsZenvia(v.whatsapp!, mensagem)
-      : await enviarMensagemTexto(v.whatsapp!, mensagem);
+    let r;
+    if (canal === "meta") {
+      // Template Meta usa só a sub mais acirrada com top 2 (igual SMS)
+      const primeiroNome = (v.nome.split(" ")[0] ?? "").trim() || "amigo(a)";
+      const primeiraSub = linhasTip[0]!;
+      const top = linhasTip
+        .filter((l) => l.subcategoria_id === primeiraSub.subcategoria_id)
+        .sort((a, b) => a.pos - b.pos)
+        .slice(0, 2);
+      if (top.length < 2) {
+        falhas.push({ votante_id: v.id, nome: v.nome, motivo: "subcat com menos de 2 candidatos" });
+        continue;
+      }
+      r = await enviarTemplate(v.whatsapp!, META_TEMPLATE_PARCIAL, META_TEMPLATE_LANG, [
+        primeiroNome,
+        primeiraSub.subcategoria_nome,
+        top[0]!.candidato_nome,
+        String(top[0]!.pct),
+        top[1]!.candidato_nome,
+        String(top[1]!.pct),
+      ]);
+    } else if (canal === "zapi") {
+      const mensagem = montarMensagem(v.nome, linhasTip);
+      if (!mensagem) {
+        falhas.push({ votante_id: v.id, nome: v.nome, motivo: "sem mensagem" });
+        continue;
+      }
+      r = await enviarMensagemTexto(v.whatsapp!, mensagem);
+    } else {
+      const mensagem = montarSms(v.nome, linhasTip);
+      if (!mensagem) {
+        falhas.push({ votante_id: v.id, nome: v.nome, motivo: "sem mensagem" });
+        continue;
+      }
+      r = await enviarSmsZenvia(v.whatsapp!, mensagem);
+    }
     if (r.ok) {
       enviados += 1;
       await supabase
@@ -177,6 +221,6 @@ export async function POST(req: Request) {
     enviados,
     falhas: falhas.length,
     detalhes_falhas: falhas,
-    canal: usarSms ? "sms" : "whatsapp",
+    canal,
   });
 }
