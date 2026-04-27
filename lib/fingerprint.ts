@@ -2,7 +2,26 @@
 // Não é infalível (pessoas determinadas conseguem burlar), mas pega 95%+ dos
 // casos comuns de votos múltiplos no mesmo aparelho.
 
-const STORAGE_KEY = "mda_device_fp";
+// Bumped para v2: adicionado UUID por browser pra evitar colisão entre
+// iPhones idênticos com Safari (que bloqueia canvas/WebGL fingerprint).
+const STORAGE_KEY = "mda_device_fp_v2";
+const UUID_KEY = "mda_device_uuid";
+
+function getOrCreateBrowserUUID(): string {
+  try {
+    const existing = localStorage.getItem(UUID_KEY);
+    if (existing && existing.length >= 16) return existing;
+    const novo =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2) + Date.now().toString(36);
+    localStorage.setItem(UUID_KEY, novo);
+    return novo;
+  } catch {
+    // Modo privado / localStorage bloqueado: cai pra valor aleatório por sessão
+    return Math.random().toString(36).slice(2) + Date.now().toString(36);
+  }
+}
 
 export async function getDeviceFingerprint(): Promise<string> {
   // Cache em localStorage para persistência entre sessões
@@ -14,6 +33,9 @@ export async function getDeviceFingerprint(): Promise<string> {
   }
 
   const sinais: string[] = [];
+
+  // 0. UUID exclusivo do browser (evita colisão entre dispositivos iguais)
+  sinais.push(getOrCreateBrowserUUID());
 
   // 1. User Agent
   sinais.push(navigator.userAgent);
