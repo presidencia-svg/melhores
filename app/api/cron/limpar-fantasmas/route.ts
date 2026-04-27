@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 // Janela de tolerância: votante criado há mais que isso sem voto = fantasma.
-// 10 min é suficiente pra ler termos + selfie + votar pelo menos 1 subcategoria.
-const MIN_MINUTOS_SEM_VOTO = 10;
+// 20 min cobre quem pausou e voltou pra continuar votando.
+const MIN_MINUTOS_SEM_VOTO = 20;
 
 // Pra Vercel Cron, garante execução até 5 min em plano Pro.
 export const maxDuration = 300;
