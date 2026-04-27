@@ -14,15 +14,29 @@ export async function loadLandmarker(): Promise<FaceLandmarker> {
   if (landmarkerPromise) return landmarkerPromise;
   landmarkerPromise = (async () => {
     const vision = await FilesetResolver.forVisionTasks(WASM_URL);
-    return await FaceLandmarker.createFromOptions(vision, {
-      baseOptions: {
-        modelAssetPath: MODEL_URL,
-        delegate: "GPU",
-      },
-      outputFaceBlendshapes: true,
-      runningMode: "VIDEO",
-      numFaces: 1,
-    });
+    // Tenta GPU primeiro (mais rápido). Se falhar (Safari mais velho ou
+    // dispositivos sem WebGPU adequado), cai pra CPU.
+    try {
+      return await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: MODEL_URL,
+          delegate: "GPU",
+        },
+        outputFaceBlendshapes: true,
+        runningMode: "VIDEO",
+        numFaces: 1,
+      });
+    } catch {
+      return await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: MODEL_URL,
+          delegate: "CPU",
+        },
+        outputFaceBlendshapes: true,
+        runningMode: "VIDEO",
+        numFaces: 1,
+      });
+    }
   })();
   return landmarkerPromise;
 }
@@ -73,7 +87,7 @@ export const CHALLENGES: Record<
   smile: {
     label: "Sorria",
     emoji: "😊",
-    check: (d) => d.smile > 0.12,
+    check: (d) => d.smile > 0.06,
   },
   blink: {
     label: "Pisque",

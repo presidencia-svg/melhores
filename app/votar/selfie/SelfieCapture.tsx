@@ -27,6 +27,8 @@ export function SelfieCapture() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [photoData, setPhotoData] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Mostra botão "tirar foto mesmo assim" se passar tempo demais sem detectar
+  const [permitirCapturaManual, setPermitirCapturaManual] = useState(false);
 
   const challengesRef = useRef<ChallengeKey[]>([]);
   const challengeIdxRef = useRef(0);
@@ -72,6 +74,13 @@ export function SelfieCapture() {
         setChallenges(picked);
         setChallengeIdx(0);
         setPhase("challenges");
+
+        // 2b) Fallback: depois de 12s sem detectar sorriso, libera captura manual.
+        setTimeout(() => {
+          if (!cancelled && challengeIdxRef.current < picked.length) {
+            setPermitirCapturaManual(true);
+          }
+        }, 12000);
 
         // 3) Detection loop
         const detect = () => {
@@ -307,6 +316,18 @@ export function SelfieCapture() {
         <div className="flex items-center justify-center gap-2 text-xs text-muted">
           <ShieldCheck className="w-3 h-3 text-cdl-green" />
           <span>Validação anti-fraude em tempo real</span>
+        </div>
+      )}
+
+      {phase === "challenges" && permitirCapturaManual && (
+        <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-center">
+          <p className="text-xs text-amber-800 mb-2">
+            Sem conseguir detectar o sorriso? Tire a foto manualmente:
+          </p>
+          <Button variant="outline" size="sm" onClick={capture} type="button">
+            <Camera className="w-4 h-4 mr-1" />
+            Tirar foto mesmo assim
+          </Button>
         </div>
       )}
     </div>
