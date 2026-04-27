@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Camera, RotateCcw, Check, ShieldCheck } from "lucide-react";
 import {
   loadLandmarker,
+  disposeLandmarker,
   parseDetection,
   CHALLENGES,
   type ChallengeKey,
@@ -153,6 +154,7 @@ export function SelfieCapture() {
       cancelled = true;
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+      disposeLandmarker();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

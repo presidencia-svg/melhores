@@ -41,6 +41,27 @@ export async function loadLandmarker(): Promise<FaceLandmarker> {
   return landmarkerPromise;
 }
 
+// Fecha o landmarker e limpa o cache. Chamar no unmount evita reusar
+// a mesma instancia em VIDEO mode entre sessoes de stream — quando o
+// usuario volta pra /votar/selfie, o cache antigo as vezes para de
+// emitir blendshapes (smile fica em 0) e o sorriso nunca passa.
+export function disposeLandmarker(): void {
+  const pending = landmarkerPromise;
+  landmarkerPromise = null;
+  if (!pending) return;
+  pending
+    .then((l) => {
+      try {
+        l.close();
+      } catch {
+        // ignore
+      }
+    })
+    .catch(() => {
+      // ignore
+    });
+}
+
 export type Detection = {
   hasFace: boolean;
   smile: number;
