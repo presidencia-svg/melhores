@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { enviarMensagemTexto } from "@/lib/zapi/client";
+import { enviarMensagemTexto, verificarStatus } from "@/lib/zapi/client";
+import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 
 // Pacing 2-5s significa ~50 envios em ~5min (limite do Vercel Pro).
 export const maxDuration = 300;
@@ -51,6 +52,15 @@ function montarMensagem(e: Elegivel): string {
   ].join("\n");
 }
 
+// Versão curta sem acento, dentro de ~155 chars (1 segmento de SMS)
+function montarSms(e: Elegivel): string {
+  const primeiroNome = (e.votante_nome.split(" ")[0] ?? "").trim() || "amigo";
+  const trecho = e.diferenca === 0
+    ? `votacao empatada`
+    : `disputa apertada por ${e.diferenca} ${e.diferenca === 1 ? "voto" : "votos"}`;
+  return `Ola ${primeiroNome}! Voce votou em ${e.candidato_perdendo_nome} (${e.subcategoria_nome}). ${trecho}. Compartilhe: votar.cdlaju.com.br`;
+}
+
 export async function POST(req: Request) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
@@ -94,12 +104,26 @@ export async function POST(req: Request) {
   const finalAlvos = todosAlvos.slice(0, LOTE_MAX);
   const restantes = Math.max(0, todosAlvos.length - finalAlvos.length);
 
+  // Decide canal: tenta WhatsApp; se Z-API offline e Zenvia configurada, vai pra SMS
+  const status = await verificarStatus();
+  const usarSms = !status.conectado && zenviaConfigurada();
+  if (!status.conectado && !zenviaConfigurada()) {
+    return NextResponse.json(
+      {
+        error:
+          "Z-API desconectada e Zenvia (SMS) não configurada. Reconecte o WhatsApp ou configure ZENVIA_API_TOKEN/ZENVIA_FROM.",
+      },
+      { status: 503 }
+    );
+  }
+
   let enviados = 0;
   const falhas: { votante_id: string; nome: string; motivo: string }[] = [];
 
   for (const e of finalAlvos) {
-    const mensagem = montarMensagem(e);
-    const r = await enviarMensagemTexto(e.whatsapp, mensagem);
+    const r = usarSms
+      ? await enviarSmsZenvia(e.whatsapp, montarSms(e))
+      : await enviarMensagemTexto(e.whatsapp, montarMensagem(e));
     if (r.ok) {
       enviados += 1;
       await supabase
@@ -126,5 +150,6 @@ export async function POST(req: Request) {
     detalhes_falhas: falhas,
     restantes,
     lote_max: LOTE_MAX,
+    canal: usarSms ? "sms" : "whatsapp",
   });
 }

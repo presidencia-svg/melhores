@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { enviarMensagemTexto } from "@/lib/zapi/client";
+import { enviarMensagemTexto, verificarStatus } from "@/lib/zapi/client";
+import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 
 // Pacing 2-5s significa ~50 envios em ~5min.
 export const maxDuration = 300;
@@ -68,6 +69,20 @@ function montarMensagem(votanteNome: string, linhas: LinhaRpc[]): string | null 
   ].join("\n");
 }
 
+// Versão SMS curta (~155 chars): pega só a subcategoria mais acirrada com top 1 e top 2.
+function montarSms(votanteNome: string, linhas: LinhaRpc[]): string | null {
+  if (linhas.length === 0) return null;
+  const primeiroNome = (votanteNome.split(" ")[0] ?? "").trim() || "amigo";
+  const primeiraSub = linhas[0]!;
+  const top = linhas
+    .filter((l) => l.subcategoria_id === primeiraSub.subcategoria_id)
+    .sort((a, b) => a.pos - b.pos)
+    .slice(0, 2);
+  if (top.length === 0) return null;
+  const trecho = top.map((c) => `${c.pos}o ${c.candidato_nome} ${c.pct}%`).join(" x ");
+  return `Ola ${primeiroNome}! ${primeiraSub.subcategoria_nome}: ${trecho}. Compartilhe: votar.cdlaju.com.br`;
+}
+
 export async function POST(req: Request) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
@@ -95,6 +110,19 @@ export async function POST(req: Request) {
     (v) => v.whatsapp_validado && v.whatsapp && !v.parcial_enviada_em
   );
 
+  // Decide canal: WhatsApp se Z-API conectada; senão SMS via Zenvia (se configurada).
+  const status = await verificarStatus();
+  const usarSms = !status.conectado && zenviaConfigurada();
+  if (!status.conectado && !zenviaConfigurada()) {
+    return NextResponse.json(
+      {
+        error:
+          "Z-API desconectada e Zenvia (SMS) não configurada. Reconecte o WhatsApp ou configure ZENVIA_API_TOKEN/ZENVIA_FROM.",
+      },
+      { status: 503 }
+    );
+  }
+
   let enviados = 0;
   const falhas: { votante_id: string; nome: string; motivo: string }[] = [];
 
@@ -112,13 +140,18 @@ export async function POST(req: Request) {
       continue;
     }
 
-    const mensagem = montarMensagem(v.nome, (linhas ?? []) as LinhaRpc[]);
+    const linhasTip = (linhas ?? []) as LinhaRpc[];
+    const mensagem = usarSms
+      ? montarSms(v.nome, linhasTip)
+      : montarMensagem(v.nome, linhasTip);
     if (!mensagem) {
       falhas.push({ votante_id: v.id, nome: v.nome, motivo: "sem dados de parcial" });
       continue;
     }
 
-    const r = await enviarMensagemTexto(v.whatsapp!, mensagem);
+    const r = usarSms
+      ? await enviarSmsZenvia(v.whatsapp!, mensagem)
+      : await enviarMensagemTexto(v.whatsapp!, mensagem);
     if (r.ok) {
       enviados += 1;
       await supabase
@@ -144,5 +177,6 @@ export async function POST(req: Request) {
     enviados,
     falhas: falhas.length,
     detalhes_falhas: falhas,
+    canal: usarSms ? "sms" : "whatsapp",
   });
 }
