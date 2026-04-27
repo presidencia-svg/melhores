@@ -2,8 +2,21 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { enviarMensagemTexto, gerarCodigoVerificacao } from "@/lib/zapi/client";
+import {
+  enviarMensagemTexto,
+  gerarCodigoVerificacao,
+  verificarStatus,
+} from "@/lib/zapi/client";
+import {
+  enviarTemplateAutenticacao,
+  metaConfigurada,
+} from "@/lib/meta-whatsapp/client";
+import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 import { getClientIp } from "@/lib/utils";
+
+const META_TEMPLATE_OTP =
+  process.env.META_TEMPLATE_OTP ?? "codigo_verificacao_2025";
+const META_TEMPLATE_LANG = process.env.META_TEMPLATE_LANG ?? "pt_BR";
 
 const Body = z.object({ whatsapp: z.string().min(10).max(13) });
 
@@ -63,21 +76,55 @@ export async function POST(req: Request) {
     .update({ whatsapp, whatsapp_validado: false })
     .eq("id", sessao.id);
 
-  // Envia via Z-API
-  const mensagem =
-    `🏆 *Melhores do Ano CDL Aracaju 2025*\n\n` +
-    `Olá! Seu código de validação é:\n\n` +
-    `*${codigo}*\n\n` +
-    `Use esse código para confirmar seu WhatsApp e receber em primeira mão os campeões. ` +
-    `O código expira em 10 minutos.`;
+  // Decide canal: Meta WhatsApp Cloud API (template AUTHENTICATION) > Z-API > SMS Zenvia.
+  let envioOk = false;
+  let canal: "meta" | "zapi" | "sms" | null = null;
 
-  const envio = await enviarMensagemTexto(whatsapp, mensagem);
-  if (!envio.ok) {
+  if (metaConfigurada()) {
+    const r = await enviarTemplateAutenticacao(
+      whatsapp,
+      META_TEMPLATE_OTP,
+      META_TEMPLATE_LANG,
+      codigo
+    );
+    if (r.ok) {
+      envioOk = true;
+      canal = "meta";
+    }
+  }
+
+  if (!envioOk) {
+    const status = await verificarStatus();
+    if (status.conectado) {
+      const mensagem =
+        `*Melhores do Ano CDL Aracaju 2025*\n\n` +
+        `Olá! Seu código de validação é:\n\n` +
+        `*${codigo}*\n\n` +
+        `Use esse código para confirmar seu WhatsApp e receber em primeira mão os campeões. ` +
+        `O código expira em 10 minutos.`;
+      const r = await enviarMensagemTexto(whatsapp, mensagem);
+      if (r.ok) {
+        envioOk = true;
+        canal = "zapi";
+      }
+    }
+  }
+
+  if (!envioOk && zenviaConfigurada()) {
+    const sms = `Codigo CDL Aracaju 2025: ${codigo}. Valido por 10 minutos. Nao compartilhe.`;
+    const r = await enviarSmsZenvia(whatsapp, sms);
+    if (r.ok) {
+      envioOk = true;
+      canal = "sms";
+    }
+  }
+
+  if (!envioOk) {
     return NextResponse.json(
       { error: "Não conseguimos enviar o código. Confira o número e tente novamente." },
       { status: 502 }
     );
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, canal });
 }

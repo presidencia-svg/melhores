@@ -106,6 +106,74 @@ export async function enviarTemplate(
   return { ok: false, detalhe: lastErr ?? "todos os Phone Number IDs falharam" };
 }
 
+// Envia template de autenticação (categoria AUTHENTICATION) com botão "Copiar código".
+// O parâmetro `codigo` aparece tanto no corpo `{{1}}` quanto no botão de copy.
+export async function enviarTemplateAutenticacao(
+  numero: string,
+  templateName: string,
+  language: string,
+  codigo: string
+): Promise<MetaSendResult> {
+  const token = getToken();
+  const ids = getPhoneNumberIds();
+  if (!token) return { ok: false, detalhe: "META_WHATSAPP_TOKEN não configurado" };
+  if (ids.length === 0)
+    return { ok: false, detalhe: "META_WHATSAPP_PHONE_IDS vazio" };
+
+  const to = normalizePhone(numero);
+  const baseStart = nextIdx % ids.length;
+  nextIdx++;
+
+  let lastErr: string | undefined;
+  for (let i = 0; i < ids.length; i++) {
+    const phoneId = ids[(baseStart + i) % ids.length]!;
+    try {
+      const body = {
+        messaging_product: "whatsapp",
+        to,
+        type: "template",
+        template: {
+          name: templateName,
+          language: { code: language },
+          components: [
+            {
+              type: "body",
+              parameters: [{ type: "text", text: codigo }],
+            },
+            {
+              type: "button",
+              sub_type: "url",
+              index: "0",
+              parameters: [{ type: "text", text: codigo }],
+            },
+          ],
+        },
+      };
+
+      const { data } = await axios.post(
+        `https://graph.facebook.com/${getApiVersion()}/${phoneId}/messages`,
+        body,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          timeout: 12000,
+        }
+      );
+      return { ok: true, raw: data };
+    } catch (err: unknown) {
+      const msg =
+        (axios.isAxiosError(err) &&
+          (err.response?.data as { error?: { message?: string } } | undefined)
+            ?.error?.message) ||
+        (err instanceof Error ? err.message : "erro desconhecido");
+      lastErr = `[${phoneId}] ${msg}`;
+    }
+  }
+  return { ok: false, detalhe: lastErr ?? "todos os Phone Number IDs falharam" };
+}
+
 // Verifica saúde da configuração: tem token + ao menos um phone id, e os tokens funcionam.
 // Retorna detalhes pra UI mostrar pro admin.
 export async function verificarStatusMeta(): Promise<{
