@@ -14,7 +14,7 @@ const Body = z.object({
   turnstileToken: z.string().nullable().optional(),
 });
 
-const MAX_CPFS_POR_DISPOSITIVO = 2;
+const MAX_CPFS_POR_DISPOSITIVO = 5;
 
 function deveConsultarSPC(): boolean {
   const rate = parseFloat(process.env.SPC_SAMPLE_RATE ?? "0");
