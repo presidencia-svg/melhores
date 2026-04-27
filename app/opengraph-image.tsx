@@ -4,6 +4,8 @@ import { getLogoWhiteDataUrl, loadEditorialFonts } from "@/lib/marketing/og-help
 export const alt = "Melhores do Ano CDL Aracaju 2025";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+// Renderiza sob demanda (não falha o build se Google Fonts der hiccup)
+export const dynamic = "force-dynamic";
 
 export default async function OgImage() {
   const logoSrc = await getLogoWhiteDataUrl();
