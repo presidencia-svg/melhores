@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { maskCpf } from "@/lib/cpf";
-import { Camera, MessageSquare, MapPin, Vote, Clock } from "lucide-react";
+import { Camera, MessageSquare, MapPin, Clock } from "lucide-react";
 
 const PAGE_SIZE = 50;
 const SIGNED_URL_TTL = 60 * 60; // 1h
@@ -17,31 +17,56 @@ export default async function VotantesPage({ searchParams }: Props) {
 
   const supabase = createSupabaseAdminClient();
 
-  const [{ data: votantes, count }, { data: votosPorVotante }, { data: todosFps }] = await Promise.all([
+  // RPC traz votantes paginados ja com count de votos no banco — sem
+  // baixar votos/fingerprints inteiros (que truncavam em 1000).
+  const [{ data: linhas }, { data: fpsCompart }] = await Promise.all([
+    supabase.rpc("votantes_listagem", {
+      p_offset: offset,
+      p_limit: PAGE_SIZE,
+    }),
     supabase
-      .from("votantes")
-      .select(
-        "id, cpf, nome, selfie_url, ip, user_agent, device_fingerprint, whatsapp, whatsapp_validado, criado_em",
-        { count: "exact" }
-      )
-      .order("criado_em", { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1),
-    supabase.from("votos").select("votante_id"),
-    supabase.from("votantes").select("device_fingerprint").not("device_fingerprint", "is", null),
+      .from("v_fingerprints_compartilhados")
+      .select("device_fingerprint, total"),
   ]);
 
-  // Conta quantas vezes cada fingerprint apareceu (pra detectar dispositivos compartilhados)
+  type LinhaVotante = {
+    id: string;
+    cpf: string;
+    nome: string;
+    selfie_url: string | null;
+    ip: string | null;
+    user_agent: string | null;
+    device_fingerprint: string | null;
+    whatsapp: string | null;
+    whatsapp_validado: boolean;
+    criado_em: string;
+    votos_count: number;
+    total_count: number;
+  };
+  const votantes = ((linhas ?? []) as LinhaVotante[]).map((r) => ({
+    id: r.id,
+    cpf: r.cpf,
+    nome: r.nome,
+    selfie_url: r.selfie_url,
+    ip: r.ip,
+    user_agent: r.user_agent,
+    device_fingerprint: r.device_fingerprint,
+    whatsapp: r.whatsapp,
+    whatsapp_validado: r.whatsapp_validado,
+    criado_em: r.criado_em,
+  }));
+  const count = Number(((linhas ?? [])[0] as LinhaVotante | undefined)?.total_count ?? 0);
+
+  // Map fingerprint -> total (apenas os compartilhados aparecem na view)
   const fpCount = new Map<string, number>();
-  for (const v of todosFps ?? []) {
-    if (v.device_fingerprint) {
-      fpCount.set(v.device_fingerprint, (fpCount.get(v.device_fingerprint) ?? 0) + 1);
-    }
+  for (const fp of fpsCompart ?? []) {
+    if (fp.device_fingerprint) fpCount.set(fp.device_fingerprint, fp.total ?? 2);
   }
 
-  // Conta votos por votante
+  // Map votante_id -> votos_count (vem direto do RPC)
   const votosMap = new Map<string, number>();
-  for (const v of votosPorVotante ?? []) {
-    votosMap.set(v.votante_id, (votosMap.get(v.votante_id) ?? 0) + 1);
+  for (const r of (linhas ?? []) as LinhaVotante[]) {
+    votosMap.set(r.id, Number(r.votos_count ?? 0));
   }
 
   // Gera URLs assinadas pras selfies

@@ -58,3 +58,75 @@ from whatsapp_codigos
 where criado_em >= (now() - interval '90 days')
 group by 1
 order by 1;
+
+-- Top 50 candidatos (sort no banco, evita truncamento da v_resultados).
+create or replace view v_top_candidatos as
+select *
+from v_resultados
+order by total_votos desc
+limit 50;
+
+-- Soma de votos por categoria (poucas linhas — 1 por categoria).
+create or replace view v_resultados_por_categoria as
+select
+  categoria_id,
+  categoria_nome,
+  sum(total_votos)::bigint as total_votos
+from v_resultados
+group by categoria_id, categoria_nome
+order by total_votos desc;
+
+-- Fingerprints compartilhados (>= 2 votantes) — small list, sem trunc.
+create or replace view v_fingerprints_compartilhados as
+select device_fingerprint, count(*)::int as total
+from votantes
+where device_fingerprint is not null
+group by device_fingerprint
+having count(*) > 1;
+
+-- Listagem paginada de votantes com count de votos. Trunc seguro pq retorna
+-- exatamente p_limit linhas (geralmente 50 da pagina admin).
+create or replace function votantes_listagem(p_offset int, p_limit int)
+returns table (
+  id uuid,
+  cpf text,
+  nome text,
+  selfie_url text,
+  ip text,
+  user_agent text,
+  device_fingerprint text,
+  whatsapp text,
+  whatsapp_validado boolean,
+  criado_em timestamptz,
+  votos_count bigint,
+  total_count bigint
+)
+language sql
+stable
+as $$
+  select
+    v.id, v.cpf, v.nome, v.selfie_url, v.ip, v.user_agent,
+    v.device_fingerprint, v.whatsapp, v.whatsapp_validado, v.criado_em,
+    coalesce((select count(*) from votos where votante_id = v.id), 0)::bigint as votos_count,
+    (select count(*) from votantes)::bigint as total_count
+  from votantes v
+  order by v.criado_em desc
+  offset p_offset
+  limit p_limit;
+$$;
+
+-- Elegiveis pra parcial: validados + ja votaram + ainda nao receberam.
+-- EXISTS no Postgres em vez do .in() do PostgREST que trunca em 1000.
+create or replace function elegiveis_parcial()
+returns table (votante_id uuid, votante_nome text, whatsapp text)
+language sql
+stable
+as $$
+  select v.id, v.nome, v.whatsapp
+  from votantes v
+  where v.whatsapp_validado = true
+    and v.parcial_enviada_em is null
+    and v.whatsapp is not null
+    and exists (select 1 from votos where votante_id = v.id)
+  order by v.nome;
+$$;

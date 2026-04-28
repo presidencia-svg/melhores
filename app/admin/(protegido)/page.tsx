@@ -50,7 +50,8 @@ export default async function AdminDashboard() {
     { count: votantesMobile },
     { data: ultimosVotantes },
     { data: votosPorDia },
-    { data: resultados },
+    { data: topCandsRaw },
+    { data: topCatsRaw },
   ] = await Promise.all([
     supabase
       .from("edicao")
@@ -77,7 +78,14 @@ export default async function AdminDashboard() {
       .order("criado_em", { ascending: false })
       .limit(8),
     supabase.from("v_votos_por_dia").select("dia, total"),
-    supabase.from("v_resultados").select("*"),
+    supabase
+      .from("v_top_candidatos")
+      .select("candidato_id, candidato_nome, subcategoria_id, subcategoria_nome, categoria_id, categoria_nome, total_votos")
+      .limit(8),
+    supabase
+      .from("v_resultados_por_categoria")
+      .select("categoria_id, categoria_nome, total_votos")
+      .limit(5),
   ]);
 
   // Cálculos derivados
@@ -97,22 +105,14 @@ export default async function AdminDashboard() {
   const dias14 = bucketDaysFromView((votosPorDia ?? []) as VotosPorDiaRow[], 14);
   const maxDia = Math.max(1, ...dias14.map((d) => d.count));
 
-  // Top 5 candidatos (geral)
-  const topCandidatos = (resultados ?? [])
-    .slice()
-    .sort((a, b) => (b as Resultado).total_votos - (a as Resultado).total_votos)
-    .slice(0, 8) as Resultado[];
+  // Top 8 candidatos (ja sort+limit no Postgres via v_top_candidatos)
+  const topCandidatos = (topCandsRaw ?? []) as Resultado[];
 
-  // Top 5 categorias (somar votos por categoria)
-  const porCategoria = new Map<string, { nome: string; votos: number }>();
-  for (const r of (resultados ?? []) as Resultado[]) {
-    const atual = porCategoria.get(r.categoria_id) ?? { nome: r.categoria_nome, votos: 0 };
-    atual.votos += r.total_votos;
-    porCategoria.set(r.categoria_id, atual);
-  }
-  const topCategorias = Array.from(porCategoria.values())
-    .sort((a, b) => b.votos - a.votos)
-    .slice(0, 5);
+  // Top 5 categorias (ja agregada no Postgres via v_resultados_por_categoria)
+  const topCategorias = (topCatsRaw ?? []).map((c) => ({
+    nome: c.categoria_nome as string,
+    votos: Number(c.total_votos),
+  }));
   const maxCatVotos = Math.max(1, ...topCategorias.map((c) => c.votos));
 
   // Tempo restante
