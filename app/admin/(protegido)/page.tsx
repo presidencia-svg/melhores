@@ -34,6 +34,8 @@ type VotanteRecente = {
   criado_em: string;
 };
 
+type VotosPorDiaRow = { dia: string; total: number };
+
 export default async function AdminDashboard() {
   const supabase = createSupabaseAdminClient();
 
@@ -45,7 +47,7 @@ export default async function AdminDashboard() {
     { count: sugestoesPendentes },
     { count: whatsappsValidados },
     { count: selfies },
-    { data: votantesParaUA },
+    { count: votantesMobile },
     { data: ultimosVotantes },
     { data: votosPorDia },
     { data: resultados },
@@ -63,13 +65,18 @@ export default async function AdminDashboard() {
     supabase.from("candidatos").select("*", { head: true, count: "exact" }).eq("status", "pendente"),
     supabase.from("votantes").select("*", { head: true, count: "exact" }).eq("whatsapp_validado", true),
     supabase.from("votantes").select("*", { head: true, count: "exact" }).not("selfie_url", "is", null),
-    supabase.from("votantes").select("user_agent"),
+    supabase
+      .from("votantes")
+      .select("*", { head: true, count: "exact" })
+      .or(
+        "user_agent.ilike.%Mobile%,user_agent.ilike.%Android%,user_agent.ilike.%iPhone%,user_agent.ilike.%iPad%"
+      ),
     supabase
       .from("votantes")
       .select("id, nome, user_agent, criado_em")
       .order("criado_em", { ascending: false })
       .limit(8),
-    supabase.from("votos").select("criado_em").order("criado_em"),
+    supabase.from("v_votos_por_dia").select("dia, total"),
     supabase.from("v_resultados").select("*"),
   ]);
 
@@ -79,12 +86,15 @@ export default async function AdminDashboard() {
   const conversao = votantesNum > 0 ? Math.round((votosNum / votantesNum) * 100) / 100 : 0;
   const mediaVotosPorVotante = votantesNum > 0 ? (votosNum / votantesNum).toFixed(1) : "0";
 
-  // Distribuição por dispositivo
-  const dispositivos = countDispositivos((votantesParaUA ?? []).map((v) => v.user_agent ?? ""));
+  // Distribuição por dispositivo (count exato, sem amostragem)
+  const dispositivos = {
+    mobile: votantesMobile ?? 0,
+    desktop: Math.max(0, votantesNum - (votantesMobile ?? 0)),
+  };
   const totalDisp = dispositivos.mobile + dispositivos.desktop;
 
-  // Votos por dia (últimos 14)
-  const dias14 = bucketByDay((votosPorDia ?? []).map((v) => v.criado_em), 14);
+  // Votos por dia (últimos 14) — view ja agrega no Postgres
+  const dias14 = bucketDaysFromView((votosPorDia ?? []) as VotosPorDiaRow[], 14);
   const maxDia = Math.max(1, ...dias14.map((d) => d.count));
 
   // Top 5 candidatos (geral)
@@ -487,38 +497,23 @@ function pct(part: number, total: number): number {
   return Math.round((part / total) * 100);
 }
 
-function countDispositivos(uas: string[]) {
-  let mobile = 0;
-  let desktop = 0;
-  for (const ua of uas) {
-    if (/Mobile|Android|iPhone|iPad/i.test(ua)) mobile++;
-    else desktop++;
-  }
-  return { mobile, desktop };
-}
+function bucketDaysFromView(rows: VotosPorDiaRow[], days: number) {
+  const byDate = new Map<string, number>();
+  for (const r of rows) byDate.set(r.dia, (byDate.get(r.dia) ?? 0) + r.total);
 
-function bucketByDay(timestamps: string[], days: number) {
   const buckets: { label: string; count: number; date: Date }[] = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     buckets.push({
       label: d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-      count: 0,
+      count: byDate.get(iso) ?? 0,
       date: d,
     });
   }
-
-  for (const ts of timestamps) {
-    const d = new Date(ts);
-    d.setHours(0, 0, 0, 0);
-    const bucket = buckets.find((b) => b.date.getTime() === d.getTime());
-    if (bucket) bucket.count++;
-  }
-
   return buckets;
 }
 
