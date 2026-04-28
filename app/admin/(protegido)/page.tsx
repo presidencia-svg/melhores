@@ -203,11 +203,11 @@ export default async function AdminDashboard() {
                 </span>
               </div>
             </div>
-            <div className="flex items-end gap-1 h-56">
+            <div className="flex gap-1 h-56">
               {dias14.map((d, i) => {
                 const heightPct = (d.count / maxDia) * 100;
                 return (
-                  <div key={i} className="flex-1 flex flex-col items-stretch group">
+                  <div key={i} className="flex-1 h-full flex flex-col group">
                     <div className="h-5 flex items-end justify-center">
                       <span
                         className={`text-[11px] font-bold tabular-nums leading-none whitespace-nowrap ${
@@ -217,7 +217,7 @@ export default async function AdminDashboard() {
                         {fmt(d.count)}
                       </span>
                     </div>
-                    <div className="flex-1 flex flex-col-reverse">
+                    <div className="flex-1 flex flex-col-reverse min-h-0">
                       <div
                         className="w-full bg-cdl-blue rounded-t transition-all group-hover:bg-cdl-blue-light"
                         style={{ height: `${heightPct}%`, minHeight: d.count > 0 ? 4 : 0 }}
