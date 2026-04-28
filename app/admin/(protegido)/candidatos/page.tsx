@@ -34,18 +34,35 @@ export default async function CandidatosAdminPage() {
       return c !== 0 ? c : a.nome.localeCompare(b.nome, "pt-BR");
     });
 
-  const { data: candidatos } = await supabase
-    .from("candidatos")
-    .select("id, nome, descricao, foto_url, origem, status, sugestoes_count, subcategoria:subcategorias!inner(id, nome, categoria:categorias!inner(nome, edicao_id))")
-    .eq("subcategoria.categoria.edicao_id", edicao.id)
-    .neq("status", "rejeitado")
-    .order("nome");
+  // Pagina manual pra contornar o limite default de 1000 do PostgREST.
+  // Com 1.000+ candidatos, sem isso o admin so via os primeiros 1k.
+  const PAGE_SIZE = 1000;
+  const SELECT_COLS =
+    "id, nome, descricao, foto_url, origem, status, sugestoes_count, subcategoria:subcategorias!inner(id, nome, categoria:categorias!inner(nome, edicao_id))";
+  const candidatos: NonNullable<Awaited<ReturnType<typeof carregar>>> = [];
+  async function carregar(offset: number) {
+    return (
+      await supabase
+        .from("candidatos")
+        .select(SELECT_COLS)
+        .eq("subcategoria.categoria.edicao_id", edicao!.id)
+        .neq("status", "rejeitado")
+        .order("nome")
+        .range(offset, offset + PAGE_SIZE - 1)
+    ).data;
+  }
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const lote = await carregar(offset);
+    if (!lote || lote.length === 0) break;
+    candidatos.push(...lote);
+    if (lote.length < PAGE_SIZE) break;
+  }
 
   return (
     <div className="p-8">
       <header className="mb-6">
         <h1 className="font-display text-3xl font-bold text-cdl-blue">Candidatos</h1>
-        <p className="text-muted mt-1">{(candidatos ?? []).length} candidatos · importe via CSV ou gerencie abaixo</p>
+        <p className="text-muted mt-1">{candidatos.length} candidatos · importe via CSV ou gerencie abaixo</p>
       </header>
 
       <CandidatosManager
@@ -59,7 +76,7 @@ export default async function CandidatosAdminPage() {
 
       <div className="mt-8">
         <CandidatosLista
-          candidatos={(candidatos ?? []) as unknown as Array<{
+          candidatos={candidatos as unknown as Array<{
             id: string;
             nome: string;
             descricao: string | null;
