@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { BarChart3, AlertCircle, Check } from "lucide-react";
+import { BarChart3, AlertCircle, Check, RotateCcw } from "lucide-react";
 
 type Elegivel = {
   votante_id: string;
@@ -14,7 +14,7 @@ type Elegivel = {
 const LOTE_MAX = 50;
 
 export function ParcialSection() {
-  const [loading, setLoading] = useState<"preview" | "disparar" | null>(null);
+  const [loading, setLoading] = useState<"preview" | "disparar" | "reiniciar" | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [elegiveis, setElegiveis] = useState<Elegivel[] | null>(null);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
@@ -23,6 +23,35 @@ export function ParcialSection() {
     falhas: number;
     detalhes_falhas: { nome: string; motivo: string }[];
   } | null>(null);
+  const [reiniciado, setReiniciado] = useState<number | null>(null);
+
+  async function reiniciarFila() {
+    if (
+      !confirm(
+        "Reiniciar a fila? Todos os votantes que já receberam a parcial vão voltar a ficar elegíveis e podem receber outra parcial. Continuar?"
+      )
+    ) {
+      return;
+    }
+    setLoading("reiniciar");
+    setErro(null);
+    setReiniciado(null);
+    try {
+      const res = await fetch("/api/admin/whatsapp/parcial/reiniciar-fila", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Falha");
+      setReiniciado(data.resetados ?? 0);
+      setElegiveis(null);
+      setSelecionados(new Set());
+      setResultado(null);
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Erro inesperado");
+    } finally {
+      setLoading(null);
+    }
+  }
 
   async function calcular() {
     setLoading("preview");
@@ -98,14 +127,36 @@ export function ParcialSection() {
           menos 1 voto registrado e ainda não recebeu a parcial.
         </p>
 
-        <Button onClick={calcular} loading={loading === "preview"} className="mb-4">
-          Calcular elegíveis
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <Button onClick={calcular} loading={loading === "preview"}>
+            Calcular elegíveis
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={reiniciarFila}
+            loading={loading === "reiniciar"}
+            disabled={loading === "preview" || loading === "disparar"}
+            title="Marca todos os votantes como elegíveis novamente (limpa parcial_enviada_em)"
+          >
+            <RotateCcw className="w-4 h-4 mr-1" /> Reiniciar fila
+          </Button>
+        </div>
 
         {erro && (
           <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 mb-3">
             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
             <span>{erro}</span>
+          </div>
+        )}
+
+        {reiniciado !== null && (
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-cdl-blue/10 border border-cdl-blue/30 text-sm text-cdl-blue mb-3">
+            <RotateCcw className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>
+              Fila reiniciada. <strong>{reiniciado}</strong> votante(s) voltam a
+              ficar elegíveis. Clique em &quot;Calcular elegíveis&quot; pra
+              começar a próxima rodada.
+            </span>
           </div>
         )}
 
