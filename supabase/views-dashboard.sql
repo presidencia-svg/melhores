@@ -117,6 +117,7 @@ $$;
 
 -- Elegiveis pra parcial: validados + ja votaram + ainda nao receberam.
 -- EXISTS no Postgres em vez do .in() do PostgREST que trunca em 1000.
+-- Ordem por criado_em asc — quem se cadastrou primeiro recebe primeiro.
 create or replace function elegiveis_parcial()
 returns table (votante_id uuid, votante_nome text, whatsapp text)
 language sql
@@ -128,5 +129,5 @@ as $$
     and v.parcial_enviada_em is null
     and v.whatsapp is not null
     and exists (select 1 from votos where votante_id = v.id)
-  order by v.nome;
+  order by v.criado_em asc;
 $$;
