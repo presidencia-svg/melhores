@@ -454,14 +454,15 @@ function DonutChart({ segments, total }: { segments: { label: string; value: num
   }
   const r = 40;
   const c = 2 * Math.PI * r;
-  let acc = 0;
   return (
     <svg viewBox="0 0 100 100" className="w-32 h-32 mx-auto -rotate-90">
       <circle cx="50" cy="50" r={r} fill="none" stroke="#f1f5f9" strokeWidth="14" />
-      {segments.map((s, i) => {
+      {segments.map((s, i, arr) => {
         const len = (s.value / total) * c;
-        const offset = c - acc;
-        acc += len;
+        // Acumula tamanho dos segmentos anteriores (sem mutar fora do escopo)
+        const offsetBefore = arr
+          .slice(0, i)
+          .reduce((sum, x) => sum + (x.value / total) * c, 0);
         return (
           <circle
             key={i}
@@ -471,8 +472,8 @@ function DonutChart({ segments, total }: { segments: { label: string; value: num
             fill="none"
             stroke={s.color}
             strokeWidth="14"
-            strokeDasharray={`${len} ${c}`}
-            strokeDashoffset={offset}
+            strokeDasharray={`${len} ${c - len}`}
+            strokeDashoffset={-offsetBefore}
             strokeLinecap="butt"
           />
         );
