@@ -115,6 +115,63 @@ as $$
   limit p_limit;
 $$;
 
+-- Resumo do dia em curso (BRT). Retorna 1 linha com 4 contagens.
+create or replace view v_resumo_hoje as
+with hoje as (
+  select (now() at time zone 'America/Sao_Paulo')::date as d
+)
+select
+  (select count(*) from votos, hoje
+    where (criado_em at time zone 'America/Sao_Paulo')::date = hoje.d)::int as votos,
+  (select count(*) from votantes, hoje
+    where (criado_em at time zone 'America/Sao_Paulo')::date = hoje.d)::int as votantes,
+  (select count(*) from whatsapp_codigos, hoje
+    where (criado_em at time zone 'America/Sao_Paulo')::date = hoje.d)::int as otps,
+  (select count(*) from votantes, hoje
+    where parcial_enviada_em is not null
+      and (parcial_enviada_em at time zone 'America/Sao_Paulo')::date = hoje.d)::int as parciais;
+
+-- Votos por hora do dia em curso (BRT). Ate 24 linhas (0-23h).
+create or replace view v_votos_por_hora_hoje as
+select
+  extract(hour from (criado_em at time zone 'America/Sao_Paulo'))::int as hora,
+  count(*)::int as total
+from votos
+where (criado_em at time zone 'America/Sao_Paulo')::date
+    = (now() at time zone 'America/Sao_Paulo')::date
+group by 1
+order by 1;
+
+-- Top 10 subcategorias mais acirradas: menor diferenca entre 1o e 2o lugar.
+-- Ja exclui subcats sem candidatos suficientes ou com 0 votos no topo.
+create or replace view v_subcats_acirradas as
+with ranked as (
+  select
+    subcategoria_id,
+    subcategoria_nome,
+    candidato_nome,
+    total_votos,
+    row_number() over (
+      partition by subcategoria_id order by total_votos desc
+    ) as posicao
+  from v_resultados
+)
+select
+  r1.subcategoria_id,
+  r1.subcategoria_nome,
+  r1.candidato_nome as primeiro_nome,
+  r1.total_votos   as primeiro_votos,
+  r2.candidato_nome as segundo_nome,
+  r2.total_votos   as segundo_votos,
+  (r1.total_votos - r2.total_votos) as diff
+from ranked r1
+join ranked r2 using (subcategoria_id)
+where r1.posicao = 1
+  and r2.posicao = 2
+  and r1.total_votos > 0
+order by diff asc, r1.subcategoria_nome asc
+limit 10;
+
 -- Elegiveis pra parcial: validados + ja votaram + ainda nao receberam.
 -- EXISTS no Postgres em vez do .in() do PostgREST que trunca em 1000.
 -- Ordem por criado_em asc — quem se cadastrou primeiro recebe primeiro.

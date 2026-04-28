@@ -52,6 +52,9 @@ export default async function AdminDashboard() {
     { data: votosPorDia },
     { data: topCandsRaw },
     { data: topCatsRaw },
+    { data: resumoHoje },
+    { data: votosPorHoraHoje },
+    { data: acirradasRaw },
   ] = await Promise.all([
     supabase
       .from("edicao")
@@ -86,6 +89,17 @@ export default async function AdminDashboard() {
       .from("v_resultados_por_categoria")
       .select("categoria_id, categoria_nome, total_votos")
       .limit(5),
+    supabase
+      .from("v_resumo_hoje")
+      .select("votos, votantes, otps, parciais")
+      .maybeSingle(),
+    supabase.from("v_votos_por_hora_hoje").select("hora, total"),
+    supabase
+      .from("v_subcats_acirradas")
+      .select(
+        "subcategoria_id, subcategoria_nome, primeiro_nome, primeiro_votos, segundo_nome, segundo_votos, diff"
+      )
+      .limit(5),
   ]);
 
   // Cálculos derivados
@@ -114,6 +128,36 @@ export default async function AdminDashboard() {
     votos: Number(c.total_votos),
   }));
   const maxCatVotos = Math.max(1, ...topCategorias.map((c) => c.votos));
+
+  // Resumo de hoje (BRT)
+  const hoje = (resumoHoje as { votos?: number; votantes?: number; otps?: number; parciais?: number } | null) ?? {};
+  const hojeVotos = Number(hoje.votos ?? 0);
+  const hojeVotantes = Number(hoje.votantes ?? 0);
+  const hojeOtps = Number(hoje.otps ?? 0);
+  const hojeParciais = Number(hoje.parciais ?? 0);
+
+  // Votos por hora hoje — preenche 0..23 com 0
+  const horasHoje: { hora: number; total: number }[] = Array.from(
+    { length: 24 },
+    (_, h) => ({ hora: h, total: 0 })
+  );
+  for (const r of (votosPorHoraHoje ?? []) as { hora: number; total: number }[]) {
+    const idx = Number(r.hora);
+    if (idx >= 0 && idx < 24) horasHoje[idx]!.total = Number(r.total);
+  }
+  const maxHora = Math.max(1, ...horasHoje.map((h) => h.total));
+
+  // Subcategorias acirradas
+  type AcirradaRow = {
+    subcategoria_id: string;
+    subcategoria_nome: string;
+    primeiro_nome: string;
+    primeiro_votos: number;
+    segundo_nome: string;
+    segundo_votos: number;
+    diff: number;
+  };
+  const acirradas = (acirradasRaw ?? []) as AcirradaRow[];
 
   // Tempo restante
   const agora = Date.now();
@@ -187,6 +231,101 @@ export default async function AdminDashboard() {
         <SmallKpi icon={<Inbox />} label="Sugestões pendentes" value={fmt(sugestoesPendentes ?? 0)} link="/admin/sugestoes" highlight={(sugestoesPendentes ?? 0) > 0} />
         <SmallKpi icon={<Camera />} label="Selfies registradas" value={fmt(selfies ?? 0)} link="/admin/votantes" />
         <SmallKpi icon={<MessageSquare />} label="Telefones coletados" value={fmt(whatsappsValidados ?? 0)} link="/admin/whatsapp" />
+      </div>
+
+      {/* Hoje (BRT) */}
+      <Card className="mb-6">
+        <CardContent>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-lg font-bold text-cdl-blue">Hoje</h2>
+            <span className="text-xs text-muted">snapshot do dia em curso</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <HojeMetric icon={<Vote className="w-4 h-4" />} label="Votos hoje" value={hojeVotos} />
+            <HojeMetric icon={<Users className="w-4 h-4" />} label="Votantes hoje" value={hojeVotantes} />
+            <HojeMetric icon={<Zap className="w-4 h-4" />} label="OTPs hoje" value={hojeOtps} />
+            <HojeMetric icon={<MessageSquare className="w-4 h-4" />} label="Parciais hoje" value={hojeParciais} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Votos por hora hoje + Subcategorias acirradas */}
+      <div className="grid lg:grid-cols-2 gap-4 mb-6">
+        <Card>
+          <CardContent>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg font-bold text-cdl-blue">Votos por hora hoje</h2>
+              <span className="text-xs text-muted">
+                pico {fmt(maxHora)} às {String(horasHoje.findIndex((h) => h.total === maxHora)).padStart(2, "0")}h
+              </span>
+            </div>
+            <div className="flex gap-0.5 h-32">
+              {horasHoje.map((h) => {
+                const pct = (h.total / maxHora) * 100;
+                const isPeak = h.total > 0 && h.total === maxHora;
+                return (
+                  <div key={h.hora} className="flex-1 h-full flex flex-col group">
+                    <div className="flex-1 flex flex-col-reverse min-h-0">
+                      <div
+                        className={`w-full rounded-t transition-colors ${
+                          isPeak ? "bg-cdl-yellow" : "bg-cdl-blue group-hover:bg-cdl-blue-light"
+                        }`}
+                        style={{ height: `${pct}%`, minHeight: h.total > 0 ? 2 : 0 }}
+                        title={`${String(h.hora).padStart(2, "0")}h: ${h.total} votos`}
+                      />
+                    </div>
+                    <span className="text-[9px] text-muted mt-1 text-center font-mono">
+                      {h.hora % 3 === 0 ? String(h.hora).padStart(2, "0") : ""}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-2 text-xs text-muted">
+              {hojeVotos > 0
+                ? `${fmt(hojeVotos)} votos hoje · ${(hojeVotos / 24).toFixed(0)}/h média`
+                : "ainda sem votos hoje"}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg font-bold text-cdl-blue">Subcategorias acirradas</h2>
+              <span className="text-xs text-muted">candidatas a incentivo</span>
+            </div>
+            {acirradas.length === 0 ? (
+              <p className="text-sm text-muted text-center py-8">
+                Sem disputas próximas ainda.
+              </p>
+            ) : (
+              <div className="divide-y divide-border">
+                {acirradas.map((a) => (
+                  <div key={a.subcategoria_id} className="py-2.5 flex items-center gap-2 text-sm">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-cdl-blue truncate">{a.subcategoria_nome}</div>
+                      <div className="text-xs text-muted truncate">
+                        1º <strong className="text-foreground">{a.primeiro_nome}</strong> ({a.primeiro_votos}) · 2º {a.segundo_nome} ({a.segundo_votos})
+                      </div>
+                    </div>
+                    <span
+                      className={`shrink-0 font-mono text-sm font-bold tabular-nums ${
+                        a.diff <= 5
+                          ? "text-rose-600"
+                          : a.diff <= 15
+                            ? "text-amber-600"
+                            : "text-cdl-blue"
+                      }`}
+                    >
+                      {a.diff === 0 ? "=" : `+${a.diff}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4 mb-6">
@@ -406,6 +545,30 @@ function Kpi({
         {hint && <p className="text-xs text-muted mt-1">{hint}</p>}
       </CardContent>
     </Card>
+  );
+}
+
+function HojeMetric({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-xl bg-cdl-blue/10 text-cdl-blue flex items-center justify-center shrink-0">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs text-muted truncate">{label}</p>
+        <p className="font-display text-2xl font-bold text-cdl-blue tabular-nums">
+          {fmt(value)}
+        </p>
+      </div>
+    </div>
   );
 }
 
