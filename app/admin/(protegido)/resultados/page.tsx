@@ -78,7 +78,10 @@ export default async function ResultadosPage() {
                   {g.candidatos.length} candidatos
                 </span>
               </div>
-              <ol className="flex flex-col gap-2">
+              <ol
+                className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1"
+                style={{ scrollbarGutter: "stable" }}
+              >
                 {g.candidatos.map((c, idx) => (
                   <li
                     key={c.candidato_id}
@@ -97,6 +100,11 @@ export default async function ResultadosPage() {
                   </li>
                 ))}
               </ol>
+              {g.candidatos.length > 6 && (
+                <div className="mt-2 text-[11px] text-muted text-center">
+                  ↓ rolar pra ver os {g.candidatos.length - 6} restantes
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
