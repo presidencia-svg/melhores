@@ -46,10 +46,6 @@ function clampDays(input: string | undefined): number {
   return n;
 }
 
-function dayKey(iso: string): string {
-  return iso.slice(0, 10);
-}
-
 export default async function WhatsAppInsightsPage({
   searchParams,
 }: {
@@ -64,20 +60,20 @@ export default async function WhatsAppInsightsPage({
 
   const [
     metaInsights,
-    otpRes,
+    otpResumoRes,
+    votosResumoRes,
     votantesPeriodoRes,
     votantesTotalRes,
     validadosTotalRes,
     parciaisRes,
     incentivosRes,
-    votosRes,
+    votosPorDiaRes,
     resultadosRes,
+    otpPorDiaRes,
   ] = await Promise.all([
     fetchMetaInsights(days),
-    supabase
-      .from("whatsapp_codigos")
-      .select("validado, tentativas, criado_em")
-      .gte("criado_em", cutoff),
+    supabase.rpc("insights_otp_periodo", { dias: days }),
+    supabase.rpc("insights_votos_periodo", { dias: days }),
     supabase
       .from("votantes")
       .select("id", { head: true, count: "exact" })
@@ -89,35 +85,40 @@ export default async function WhatsAppInsightsPage({
       .eq("whatsapp_validado", true),
     supabase
       .from("votantes")
-      .select("parcial_enviada_em")
+      .select("id", { head: true, count: "exact" })
       .not("parcial_enviada_em", "is", null)
       .gte("parcial_enviada_em", cutoff),
     supabase
       .from("votantes")
-      .select("incentivo_enviado_em")
+      .select("id", { head: true, count: "exact" })
       .not("incentivo_enviado_em", "is", null)
       .gte("incentivo_enviado_em", cutoff),
-    supabase.from("votos").select("votante_id, criado_em").gte("criado_em", cutoff),
+    supabase.from("v_votos_por_dia").select("dia, total"),
     supabase
       .from("v_resultados")
       .select("subcategoria_id, subcategoria_nome, candidato_nome, total_votos"),
+    supabase.from("v_otp_por_dia").select("dia, total"),
   ]);
 
-  const otps = otpRes.data ?? [];
-  const otpsTotal = otps.length;
-  const otpsValidados = otps.filter((o) => o.validado).length;
-  const otpsTentativasMedias =
-    otpsTotal > 0 ? otps.reduce((a, o) => a + (o.tentativas ?? 0), 0) / otpsTotal : 0;
+  const otpResumo = (otpResumoRes.data?.[0] ?? null) as
+    | { total: number; validados: number; tentativas_media: number | string }
+    | null;
+  const otpsTotal = Number(otpResumo?.total ?? 0);
+  const otpsValidados = Number(otpResumo?.validados ?? 0);
+  const otpsTentativasMedias = Number(otpResumo?.tentativas_media ?? 0);
+
+  const votosResumo = (votosResumoRes.data?.[0] ?? null) as
+    | { total: number; votantes_unicos: number }
+    | null;
+  const votosTotal = Number(votosResumo?.total ?? 0);
+  const votantesQueVotaram = Number(votosResumo?.votantes_unicos ?? 0);
 
   const votantesPeriodo = votantesPeriodoRes.count ?? 0;
   const votantesTotal = votantesTotalRes.count ?? 0;
   const validadosTotal = validadosTotalRes.count ?? 0;
-  const parciaisEnviadas = parciaisRes.data?.length ?? 0;
-  const incentivosEnviados = incentivosRes.data?.length ?? 0;
+  const parciaisEnviadas = parciaisRes.count ?? 0;
+  const incentivosEnviados = incentivosRes.count ?? 0;
 
-  const votos = votosRes.data ?? [];
-  const votosTotal = votos.length;
-  const votantesQueVotaram = new Set(votos.map((v) => v.votante_id)).size;
   const conversao = pct(votantesQueVotaram, votantesPeriodo);
 
   type Linha = { nome: string; votos: number };
@@ -150,13 +151,13 @@ export default async function WhatsAppInsightsPage({
     const d = new Date(nowMs - i * 86_400_000).toISOString().slice(0, 10);
     seriaPorDia[d] = { otp: 0, votos: 0 };
   }
-  for (const o of otps) {
-    const bucket = seriaPorDia[dayKey(o.criado_em)];
-    if (bucket) bucket.otp += 1;
+  for (const r of votosPorDiaRes.data ?? []) {
+    const bucket = seriaPorDia[r.dia as string];
+    if (bucket) bucket.votos = r.total as number;
   }
-  for (const v of votos) {
-    const bucket = seriaPorDia[dayKey(v.criado_em)];
-    if (bucket) bucket.votos += 1;
+  for (const r of otpPorDiaRes.data ?? []) {
+    const bucket = seriaPorDia[r.dia as string];
+    if (bucket) bucket.otp = r.total as number;
   }
   const serie = Object.entries(seriaPorDia)
     .map(([date, v]) => ({ date, ...v }))
