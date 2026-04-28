@@ -195,25 +195,44 @@ export default async function AdminDashboard() {
           <CardContent>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-lg font-bold text-cdl-blue">Votos por dia</h2>
-              <span className="text-xs text-muted">últimos 14 dias</span>
+              <div className="flex items-center gap-3 text-xs text-muted">
+                <span>últimos 14 dias</span>
+                <span>·</span>
+                <span>
+                  total <strong className="text-cdl-blue">{fmt(dias14.reduce((a, d) => a + d.count, 0))}</strong>
+                </span>
+              </div>
             </div>
-            <div className="flex items-end gap-1 h-40">
-              {dias14.map((d, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
-                  <div className="w-full relative flex flex-col-reverse h-full">
-                    <div
-                      className="w-full bg-cdl-blue rounded-t transition-all group-hover:bg-cdl-blue-light"
-                      style={{ height: `${(d.count / maxDia) * 100}%`, minHeight: d.count > 0 ? 4 : 0 }}
-                      title={`${d.label}: ${d.count} votos`}
-                    />
+            <div className="flex items-end gap-1 h-48">
+              {dias14.map((d, i) => {
+                const heightPct = (d.count / maxDia) * 100;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
+                    <div className="w-full relative flex flex-col-reverse h-full">
+                      <div
+                        className="w-full bg-cdl-blue rounded-t transition-all group-hover:bg-cdl-blue-light relative"
+                        style={{ height: `${heightPct}%`, minHeight: d.count > 0 ? 4 : 0 }}
+                        title={`${d.label}: ${d.count} votos`}
+                      >
+                        {d.count > 0 && (
+                          <span
+                            className={`absolute left-1/2 -translate-x-1/2 text-[10px] font-bold tabular-nums ${
+                              heightPct > 18 ? "bottom-1 text-white" : "-top-4 text-cdl-blue"
+                            }`}
+                          >
+                            {fmt(d.count)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-muted">{d.label.slice(0, 5)}</span>
                   </div>
-                  <span className="text-[10px] text-muted">{d.label.slice(0, 5)}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-3 flex justify-between text-xs text-muted">
               <span>0</span>
-              <span>{fmt(maxDia)}</span>
+              <span>pico {fmt(maxDia)}</span>
             </div>
           </CardContent>
         </Card>
