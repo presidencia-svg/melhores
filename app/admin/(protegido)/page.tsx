@@ -203,29 +203,30 @@ export default async function AdminDashboard() {
                 </span>
               </div>
             </div>
-            <div className="flex items-end gap-1 h-48">
+            <div className="flex items-end gap-1 h-56">
               {dias14.map((d, i) => {
                 const heightPct = (d.count / maxDia) * 100;
                 return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
-                    <div className="w-full relative flex flex-col-reverse h-full">
+                  <div key={i} className="flex-1 flex flex-col items-stretch group">
+                    <div className="h-5 flex items-end justify-center">
+                      <span
+                        className={`text-[11px] font-bold tabular-nums leading-none whitespace-nowrap ${
+                          d.count > 0 ? "text-cdl-blue" : "text-transparent"
+                        }`}
+                      >
+                        {fmt(d.count)}
+                      </span>
+                    </div>
+                    <div className="flex-1 flex flex-col-reverse">
                       <div
-                        className="w-full bg-cdl-blue rounded-t transition-all group-hover:bg-cdl-blue-light relative"
+                        className="w-full bg-cdl-blue rounded-t transition-all group-hover:bg-cdl-blue-light"
                         style={{ height: `${heightPct}%`, minHeight: d.count > 0 ? 4 : 0 }}
                         title={`${d.label}: ${d.count} votos`}
-                      >
-                        {d.count > 0 && (
-                          <span
-                            className={`absolute left-1/2 -translate-x-1/2 text-[10px] font-bold tabular-nums ${
-                              heightPct > 18 ? "bottom-1 text-white" : "-top-4 text-cdl-blue"
-                            }`}
-                          >
-                            {fmt(d.count)}
-                          </span>
-                        )}
-                      </div>
+                      />
                     </div>
-                    <span className="text-[10px] text-muted">{d.label.slice(0, 5)}</span>
+                    <span className="text-[10px] text-muted mt-1 text-center">
+                      {d.label.slice(0, 5)}
+                    </span>
                   </div>
                 );
               })}
