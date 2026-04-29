@@ -18,6 +18,7 @@ const Body = z.object({
   cpf: z.string(),
   nome: z.string().min(2).max(120).optional(),
   fingerprint: z.string().nullable().optional(),
+  privateMode: z.boolean().optional(),
   turnstileToken: z.string().nullable().optional(),
 });
 
@@ -57,6 +58,16 @@ async function handleIdentificar(req: Request) {
   const parsed = Body.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ error: "Requisição inválida" }, { status: 400 });
+  }
+
+  if (parsed.data.privateMode) {
+    return NextResponse.json(
+      {
+        error:
+          "Não é possível votar em janela anônima/privada. Abra uma janela normal do navegador e tente de novo.",
+      },
+      { status: 403 }
+    );
   }
 
   const cpf = onlyDigits(parsed.data.cpf);

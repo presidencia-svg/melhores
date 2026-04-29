@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { formatCpf, isValidCpf, onlyDigits } from "@/lib/cpf";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
+import { isPrivateMode } from "@/lib/private-mode";
 import { Turnstile } from "@/components/voto/Turnstile";
 
 type Etapa = "cpf" | "nome";
@@ -31,10 +32,14 @@ export function CpfForm() {
 
   async function chamarIdentificar(comNome: boolean) {
     const numeros = onlyDigits(cpf);
-    const fingerprint = await getDeviceFingerprint().catch(() => null);
+    const [fingerprint, privateMode] = await Promise.all([
+      getDeviceFingerprint().catch(() => null),
+      isPrivateMode().catch(() => false),
+    ]);
     const body: Record<string, unknown> = {
       cpf: numeros,
       fingerprint,
+      privateMode,
       turnstileToken,
     };
     if (comNome) body.nome = nome.trim();
