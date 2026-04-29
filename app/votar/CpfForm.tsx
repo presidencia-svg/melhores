@@ -72,6 +72,11 @@ export function CpfForm() {
         }
         return;
       }
+      // CPF ja existe + whatsapp_validado → fluxo de retorno (OTP no celular cadastrado)
+      if (data.retorno) {
+        router.push("/votar/retornar");
+        return;
+      }
       router.push("/votar/selfie");
     } catch {
       setError("Erro de conexão. Verifique sua internet e tente novamente.");

@@ -3,8 +3,8 @@ import { z } from "zod";
 import { hashCpf, isValidCpf, onlyDigits } from "@/lib/cpf";
 import { consultarCpfSpc } from "@/lib/spc/client";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { setPreCadastro } from "@/lib/sessao";
-import { getClientIp } from "@/lib/utils";
+import { clearPreCadastro, clearVotanteSessao, setPreCadastro, setPreRetorno } from "@/lib/sessao";
+import { getClientIp, mascararWhatsapp } from "@/lib/utils";
 import { verifyTurnstile } from "@/lib/turnstile";
 
 const Body = z.object({
@@ -120,19 +120,35 @@ async function handleIdentificar(req: Request) {
 
   const cpfHash = hashCpf(cpf);
 
-  // Já votou nessa edição?
+  // Ja votou nessa edicao? Se sim, abre fluxo de retorno (votar nas
+  // subcategorias que ainda faltam, OTP no celular cadastrado).
   const { data: existente } = await supabase
     .from("votantes")
-    .select("id, selfie_url")
+    .select("id, whatsapp, whatsapp_validado, selfie_url")
     .eq("edicao_id", edicao.id)
     .eq("cpf_hash", cpfHash)
     .maybeSingle();
 
   if (existente) {
-    return NextResponse.json(
-      { error: "Este CPF já participou da votação." },
-      { status: 409 }
-    );
+    if (!existente.whatsapp_validado || !existente.whatsapp) {
+      return NextResponse.json(
+        {
+          error:
+            "Cadastro incompleto. Você se cadastrou mas não confirmou o WhatsApp. Contate o suporte.",
+        },
+        { status: 409 }
+      );
+    }
+    // Abre fluxo de retorno: cookie pre-retorno (so id), limpa qualquer
+    // sessao/pre-cadastro de fluxos antigos pra nao confundir.
+    await clearVotanteSessao();
+    await clearPreCadastro();
+    await setPreRetorno(existente.id);
+    return NextResponse.json({
+      ok: true,
+      retorno: true,
+      whatsapp_masked: mascararWhatsapp(existente.whatsapp),
+    });
   }
 
   // Limite por dispositivo (máx 2 CPFs por fingerprint)
