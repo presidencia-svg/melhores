@@ -56,15 +56,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Candidato inválido" }, { status: 400 });
   }
 
-  // Upsert voto (1 por votante/subcategoria)
+  // INSERT puro, sem upsert — voto é definitivo. Se ja existe linha pra
+  // (votante_id, subcategoria_id), o unique constraint do banco impede
+  // duplicacao e o erro vira 409. Nao permite trocar voto ja registrado.
   const { error } = await supabase
     .from("votos")
-    .upsert(
-      { votante_id: sessao.id, subcategoria_id: subcategoriaId, candidato_id: candidatoId, ip },
-      { onConflict: "votante_id,subcategoria_id" }
-    );
+    .insert({ votante_id: sessao.id, subcategoria_id: subcategoriaId, candidato_id: candidatoId, ip });
 
   if (error) {
+    // Postgres '23505' = unique_violation
+    const isDuplicate =
+      (error as { code?: string }).code === "23505" ||
+      /duplicate key|unique constraint/i.test(error.message);
+    if (isDuplicate) {
+      return NextResponse.json(
+        { error: "Você já votou nesta categoria. O voto não pode ser alterado." },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: "Falha ao registrar voto" }, { status: 500 });
   }
 

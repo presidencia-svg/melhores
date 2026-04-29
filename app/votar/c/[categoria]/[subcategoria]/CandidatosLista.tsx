@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Search, Plus, Check } from "lucide-react";
+import { Plus, Check, Lock } from "lucide-react";
 
 type Candidato = {
   id: string;
@@ -22,11 +23,17 @@ type Props = {
 export function CandidatosLista({ subcategoriaId, candidatos, votoAtual }: Props) {
   const router = useRouter();
   const [busca, setBusca] = useState("");
-  const [selecionado, setSelecionado] = useState<string | null>(votoAtual);
+  const [selecionado, setSelecionado] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSugestao, setShowSugestao] = useState(false);
   const [novoNome, setNovoNome] = useState("");
+
+  // Se ja votou nessa subcategoria, voto e DEFINITIVO — nao deixa trocar.
+  const jaVotou = votoAtual !== null;
+  const candidatoVotado = jaVotou
+    ? candidatos.find((c) => c.id === votoAtual)
+    : null;
 
   const filtrados = useMemo(() => {
     if (!busca) return candidatos;
@@ -94,6 +101,36 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual }: Props
       setError("Erro ao sugerir. Tente novamente.");
       setSubmitting(false);
     }
+  }
+
+  if (jaVotou) {
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="rounded-xl border-2 border-cdl-blue/30 bg-cdl-blue/5 p-5 flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-cdl-blue/10 flex items-center justify-center shrink-0">
+            <Lock className="w-5 h-5 text-cdl-blue" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs uppercase tracking-wider font-semibold text-cdl-blue mb-1">
+              Voto registrado
+            </p>
+            <p className="text-base font-display-bold text-navy-800">
+              {candidatoVotado?.nome ?? "Candidato"}
+            </p>
+            <p className="text-xs text-muted mt-2">
+              Você já votou nesta categoria. O voto é definitivo e não pode ser
+              alterado.
+            </p>
+          </div>
+        </div>
+
+        <Link href={`/votar/categorias#sub-${subcategoriaId}`}>
+          <Button variant="ghost" className="w-full">
+            Voltar para outras categorias
+          </Button>
+        </Link>
+      </div>
+    );
   }
 
   return (
