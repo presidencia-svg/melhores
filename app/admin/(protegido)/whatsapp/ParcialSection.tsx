@@ -1,17 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { BarChart3, AlertCircle, Check, RotateCcw } from "lucide-react";
+import { BarChart3, AlertCircle, Check, RotateCcw, Users, Send, Inbox, Clock } from "lucide-react";
 
 type Elegivel = {
   votante_id: string;
   votante_nome: string;
   whatsapp: string;
+  criado_em?: string;
+  votos_count?: number;
+};
+
+type Stats = {
+  total: number;
+  ja_receberam: number;
+  na_fila: number;
+  enviadas_hoje: number;
+  ultima_enviada: string | null;
 };
 
 const LOTE_MAX = 50;
+
+function formatDateTime(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export function ParcialSection() {
   const [loading, setLoading] = useState<"preview" | "disparar" | "reiniciar" | null>(null);
@@ -24,6 +45,30 @@ export function ParcialSection() {
     detalhes_falhas: { nome: string; motivo: string }[];
   } | null>(null);
   const [reiniciado, setReiniciado] = useState<number | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
+
+  const carregarStats = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/whatsapp/parcial/stats", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setStats({
+          total: data.total ?? 0,
+          ja_receberam: data.ja_receberam ?? 0,
+          na_fila: data.na_fila ?? 0,
+          enviadas_hoje: data.enviadas_hoje ?? 0,
+          ultima_enviada: data.ultima_enviada ?? null,
+        });
+      }
+    } catch {
+      // silencioso — stats nao bloqueia operacao
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on mount
+    carregarStats();
+  }, [carregarStats]);
 
   async function reiniciarFila() {
     if (
@@ -46,6 +91,7 @@ export function ParcialSection() {
       setElegiveis(null);
       setSelecionados(new Set());
       setResultado(null);
+      carregarStats();
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro inesperado");
     } finally {
@@ -98,6 +144,7 @@ export function ParcialSection() {
       });
       setElegiveis(null);
       setSelecionados(new Set());
+      carregarStats();
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro inesperado");
     } finally {
@@ -126,6 +173,40 @@ export function ParcialSection() {
           que cada votante votou. Só envia para quem tem WhatsApp validado, ao
           menos 1 voto registrado e ainda não recebeu a parcial.
         </p>
+
+        {stats && (
+          <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard
+              icon={<Users className="w-4 h-4" />}
+              label="Total elegíveis"
+              value={stats.total}
+              hint="validados + com voto"
+            />
+            <StatCard
+              icon={<Check className="w-4 h-4 text-emerald-600" />}
+              label="Já receberam"
+              value={stats.ja_receberam}
+              hint={stats.total > 0 ? `${Math.round((stats.ja_receberam / stats.total) * 100)}%` : ""}
+            />
+            <StatCard
+              icon={<Inbox className="w-4 h-4 text-amber-600" />}
+              label="Faltam receber"
+              value={stats.na_fila}
+              hint={stats.total > 0 ? `${Math.round((stats.na_fila / stats.total) * 100)}%` : ""}
+              highlight={stats.na_fila > 0}
+            />
+            <StatCard
+              icon={<Send className="w-4 h-4 text-cdl-blue" />}
+              label="Enviadas hoje"
+              value={stats.enviadas_hoje}
+              hint={
+                stats.ultima_enviada
+                  ? `última: ${formatDateTime(stats.ultima_enviada)}`
+                  : "nenhuma ainda"
+              }
+            />
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-2 mb-4">
           <Button onClick={calcular} loading={loading === "preview"}>
@@ -228,7 +309,22 @@ export function ParcialSection() {
                       <span className="font-medium text-sm truncate block">
                         {e.votante_nome}
                       </span>
-                      <span className="text-xs text-muted">{e.whatsapp}</span>
+                      <span className="text-xs text-muted block truncate">
+                        {e.whatsapp}
+                      </span>
+                    </div>
+                    <div className="text-right text-xs text-muted shrink-0 flex flex-col items-end gap-0.5">
+                      {typeof e.votos_count === "number" && (
+                        <span className="font-bold text-cdl-blue tabular-nums">
+                          {e.votos_count} {e.votos_count === 1 ? "voto" : "votos"}
+                        </span>
+                      )}
+                      {e.criado_em && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDateTime(e.criado_em)}
+                        </span>
+                      )}
                     </div>
                   </label>
                 );
@@ -250,5 +346,38 @@ export function ParcialSection() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  hint,
+  highlight,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  hint?: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-xl border p-3 ${
+        highlight
+          ? "bg-amber-50 border-amber-200"
+          : "bg-cream-100 border-[rgba(10,42,94,0.12)]"
+      }`}
+    >
+      <div className="flex items-center gap-1.5 text-xs text-muted mb-0.5">
+        {icon}
+        <span className="truncate">{label}</span>
+      </div>
+      <div className="font-display text-2xl font-bold text-cdl-blue tabular-nums leading-none">
+        {value.toLocaleString("pt-BR")}
+      </div>
+      {hint && <div className="text-[11px] text-muted mt-1 truncate">{hint}</div>}
+    </div>
   );
 }

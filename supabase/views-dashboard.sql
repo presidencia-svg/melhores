@@ -172,15 +172,47 @@ where r1.posicao = 1
 order by diff asc, r1.subcategoria_nome asc
 limit 10;
 
+-- Estatisticas da fila de parciais — base = validados com whatsapp e voto.
+-- Retorna 1 linha com total, ja_receberam, na_fila, enviadas_hoje, ultima.
+create or replace view v_parcial_stats as
+with base as (
+  select v.id, v.parcial_enviada_em
+  from votantes v
+  where v.whatsapp_validado = true
+    and v.whatsapp is not null
+    and exists (select 1 from votos where votante_id = v.id)
+)
+select
+  (select count(*) from base)::int                                              as total,
+  (select count(*) from base where parcial_enviada_em is not null)::int         as ja_receberam,
+  (select count(*) from base where parcial_enviada_em is null)::int             as na_fila,
+  (select count(*) from votantes
+    where parcial_enviada_em is not null
+      and (parcial_enviada_em at time zone 'America/Sao_Paulo')::date
+        = (now() at time zone 'America/Sao_Paulo')::date)::int                  as enviadas_hoje,
+  (select max(parcial_enviada_em) from votantes)::timestamptz                   as ultima_enviada;
+
 -- Elegiveis pra parcial: validados + ja votaram + ainda nao receberam.
 -- EXISTS no Postgres em vez do .in() do PostgREST que trunca em 1000.
 -- Ordem por criado_em asc — quem se cadastrou primeiro recebe primeiro.
+-- Inclui criado_em e votos_count pra UI mostrar mais contexto.
 create or replace function elegiveis_parcial()
-returns table (votante_id uuid, votante_nome text, whatsapp text)
+returns table (
+  votante_id uuid,
+  votante_nome text,
+  whatsapp text,
+  criado_em timestamptz,
+  votos_count bigint
+)
 language sql
 stable
 as $$
-  select v.id, v.nome, v.whatsapp
+  select
+    v.id,
+    v.nome,
+    v.whatsapp,
+    v.criado_em,
+    (select count(*) from votos where votante_id = v.id)::bigint as votos_count
   from votantes v
   where v.whatsapp_validado = true
     and v.parcial_enviada_em is null
