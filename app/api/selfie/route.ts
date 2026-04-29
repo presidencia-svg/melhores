@@ -11,7 +11,7 @@ import { getClientIp } from "@/lib/utils";
 
 const Body = z.object({ image: z.string().startsWith("data:image/") });
 const BUCKET = "selfies";
-const MAX_CPFS_POR_DISPOSITIVO = 5;
+const MAX_CPFS_POR_DISPOSITIVO = 2;
 
 export async function POST(req: Request) {
   // Caminho A: votante já existe (retomada). Caminho B: vem do pre-cadastro.
