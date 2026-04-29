@@ -3,7 +3,14 @@ import { z } from "zod";
 import { hashCpf, isValidCpf, onlyDigits } from "@/lib/cpf";
 import { consultarCpfSpc } from "@/lib/spc/client";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { clearPreCadastro, clearVotanteSessao, setPreCadastro, setPreRetorno } from "@/lib/sessao";
+import {
+  clearPreCadastro,
+  clearPreRetorno,
+  clearVotanteSessao,
+  setPreCadastro,
+  setPreRetorno,
+  setVotanteSessao,
+} from "@/lib/sessao";
 import { getClientIp, mascararWhatsapp } from "@/lib/utils";
 import { verifyTurnstile } from "@/lib/turnstile";
 
@@ -130,14 +137,14 @@ async function handleIdentificar(req: Request) {
     .maybeSingle();
 
   if (existente) {
+    // Cadastro incompleto (sem whatsapp validado). Em vez de bloquear, deixa
+    // o votante completar agora: abre a sessao dele e o frontend manda pra
+    // tela de confirmacao do WhatsApp.
     if (!existente.whatsapp_validado || !existente.whatsapp) {
-      return NextResponse.json(
-        {
-          error:
-            "Cadastro incompleto. Você se cadastrou mas não confirmou o WhatsApp. Contate o suporte.",
-        },
-        { status: 409 }
-      );
+      await clearPreCadastro();
+      await clearPreRetorno();
+      await setVotanteSessao(existente.id);
+      return NextResponse.json({ ok: true, completarCadastro: true });
     }
     // Abre fluxo de retorno: cookie pre-retorno (so id), limpa qualquer
     // sessao/pre-cadastro de fluxos antigos pra nao confundir.

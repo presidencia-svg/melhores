@@ -14,7 +14,13 @@ function formatPhone(value: string): string {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
-export function WhatsAppForm({ whatsappAtual }: { whatsappAtual: string | null }) {
+export function WhatsAppForm({
+  whatsappAtual,
+  redirectAfter = "/votar/obrigado",
+}: {
+  whatsappAtual: string | null;
+  redirectAfter?: string;
+}) {
   const router = useRouter();
   const [etapa, setEtapa] = useState<Etapa>("telefone");
   const [phone, setPhone] = useState(whatsappAtual ? formatPhone(whatsappAtual) : "");
@@ -71,7 +77,7 @@ export function WhatsAppForm({ whatsappAtual }: { whatsappAtual: string | null }
         setLoading(false);
         return;
       }
-      router.push("/votar/obrigado");
+      router.push(redirectAfter);
     } catch {
       setError("Erro de conexão. Tente novamente.");
       setLoading(false);

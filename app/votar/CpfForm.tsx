@@ -90,6 +90,12 @@ export function CpfForm() {
         return;
       }
 
+      // CPF ja existe mas WhatsApp nao foi validado → completa o cadastro
+      if (data.completarCadastro) {
+        router.push("/votar/completar");
+        return;
+      }
+
       // Sem SPC e sem nome → revela campo de nome pra usuario preencher
       if (data.needName) {
         setEtapa("nome");
