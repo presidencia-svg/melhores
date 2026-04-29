@@ -2,7 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Trophy, Medal, Search, X } from "lucide-react";
+import {
+  Trophy,
+  Medal,
+  Search,
+  X,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 
 type Resultado = {
   candidato_id: string;
@@ -41,6 +48,8 @@ export function ResultadosFiltrados({ grupos }: { grupos: Grupo[] }) {
     "todos" | "empates" | "acirradas"
   >("todos");
   const [semVotos, setSemVotos] = useState(false);
+  const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
+  const [colapsadas, setColapsadas] = useState<Set<string>>(new Set());
 
   const categorias = useMemo(() => {
     const set = new Set(grupos.map((g) => g.categoria));
@@ -77,11 +86,42 @@ export function ResultadosFiltrados({ grupos }: { grupos: Grupo[] }) {
     });
   }, [grupos, busca, categoria, filtroDisputa, semVotos]);
 
+  const porCategoria = useMemo(() => {
+    const map = new Map<string, Grupo[]>();
+    for (const g of filtrados) {
+      if (!map.has(g.categoria)) map.set(g.categoria, []);
+      map.get(g.categoria)!.push(g);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) =>
+      a.localeCompare(b, "pt-BR")
+    );
+  }, [filtrados]);
+
   const limpar = () => {
     setBusca("");
     setCategoria("todas");
     setFiltroDisputa("todos");
     setSemVotos(false);
+    setExpandidas(new Set());
+    setColapsadas(new Set());
+  };
+
+  const toggleCard = (key: string) => {
+    setExpandidas((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleCategoria = (cat: string) => {
+    setColapsadas((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
   };
 
   const ativos =
@@ -92,7 +132,7 @@ export function ResultadosFiltrados({ grupos }: { grupos: Grupo[] }) {
 
   return (
     <>
-      <div className="mb-6 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+      <div className="mb-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input
@@ -149,67 +189,170 @@ export function ResultadosFiltrados({ grupos }: { grupos: Grupo[] }) {
         )}
       </div>
 
-      <p className="text-xs text-muted mb-4">
-        Mostrando <strong>{filtrados.length}</strong> de {grupos.length}{" "}
-        subcategorias
-      </p>
+      <div className="mb-4 flex items-center justify-between text-xs text-muted">
+        <p>
+          <strong>{filtrados.length}</strong> de {grupos.length} subcategorias ·{" "}
+          <strong>{porCategoria.length}</strong>{" "}
+          {porCategoria.length === 1 ? "categoria" : "categorias"}
+        </p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setExpandidas(new Set(filtrados.map((g) => `${g.categoria}|${g.subcategoria}`)))}
+            className="hover:text-navy-800"
+          >
+            expandir tudo
+          </button>
+          <span>·</span>
+          <button
+            onClick={() => setExpandidas(new Set())}
+            className="hover:text-navy-800"
+          >
+            recolher tudo
+          </button>
+        </div>
+      </div>
 
-      <div className="grid lg:grid-cols-2 gap-4">
-        {filtrados.map((g) => (
-          <Card key={`${g.categoria}|${g.subcategoria}`}>
-            <CardContent>
-              <div className="mb-3 pb-3 border-b border-border flex items-baseline justify-between gap-2">
-                <div>
-                  <p className="text-xs uppercase font-semibold tracking-wider text-cdl-green">
-                    {g.categoria}
-                  </p>
-                  <h3 className="font-display text-lg font-bold text-cdl-blue">
-                    Melhor {g.subcategoria.toLowerCase()}
-                  </h3>
-                </div>
-                <span className="text-xs text-muted shrink-0">
-                  {g.candidatos.length} candidatos
-                </span>
-              </div>
-              <ol
-                className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1"
-                style={{ scrollbarGutter: "stable" }}
+      <div className="flex flex-col gap-4">
+        {porCategoria.map(([cat, gruposDaCat]) => {
+          const colapsada = colapsadas.has(cat);
+          return (
+            <section key={cat}>
+              <button
+                onClick={() => toggleCategoria(cat)}
+                className="w-full flex items-center gap-2 mb-2 px-1 py-1 rounded hover:bg-cream-100 group"
               >
-                {g.candidatos.map((c, idx) => (
-                  <li
-                    key={c.candidato_id}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
-                      idx === 0 && c.total_votos > 0
-                        ? "bg-cdl-yellow/15 border border-cdl-yellow/30"
-                        : ""
-                    }`}
-                  >
-                    <span className="w-6 text-center font-bold text-muted">
-                      {idx === 0 && c.total_votos > 0 ? (
-                        <Trophy className="w-4 h-4 text-cdl-yellow-dark inline" />
-                      ) : idx === 1 && c.total_votos > 0 ? (
-                        <Medal className="w-4 h-4 text-zinc-400 inline" />
-                      ) : (
-                        idx + 1
-                      )}
-                    </span>
-                    <span className="flex-1 text-sm font-medium truncate">
-                      {c.candidato_nome}
-                    </span>
-                    {c.origem === "sugerido" && (
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-cdl-blue/10 text-cdl-blue">
-                        sugerido
-                      </span>
-                    )}
-                    <span className="font-bold text-cdl-blue tabular-nums">
-                      {c.total_votos}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </CardContent>
-          </Card>
-        ))}
+                {colapsada ? (
+                  <ChevronRight className="w-4 h-4 text-muted" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted" />
+                )}
+                <h2 className="font-display-bold text-cdl-green text-sm uppercase tracking-wider">
+                  {cat}
+                </h2>
+                <span className="text-xs text-muted">
+                  ({gruposDaCat.length}{" "}
+                  {gruposDaCat.length === 1 ? "subcategoria" : "subcategorias"})
+                </span>
+              </button>
+
+              {!colapsada && (
+                <div className="grid lg:grid-cols-2 gap-3">
+                  {gruposDaCat.map((g) => {
+                    const key = `${g.categoria}|${g.subcategoria}`;
+                    const expandida = expandidas.has(key);
+                    const lider = g.candidatos[0];
+                    const segundo = g.candidatos[1];
+                    const diff =
+                      lider && segundo
+                        ? lider.total_votos - segundo.total_votos
+                        : null;
+                    const empate =
+                      diff === 0 && lider && lider.total_votos > 0;
+                    const totalVotos = g.candidatos.reduce(
+                      (s, c) => s + c.total_votos,
+                      0
+                    );
+
+                    return (
+                      <Card key={key}>
+                        <CardContent className="!p-3">
+                          <button
+                            onClick={() => toggleCard(key)}
+                            className="w-full flex items-start gap-2 text-left"
+                          >
+                            {expandida ? (
+                              <ChevronDown className="w-4 h-4 text-muted shrink-0 mt-1" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 text-muted shrink-0 mt-1" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-display text-sm font-bold text-cdl-blue truncate">
+                                Melhor {g.subcategoria.toLowerCase()}
+                              </h3>
+                              {lider && lider.total_votos > 0 ? (
+                                <div className="mt-1 flex items-center gap-2 text-sm">
+                                  <Trophy className="w-3.5 h-3.5 text-cdl-yellow-dark shrink-0" />
+                                  <span className="font-medium text-navy-800 truncate">
+                                    {lider.candidato_nome}
+                                  </span>
+                                  <span className="font-bold text-cdl-blue tabular-nums shrink-0">
+                                    {lider.total_votos}
+                                  </span>
+                                  {segundo && (
+                                    <span
+                                      className={`text-xs shrink-0 ${
+                                        empate
+                                          ? "text-red-600 font-semibold"
+                                          : diff !== null && diff <= 5
+                                            ? "text-orange-600"
+                                            : "text-muted"
+                                      }`}
+                                    >
+                                      {empate
+                                        ? "empate"
+                                        : `+${diff}`}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="mt-1 text-xs text-muted">
+                                  sem votos · {g.candidatos.length} candidatos
+                                </p>
+                              )}
+                              <p className="text-[11px] text-muted mt-1">
+                                {g.candidatos.length} candidatos · {totalVotos}{" "}
+                                {totalVotos === 1 ? "voto" : "votos"}
+                              </p>
+                            </div>
+                          </button>
+
+                          {expandida && (
+                            <ol
+                              className="mt-3 pt-3 border-t border-border flex flex-col gap-1.5 max-h-[280px] overflow-y-auto pr-1"
+                              style={{ scrollbarGutter: "stable" }}
+                            >
+                              {g.candidatos.map((c, idx) => (
+                                <li
+                                  key={c.candidato_id}
+                                  className={`flex items-center gap-2 px-2 py-1.5 rounded ${
+                                    idx === 0 && c.total_votos > 0
+                                      ? "bg-cdl-yellow/15"
+                                      : ""
+                                  }`}
+                                >
+                                  <span className="w-5 text-center text-xs font-bold text-muted">
+                                    {idx === 0 && c.total_votos > 0 ? (
+                                      <Trophy className="w-3.5 h-3.5 text-cdl-yellow-dark inline" />
+                                    ) : idx === 1 && c.total_votos > 0 ? (
+                                      <Medal className="w-3.5 h-3.5 text-zinc-400 inline" />
+                                    ) : (
+                                      idx + 1
+                                    )}
+                                  </span>
+                                  <span className="flex-1 text-xs font-medium truncate">
+                                    {c.candidato_nome}
+                                  </span>
+                                  {c.origem === "sugerido" && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-cdl-blue/10 text-cdl-blue">
+                                      sugerido
+                                    </span>
+                                  )}
+                                  <span className="text-xs font-bold text-cdl-blue tabular-nums">
+                                    {c.total_votos}
+                                  </span>
+                                </li>
+                              ))}
+                            </ol>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          );
+        })}
       </div>
 
       {filtrados.length === 0 && (
