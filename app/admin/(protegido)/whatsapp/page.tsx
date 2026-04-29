@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Download, MessageSquare } from "lucide-react";
 import { IncentivoSection } from "./IncentivoSection";
+import { AutoIncentivoSection } from "./AutoIncentivoSection";
 import { ParcialSection } from "./ParcialSection";
 import { StatusBanner } from "./StatusBanner";
 
@@ -60,6 +61,7 @@ export default async function WhatsAppPage() {
       </Card>
 
       <StatusBanner />
+      <AutoIncentivoSection />
       <IncentivoSection />
       <ParcialSection />
     </div>

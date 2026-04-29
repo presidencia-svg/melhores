@@ -5,6 +5,16 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { enviarMensagemTexto, verificarStatus } from "@/lib/zapi/client";
 import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 import { enviarTemplate, metaConfigurada } from "@/lib/meta-whatsapp/client";
+import {
+  Elegivel,
+  calcularDias,
+  diferencaParaTemplate,
+  formatDias,
+  formatVotosMil,
+  montarMensagem,
+  montarSms,
+  primeiroNomeDe,
+} from "@/lib/incentivo/messages";
 
 const META_TEMPLATE_INCENTIVO =
   process.env.META_TEMPLATE_INCENTIVO ?? "incentivo_voto_2025";
@@ -19,75 +29,6 @@ const Body = z.object({
   cooldown: z.number().int().min(0).max(1440).default(30),
   votante_ids: z.array(z.string().uuid()).optional(),
 });
-
-type Elegivel = {
-  votante_id: string;
-  votante_nome: string;
-  whatsapp: string;
-  categoria_nome: string;
-  subcategoria_id: string;
-  subcategoria_nome: string;
-  candidato_perdendo_id: string;
-  candidato_perdendo_nome: string;
-  candidato_perdendo_votos: number;
-  candidato_lider_nome: string;
-  candidato_lider_votos: number;
-  diferenca: number;
-};
-
-// "18324" -> "19 mil"; "523" -> "523"; "1000" -> "1 mil".
-// Arredonda PRA CIMA pro proximo milhar (excedente vira mil cheio).
-function formatVotosMil(total: number): string {
-  if (total <= 0) return "0";
-  if (total < 1000) return total.toLocaleString("pt-BR");
-  return `${Math.ceil(total / 1000).toLocaleString("pt-BR")} mil`;
-}
-
-// Dias completos desde inicio_votacao. Min 1.
-function calcularDias(inicio: string | null | undefined): number {
-  if (!inicio) return 1;
-  const ms = Date.now() - new Date(inicio).getTime();
-  return Math.max(1, Math.floor(ms / 86_400_000));
-}
-
-function formatDias(dias: number): string {
-  return dias === 1 ? "1 dia" : `${dias} dias`;
-}
-
-function montarMensagem(
-  e: Elegivel,
-  votosFmt: string,
-  diasFmt: string
-): string {
-  const primeiroNome = (e.votante_nome.split(" ")[0] ?? "").trim() || "amigo(a)";
-  const empate = e.diferenca === 0;
-  const diff = e.diferenca === 1 ? "1 voto" : `${e.diferenca} votos`;
-  const linhaDisputa = empate
-    ? `A disputa está empatada com ${e.candidato_lider_nome}.`
-    : `${e.candidato_lider_nome} está na frente por só ${diff}.`;
-
-  return [
-    `🏆 Oi, ${primeiroNome}!`,
-    "",
-    `Os Melhores do Ano CDL Aracaju 2025 já passaram de ${votosFmt} votos em ${diasFmt} — obrigado pela sua participação!`,
-    "",
-    `Você votou em ${e.candidato_perdendo_nome} para Melhor ${e.subcategoria_nome}. ${linhaDisputa}`,
-    "",
-    `Compartilhe o link com seus contatos e ajude quem você votou:`,
-    `🌐 https://votar.cdlaju.com.br`,
-    "",
-    `Cada voto faz diferença!`,
-  ].join("\n");
-}
-
-// Versão curta sem acento, dentro de ~155 chars (1 segmento de SMS)
-function montarSms(e: Elegivel, votosFmt: string, diasFmt: string): string {
-  const primeiroNome = (e.votante_nome.split(" ")[0] ?? "").trim() || "amigo";
-  const trecho = e.diferenca === 0
-    ? `votacao empatada`
-    : `disputa apertada por ${e.diferenca} ${e.diferenca === 1 ? "voto" : "votos"}`;
-  return `Ola ${primeiroNome}! ${votosFmt} votos em ${diasFmt}. Voce votou em ${e.candidato_perdendo_nome} (${e.subcategoria_nome}). ${trecho}. Compartilhe: votar.cdlaju.com.br`;
-}
 
 export async function POST(req: Request) {
   if (!(await isAdmin())) {
@@ -176,21 +117,14 @@ export async function POST(req: Request) {
   const falhas: { votante_id: string; nome: string; motivo: string }[] = [];
 
   for (const e of finalAlvos) {
-    const primeiroNome = (e.votante_nome.split(" ")[0] ?? "").trim() || "amigo(a)";
-    const diff =
-      e.diferenca === 0
-        ? "(empatado)"
-        : e.diferenca === 1
-          ? "1 voto"
-          : `${e.diferenca} votos`;
     let r;
     if (canal === "meta") {
       r = await enviarTemplate(e.whatsapp, META_TEMPLATE_INCENTIVO, META_TEMPLATE_LANG, [
-        primeiroNome,
+        primeiroNomeDe(e.votante_nome),
         e.candidato_perdendo_nome,
         e.subcategoria_nome,
         e.candidato_lider_nome,
-        diff,
+        diferencaParaTemplate(e.diferenca),
         votosFmt,
         diasFmt,
       ]);
@@ -201,10 +135,19 @@ export async function POST(req: Request) {
     }
     if (r.ok) {
       enviados += 1;
-      await supabase
-        .from("votantes")
-        .update({ incentivo_enviado_em: new Date().toISOString() })
-        .eq("id", e.votante_id);
+      const agora = new Date().toISOString();
+      await Promise.all([
+        supabase
+          .from("votantes")
+          .update({ incentivo_enviado_em: agora })
+          .eq("id", e.votante_id),
+        supabase.from("incentivo_envios_log").insert({
+          votante_id: e.votante_id,
+          subcategoria_id: e.subcategoria_id,
+          motivo: "manual",
+          canal,
+        }),
+      ]);
     } else {
       falhas.push({
         votante_id: e.votante_id,
