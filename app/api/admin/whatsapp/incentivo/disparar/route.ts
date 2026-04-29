@@ -35,7 +35,30 @@ type Elegivel = {
   diferenca: number;
 };
 
-function montarMensagem(e: Elegivel): string {
+// "18324" -> "19 mil"; "523" -> "523"; "1000" -> "1 mil".
+// Arredonda PRA CIMA pro proximo milhar (excedente vira mil cheio).
+function formatVotosMil(total: number): string {
+  if (total <= 0) return "0";
+  if (total < 1000) return total.toLocaleString("pt-BR");
+  return `${Math.ceil(total / 1000).toLocaleString("pt-BR")} mil`;
+}
+
+// Dias completos desde inicio_votacao. Min 1.
+function calcularDias(inicio: string | null | undefined): number {
+  if (!inicio) return 1;
+  const ms = Date.now() - new Date(inicio).getTime();
+  return Math.max(1, Math.floor(ms / 86_400_000));
+}
+
+function formatDias(dias: number): string {
+  return dias === 1 ? "1 dia" : `${dias} dias`;
+}
+
+function montarMensagem(
+  e: Elegivel,
+  votosFmt: string,
+  diasFmt: string
+): string {
   const primeiroNome = (e.votante_nome.split(" ")[0] ?? "").trim() || "amigo(a)";
   const empate = e.diferenca === 0;
   const diff = e.diferenca === 1 ? "1 voto" : `${e.diferenca} votos`;
@@ -46,7 +69,7 @@ function montarMensagem(e: Elegivel): string {
   return [
     `🏆 Oi, ${primeiroNome}!`,
     "",
-    `Os Melhores do Ano CDL Aracaju 2025 já passaram de 5 mil votos em apenas 3 horas — obrigado pela sua participação!`,
+    `Os Melhores do Ano CDL Aracaju 2025 já passaram de ${votosFmt} votos em ${diasFmt} — obrigado pela sua participação!`,
     "",
     `Você votou em ${e.candidato_perdendo_nome} para Melhor ${e.subcategoria_nome}. ${linhaDisputa}`,
     "",
@@ -58,12 +81,12 @@ function montarMensagem(e: Elegivel): string {
 }
 
 // Versão curta sem acento, dentro de ~155 chars (1 segmento de SMS)
-function montarSms(e: Elegivel): string {
+function montarSms(e: Elegivel, votosFmt: string, diasFmt: string): string {
   const primeiroNome = (e.votante_nome.split(" ")[0] ?? "").trim() || "amigo";
   const trecho = e.diferenca === 0
     ? `votacao empatada`
     : `disputa apertada por ${e.diferenca} ${e.diferenca === 1 ? "voto" : "votos"}`;
-  return `Ola ${primeiroNome}! Voce votou em ${e.candidato_perdendo_nome} (${e.subcategoria_nome}). ${trecho}. Compartilhe: votar.cdlaju.com.br`;
+  return `Ola ${primeiroNome}! ${votosFmt} votos em ${diasFmt}. Voce votou em ${e.candidato_perdendo_nome} (${e.subcategoria_nome}). ${trecho}. Compartilhe: votar.cdlaju.com.br`;
 }
 
 export async function POST(req: Request) {
@@ -78,16 +101,33 @@ export async function POST(req: Request) {
   }
 
   const supabase = createSupabaseAdminClient();
-  const { data: elegiveis, error } = await supabase.rpc("incentivo_elegives", {
-    p_threshold: parsed.data.threshold,
-    p_min_minutos_apos_voto: parsed.data.cooldown,
-  });
+  const [
+    { data: elegiveis, error },
+    { count: totalVotos },
+    { data: edicao },
+  ] = await Promise.all([
+    supabase.rpc("incentivo_elegives", {
+      p_threshold: parsed.data.threshold,
+      p_min_minutos_apos_voto: parsed.data.cooldown,
+    }),
+    supabase.from("votos").select("*", { head: true, count: "exact" }),
+    supabase
+      .from("edicao")
+      .select("inicio_votacao")
+      .eq("ativa", true)
+      .order("ano", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
   if (error) {
     return NextResponse.json(
       { error: `Falha ao buscar elegíveis: ${error.message}` },
       { status: 500 }
     );
   }
+
+  const votosFmt = formatVotosMil(totalVotos ?? 0);
+  const diasFmt = formatDias(calcularDias(edicao?.inicio_votacao));
 
   const lista = (elegiveis ?? []) as Elegivel[];
   const filtroIds = parsed.data.votante_ids;
@@ -151,11 +191,13 @@ export async function POST(req: Request) {
         e.subcategoria_nome,
         e.candidato_lider_nome,
         diff,
+        votosFmt,
+        diasFmt,
       ]);
     } else if (canal === "zapi") {
-      r = await enviarMensagemTexto(e.whatsapp, montarMensagem(e));
+      r = await enviarMensagemTexto(e.whatsapp, montarMensagem(e, votosFmt, diasFmt));
     } else {
-      r = await enviarSmsZenvia(e.whatsapp, montarSms(e));
+      r = await enviarSmsZenvia(e.whatsapp, montarSms(e, votosFmt, diasFmt));
     }
     if (r.ok) {
       enviados += 1;
