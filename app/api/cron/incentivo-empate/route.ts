@@ -6,7 +6,6 @@ import { enviarTemplate, metaConfigurada } from "@/lib/meta-whatsapp/client";
 import {
   Elegivel,
   calcularDias,
-  diferencaParaTemplate,
   formatDias,
   formatVotosMil,
   montarMensagem,
@@ -16,8 +15,8 @@ import {
 
 export const maxDuration = 300;
 
-const META_TEMPLATE_INCENTIVO =
-  process.env.META_TEMPLATE_INCENTIVO ?? "incentivo_voto_2025";
+const META_TEMPLATE_INCENTIVO_EMPATE =
+  process.env.META_TEMPLATE_INCENTIVO_EMPATE ?? "incentivo_empate_2025";
 const META_TEMPLATE_LANG = process.env.META_TEMPLATE_LANG ?? "pt_BR";
 
 // Limites do disparo automatico
@@ -168,16 +167,16 @@ async function handle(req: Request) {
   for (const e of alvos) {
     let r;
     if (canal === "meta") {
+      // Cron so dispara em empate puro — usa template de empate (6 vars)
       r = await enviarTemplate(
         e.whatsapp,
-        META_TEMPLATE_INCENTIVO,
+        META_TEMPLATE_INCENTIVO_EMPATE,
         META_TEMPLATE_LANG,
         [
           primeiroNomeDe(e.votante_nome),
           e.candidato_perdendo_nome,
           e.subcategoria_nome,
           e.candidato_lider_nome,
-          diferencaParaTemplate(e.diferenca),
           votosFmt,
           diasFmt,
         ]

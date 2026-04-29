@@ -36,17 +36,31 @@ export function montarMensagem(
 ): string {
   const primeiroNome = (e.votante_nome.split(" ")[0] ?? "").trim() || "amigo(a)";
   const empate = e.diferenca === 0;
-  const diff = e.diferenca === 1 ? "1 voto" : `${e.diferenca} votos`;
-  const linhaDisputa = empate
-    ? `A disputa está empatada com ${e.candidato_lider_nome}.`
-    : `${e.candidato_lider_nome} está na frente por só ${diff}.`;
 
+  if (empate) {
+    return [
+      `🚨 EMPATE TÉCNICO, ${primeiroNome}!`,
+      "",
+      `A votação dos Melhores do Ano CDL Aracaju 2025 está NA RETA FINAL e já passou de ${votosFmt} votos em ${diasFmt}.`,
+      "",
+      `⚖️ Seu voto em *${e.candidato_perdendo_nome}* para Melhor ${e.subcategoria_nome} está EMPATADO com *${e.candidato_lider_nome}*.`,
+      "",
+      `Cada voto agora pode definir o vencedor.`,
+      "",
+      `Compartilhe esta votação com 3 amigos AGORA pra desempatar:`,
+      `🌐 https://votar.cdlaju.com.br`,
+      "",
+      `A disputa está nas suas mãos. 🏆`,
+    ].join("\n");
+  }
+
+  const diff = e.diferenca === 1 ? "1 voto" : `${e.diferenca} votos`;
   return [
     `🏆 Oi, ${primeiroNome}!`,
     "",
     `Os Melhores do Ano CDL Aracaju 2025 já passaram de ${votosFmt} votos em ${diasFmt} — obrigado pela sua participação!`,
     "",
-    `Você votou em ${e.candidato_perdendo_nome} para Melhor ${e.subcategoria_nome}. ${linhaDisputa}`,
+    `Você votou em ${e.candidato_perdendo_nome} para Melhor ${e.subcategoria_nome}. ${e.candidato_lider_nome} está na frente por só ${diff}.`,
     "",
     `Compartilhe o link com seus contatos e ajude quem você votou:`,
     `🌐 https://votar.cdlaju.com.br`,
@@ -57,10 +71,10 @@ export function montarMensagem(
 
 export function montarSms(e: Elegivel, votosFmt: string, diasFmt: string): string {
   const primeiroNome = (e.votante_nome.split(" ")[0] ?? "").trim() || "amigo";
-  const trecho =
-    e.diferenca === 0
-      ? `votacao empatada`
-      : `disputa apertada por ${e.diferenca} ${e.diferenca === 1 ? "voto" : "votos"}`;
+  if (e.diferenca === 0) {
+    return `EMPATE! ${primeiroNome}, seu voto em ${e.candidato_perdendo_nome} (${e.subcategoria_nome}) esta EMPATADO. Compartilhe pra desempatar: votar.cdlaju.com.br`;
+  }
+  const trecho = `disputa apertada por ${e.diferenca} ${e.diferenca === 1 ? "voto" : "votos"}`;
   return `Ola ${primeiroNome}! ${votosFmt} votos em ${diasFmt}. Voce votou em ${e.candidato_perdendo_nome} (${e.subcategoria_nome}). ${trecho}. Compartilhe: votar.cdlaju.com.br`;
 }
 

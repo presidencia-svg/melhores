@@ -18,6 +18,8 @@ import {
 
 const META_TEMPLATE_INCENTIVO =
   process.env.META_TEMPLATE_INCENTIVO ?? "incentivo_voto_2025";
+const META_TEMPLATE_INCENTIVO_EMPATE =
+  process.env.META_TEMPLATE_INCENTIVO_EMPATE ?? "incentivo_empate_2025";
 const META_TEMPLATE_LANG = process.env.META_TEMPLATE_LANG ?? "pt_BR";
 
 // Pacing 2-5s significa ~50 envios em ~5min (limite do Vercel Pro).
@@ -119,15 +121,33 @@ export async function POST(req: Request) {
   for (const e of finalAlvos) {
     let r;
     if (canal === "meta") {
-      r = await enviarTemplate(e.whatsapp, META_TEMPLATE_INCENTIVO, META_TEMPLATE_LANG, [
-        primeiroNomeDe(e.votante_nome),
-        e.candidato_perdendo_nome,
-        e.subcategoria_nome,
-        e.candidato_lider_nome,
-        diferencaParaTemplate(e.diferenca),
-        votosFmt,
-        diasFmt,
-      ]);
+      // Empate usa template proprio (6 vars, sem "diferenca"). Caso normal
+      // continua no template padrao (7 vars).
+      if (e.diferenca === 0) {
+        r = await enviarTemplate(
+          e.whatsapp,
+          META_TEMPLATE_INCENTIVO_EMPATE,
+          META_TEMPLATE_LANG,
+          [
+            primeiroNomeDe(e.votante_nome),
+            e.candidato_perdendo_nome,
+            e.subcategoria_nome,
+            e.candidato_lider_nome,
+            votosFmt,
+            diasFmt,
+          ]
+        );
+      } else {
+        r = await enviarTemplate(e.whatsapp, META_TEMPLATE_INCENTIVO, META_TEMPLATE_LANG, [
+          primeiroNomeDe(e.votante_nome),
+          e.candidato_perdendo_nome,
+          e.subcategoria_nome,
+          e.candidato_lider_nome,
+          diferencaParaTemplate(e.diferenca),
+          votosFmt,
+          diasFmt,
+        ]);
+      }
     } else if (canal === "zapi") {
       r = await enviarMensagemTexto(e.whatsapp, montarMensagem(e, votosFmt, diasFmt));
     } else {
