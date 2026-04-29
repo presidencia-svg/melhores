@@ -24,6 +24,22 @@ const Body = z.object({
 
 const MAX_CPFS_POR_DISPOSITIVO = 2;
 
+function deveConsultarSPC(): boolean {
+  const rate = parseFloat(process.env.SPC_SAMPLE_RATE ?? "0");
+  if (isNaN(rate) || rate <= 0) return false;
+  if (rate >= 1) return true;
+  return Math.random() < rate;
+}
+
+function normalizarNome(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
 export async function POST(req: Request) {
   try {
     return await handleIdentificar(req);
@@ -172,41 +188,57 @@ async function handleIdentificar(req: Request) {
     }
   }
 
-  // SPC obrigatorio pra todo novo cadastro. CPF que nao existe na base do
-  // SPC e bloqueado — bloqueia o uso de CPFs gerados por sites de fake.
-  const lookup = await consultarCpfSpc(cpf);
+  const nomeAutodeclarado = parsed.data.nome?.trim() ?? "";
 
-  if (!lookup.ok) {
-    if (lookup.motivo === "nao_encontrado") {
-      return NextResponse.json(
-        {
-          error:
-            "CPF não localizado na base oficial do SPC. Confira os números e tente novamente.",
-        },
-        { status: 403 }
-      );
+  // Decide se este votante entra no sample SPC (auditoria)
+  const consultarSpc = deveConsultarSPC();
+  let nomeFinal: string | null = null;
+  let spcValidado = false;
+  let source: "spc" | "autodeclarado" = "autodeclarado";
+
+  if (consultarSpc) {
+    const lookup = await consultarCpfSpc(cpf);
+    if (lookup.ok) {
+      nomeFinal = lookup.nome;
+      spcValidado = true;
+      source = "spc";
+      // Se o usuario tambem digitou nome, registra divergencia mas nao bloqueia
+      if (nomeAutodeclarado) {
+        const a = normalizarNome(lookup.nome);
+        const b = normalizarNome(nomeAutodeclarado);
+        const primeiroNomeA = a.split(" ")[0] ?? "";
+        const primeiroNomeB = b.split(" ")[0] ?? "";
+        if (primeiroNomeA && primeiroNomeB && primeiroNomeA !== primeiroNomeB) {
+          console.warn("[identificar] SPC mismatch:", {
+            autodeclarado: nomeAutodeclarado,
+            spc: lookup.nome,
+          });
+        }
+      }
+    } else {
+      console.warn("[identificar] SPC falhou no sample:", lookup.motivo);
     }
-    console.error("[identificar] SPC erro tecnico:", lookup.motivo, lookup.detalhe);
-    return NextResponse.json(
-      {
-        error:
-          "Verificação no SPC indisponível no momento. Tente novamente em alguns minutos.",
-      },
-      { status: 503 }
-    );
   }
 
-  const nomeFinal = lookup.nome;
+  // Se nao foi pra SPC e nao temos nome autodeclarado, pede o nome ao usuario.
+  // Nao persiste pre-cadastro — frontend faz nova chamada com cpf + nome.
+  if (!nomeFinal && !nomeAutodeclarado) {
+    return NextResponse.json({ ok: true, needName: true });
+  }
+
+  // Caso contrario, persiste o pre-cadastro com o melhor nome disponivel
+  // (SPC > autodeclarado).
+  const nomePreCadastro = nomeFinal ?? nomeAutodeclarado;
   void userAgent; // ip/userAgent são lidos novamente no momento da selfie
   await setPreCadastro({
     edicao_id: edicao.id,
     cpf,
     cpf_hash: cpfHash,
-    nome: nomeFinal,
-    nome_autodeclarado: nomeFinal,
-    spc_validado: true,
+    nome: nomePreCadastro,
+    nome_autodeclarado: nomeAutodeclarado || nomePreCadastro,
+    spc_validado: spcValidado,
     fingerprint,
   });
 
-  return NextResponse.json({ ok: true, nome: nomeFinal, source: "spc" });
+  return NextResponse.json({ ok: true, nome: nomePreCadastro, source });
 }

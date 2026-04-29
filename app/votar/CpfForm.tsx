@@ -10,9 +10,13 @@ import { getDeviceFingerprint } from "@/lib/fingerprint";
 import { isPrivateMode } from "@/lib/private-mode";
 import { Turnstile } from "@/components/voto/Turnstile";
 
+type Etapa = "cpf" | "nome";
+
 export function CpfForm() {
   const router = useRouter();
+  const [etapa, setEtapa] = useState<Etapa>("cpf");
   const [cpf, setCpf] = useState("");
+  const [nome, setNome] = useState("");
   const [aceitou, setAceitou] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [error, setError] = useState<string>();
@@ -26,7 +30,7 @@ export function CpfForm() {
     if (error) setError(undefined);
   }
 
-  async function chamarIdentificar() {
+  async function chamarIdentificar(comNome: boolean) {
     const numeros = onlyDigits(cpf);
     const [fingerprint, privateMode] = await Promise.all([
       getDeviceFingerprint().catch(() => null),
@@ -38,6 +42,7 @@ export function CpfForm() {
       privateMode,
       turnstileToken,
     };
+    if (comNome) body.nome = nome.trim();
 
     const res = await fetch("/api/identificar", {
       method: "POST",
@@ -67,9 +72,14 @@ export function CpfForm() {
       return;
     }
 
+    if (etapa === "nome" && nome.trim().length < 2) {
+      setError("Informe seu nome.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const { res, data } = await chamarIdentificar();
+      const { res, data } = await chamarIdentificar(etapa === "nome");
       if (!res.ok) {
         setError(data.error ?? "Não foi possível continuar. Tente novamente.");
         if (typeof window !== "undefined" && window.__turnstileReset) {
@@ -91,7 +101,18 @@ export function CpfForm() {
         return;
       }
 
-      // Pre-cadastro salvo com nome do SPC → selfie
+      // Sem SPC e sem nome → revela campo de nome pra usuario preencher
+      if (data.needName) {
+        setEtapa("nome");
+        // reseta turnstile pra proxima chamada com nome
+        if (typeof window !== "undefined" && window.__turnstileReset) {
+          window.__turnstileReset();
+          setTurnstileToken(null);
+        }
+        return;
+      }
+
+      // Pre-cadastro salvo (SPC trouxe nome OU usuario digitou nome) → selfie
       router.push("/votar/selfie");
     } catch {
       setError("Erro de conexão. Verifique sua internet e tente novamente.");
@@ -110,9 +131,28 @@ export function CpfForm() {
         value={cpf}
         onChange={(e) => handleCpfChange(e.target.value)}
         autoComplete="off"
-        autoFocus
+        autoFocus={etapa === "cpf"}
         maxLength={14}
+        disabled={etapa === "nome"}
       />
+
+      {etapa === "nome" && (
+        <>
+          <p className="text-xs text-muted -mt-1">
+            Não conseguimos validar seu CPF na base oficial. Informe seu nome
+            completo pra continuar.
+          </p>
+          <Input
+            label="Nome completo"
+            name="nome"
+            placeholder="Como você se chama?"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            autoComplete="name"
+            autoFocus
+          />
+        </>
+      )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
