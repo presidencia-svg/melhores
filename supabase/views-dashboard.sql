@@ -172,6 +172,17 @@ where r1.posicao = 1
 order by diff asc, r1.subcategoria_nome asc
 limit 10;
 
+-- Estatisticas acumuladas do incentivo (ja_receberam = lifetime).
+create or replace view v_incentivo_stats as
+select
+  (select count(*) from votantes
+    where incentivo_enviado_em is not null)::int                              as ja_receberam,
+  (select count(*) from votantes
+    where incentivo_enviado_em is not null
+      and (incentivo_enviado_em at time zone 'America/Sao_Paulo')::date
+        = (now() at time zone 'America/Sao_Paulo')::date)::int                as enviadas_hoje,
+  (select max(incentivo_enviado_em) from votantes)::timestamptz                as ultima_enviada;
+
 -- Estatisticas da fila de parciais — base = validados com whatsapp e voto.
 -- Retorna 1 linha com total, ja_receberam, na_fila, enviadas_hoje, ultima.
 create or replace view v_parcial_stats as

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Send, AlertCircle, Check } from "lucide-react";
+import { Send, AlertCircle, Check, Inbox, Clock } from "lucide-react";
 
 type Elegivel = {
   votante_id: string;
@@ -21,6 +21,23 @@ type Elegivel = {
   diferenca: number;
 };
 
+type Stats = {
+  ja_receberam: number;
+  enviadas_hoje: number;
+  ultima_enviada: string | null;
+};
+
+function formatDateTime(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function IncentivoSection() {
   const [threshold, setThreshold] = useState(5);
   const [cooldown, setCooldown] = useState(30);
@@ -34,6 +51,28 @@ export function IncentivoSection() {
     detalhes_falhas: { nome: string; motivo: string }[];
     restantes: number;
   } | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
+
+  const carregarStats = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/whatsapp/incentivo/stats", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setStats({
+          ja_receberam: data.ja_receberam ?? 0,
+          enviadas_hoje: data.enviadas_hoje ?? 0,
+          ultima_enviada: data.ultima_enviada ?? null,
+        });
+      }
+    } catch {
+      // silencioso — stats nao bloqueia operacao
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on mount
+    carregarStats();
+  }, [carregarStats]);
 
   async function calcular() {
     setLoading("preview");
@@ -81,6 +120,7 @@ export function IncentivoSection() {
       });
       setElegiveis(null);
       setSelecionados(new Set());
+      carregarStats();
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro inesperado");
     } finally {
@@ -120,6 +160,38 @@ export function IncentivoSection() {
           em subcategorias acirradas. 1 mensagem por pessoa, registrada para não
           repetir.
         </p>
+
+        {stats && (
+          <div className="mb-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="rounded-xl border border-[rgba(10,42,94,0.12)] bg-cream-100 p-3">
+              <div className="flex items-center gap-1.5 text-xs text-muted mb-0.5">
+                <Inbox className="w-4 h-4 text-cdl-blue" />
+                <span>Já receberam (acumulado)</span>
+              </div>
+              <div className="font-display text-2xl font-bold text-cdl-blue tabular-nums leading-none">
+                {stats.ja_receberam.toLocaleString("pt-BR")}
+              </div>
+            </div>
+            <div className="rounded-xl border border-[rgba(10,42,94,0.12)] bg-cream-100 p-3">
+              <div className="flex items-center gap-1.5 text-xs text-muted mb-0.5">
+                <Send className="w-4 h-4 text-cdl-green" />
+                <span>Enviadas hoje</span>
+              </div>
+              <div className="font-display text-2xl font-bold text-cdl-blue tabular-nums leading-none">
+                {stats.enviadas_hoje.toLocaleString("pt-BR")}
+              </div>
+            </div>
+            <div className="rounded-xl border border-[rgba(10,42,94,0.12)] bg-cream-100 p-3">
+              <div className="flex items-center gap-1.5 text-xs text-muted mb-0.5">
+                <Clock className="w-4 h-4 text-cdl-blue" />
+                <span>Última enviada</span>
+              </div>
+              <div className="font-display text-base font-bold text-cdl-blue tabular-nums leading-none mt-1">
+                {stats.ultima_enviada ? formatDateTime(stats.ultima_enviada) : "—"}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-end gap-3 mb-4 flex-wrap">
           <div className="flex-1 max-w-[200px]">
@@ -169,7 +241,7 @@ export function IncentivoSection() {
               {resultado.restantes > 0 && (
                 <div className="text-xs mt-1 text-amber-700">
                   ⚠ Limitado a 50 por disparo (pacing 2-5s). Sobraram{" "}
-                  <strong>{resultado.restantes}</strong> — clique em "Calcular elegíveis" e dispare de novo pra essas.
+                  <strong>{resultado.restantes}</strong> — clique em &quot;Calcular elegíveis&quot; e dispare de novo pra essas.
                 </div>
               )}
               {resultado.detalhes_falhas.length > 0 && (
