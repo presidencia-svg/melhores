@@ -3,7 +3,7 @@ import Link from "next/link";
 import { VotoLayout } from "@/components/voto/VotoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Check, ChevronRight } from "lucide-react";
+import { ChevronRight, Lock } from "lucide-react";
 import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { SmallCaps, Divider } from "@/components/brand/Marks";
@@ -93,6 +93,30 @@ export default async function CategoriasPage() {
                   <div className="border-t border-[rgba(10,42,94,0.08)] divide-y divide-[rgba(10,42,94,0.06)]">
                     {subs.map((sub) => {
                       const done = votadas.has(sub.id);
+                      if (done) {
+                        // Bloqueado — voto definitivo, nao da pra abrir mais
+                        return (
+                          <div
+                            key={sub.id}
+                            id={`sub-${sub.id}`}
+                            className="flex items-center gap-3 sm:gap-4 px-5 sm:px-7 py-3.5 sm:py-3 bg-navy-800/[0.03] cursor-not-allowed select-none min-h-[52px] scroll-mt-32"
+                            title="Voto definitivo. Não é possível alterar."
+                          >
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 bg-navy-800/15 text-navy-800/60">
+                              <Lock className="w-3 h-3" />
+                            </div>
+                            <div className="flex-1 font-medium text-navy-800/55 line-through decoration-navy-800/30">
+                              {sub.nome}
+                            </div>
+                            <span
+                              className="kicker text-navy-800/40"
+                              style={{ fontSize: 9 }}
+                            >
+                              voto registrado
+                            </span>
+                          </div>
+                        );
+                      }
                       return (
                         <Link
                           key={sub.id}
@@ -100,14 +124,8 @@ export default async function CategoriasPage() {
                           href={`/votar/c/${cat.slug}/${sub.slug}`}
                           className="flex items-center gap-3 sm:gap-4 px-5 sm:px-7 py-3.5 sm:py-3 hover:bg-cream-200 active:bg-cream-200 transition-colors group min-h-[52px] scroll-mt-32"
                         >
-                          <div
-                            className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                              done
-                                ? "bg-green-600 text-cream-100"
-                                : "border border-[rgba(10,42,94,0.2)] text-navy-800/30"
-                            }`}
-                          >
-                            {done && <Check className="w-3.5 h-3.5" />}
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 border border-[rgba(10,42,94,0.2)] text-navy-800/30">
+                            {/* circulo vazio — ainda pode votar */}
                           </div>
                           <div className="flex-1 font-medium text-foreground group-hover:text-navy-800">
                             {sub.nome}
@@ -116,7 +134,7 @@ export default async function CategoriasPage() {
                             className="kicker text-navy-800/50"
                             style={{ fontSize: 9 }}
                           >
-                            {done ? "votado" : "votar"}
+                            votar
                           </span>
                           <ChevronRight className="w-4 h-4 text-navy-800/40" />
                         </Link>

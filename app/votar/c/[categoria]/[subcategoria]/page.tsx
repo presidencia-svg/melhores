@@ -59,6 +59,12 @@ export default async function VotarSubcategoriaPage({ params }: Params) {
     .eq("subcategoria_id", subcategoria.id)
     .maybeSingle();
 
+  // Voto e definitivo: se ja votou nessa subcategoria, redireciona pra
+  // listagem. Bloqueia acesso direto pela URL tambem.
+  if (votoExistente) {
+    redirect(`/votar/categorias#sub-${subcategoria.id}`);
+  }
+
   return (
     <VotoLayout step={3}>
       <div className="mx-auto max-w-2xl w-full pt-4 sm:pt-8 animate-fade-in">
@@ -91,7 +97,7 @@ export default async function VotarSubcategoriaPage({ params }: Params) {
             <CandidatosLista
               subcategoriaId={subcategoria.id}
               candidatos={candidatos ?? []}
-              votoAtual={votoExistente?.candidato_id ?? null}
+              votoAtual={null}
             />
           </CardContent>
         </Card>
