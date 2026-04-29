@@ -9,10 +9,13 @@ import { formatCpf, isValidCpf, onlyDigits } from "@/lib/cpf";
 import { getDeviceFingerprint } from "@/lib/fingerprint";
 import { Turnstile } from "@/components/voto/Turnstile";
 
+type Etapa = "cpf" | "nome";
+
 export function CpfForm() {
   const router = useRouter();
-  const [nome, setNome] = useState("");
+  const [etapa, setEtapa] = useState<Etapa>("cpf");
   const [cpf, setCpf] = useState("");
+  const [nome, setNome] = useState("");
   const [aceitou, setAceitou] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [error, setError] = useState<string>();
@@ -26,14 +29,27 @@ export function CpfForm() {
     if (error) setError(undefined);
   }
 
+  async function chamarIdentificar(comNome: boolean) {
+    const numeros = onlyDigits(cpf);
+    const fingerprint = await getDeviceFingerprint().catch(() => null);
+    const body: Record<string, unknown> = {
+      cpf: numeros,
+      fingerprint,
+      turnstileToken,
+    };
+    if (comNome) body.nome = nome.trim();
+
+    const res = await fetch("/api/identificar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return { res, data: await res.json() };
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(undefined);
-
-    if (nome.trim().length < 2) {
-      setError("Informe seu nome.");
-      return;
-    }
 
     const numeros = onlyDigits(cpf);
     if (!isValidCpf(numeros)) {
@@ -51,32 +67,41 @@ export function CpfForm() {
       return;
     }
 
+    if (etapa === "nome" && nome.trim().length < 2) {
+      setError("Informe seu nome.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const fingerprint = await getDeviceFingerprint().catch(() => null);
-      const res = await fetch("/api/identificar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cpf: numeros,
-          nome: nome.trim(),
-          fingerprint,
-          turnstileToken,
-        }),
-      });
-      const data = await res.json();
+      const { res, data } = await chamarIdentificar(etapa === "nome");
       if (!res.ok) {
         setError(data.error ?? "Não foi possível continuar. Tente novamente.");
         if (typeof window !== "undefined" && window.__turnstileReset) {
           window.__turnstileReset();
+          setTurnstileToken(null);
         }
         return;
       }
-      // CPF ja existe + whatsapp_validado → fluxo de retorno (OTP no celular cadastrado)
+
+      // CPF ja existe + whatsapp_validado → fluxo de retorno
       if (data.retorno) {
         router.push("/votar/retornar");
         return;
       }
+
+      // Sem SPC e sem nome → revela campo de nome pra usuario preencher
+      if (data.needName) {
+        setEtapa("nome");
+        // reseta turnstile pra proxima chamada com nome
+        if (typeof window !== "undefined" && window.__turnstileReset) {
+          window.__turnstileReset();
+          setTurnstileToken(null);
+        }
+        return;
+      }
+
+      // Pre-cadastro salvo (SPC trouxe nome OU usuario digitou nome) → selfie
       router.push("/votar/selfie");
     } catch {
       setError("Erro de conexão. Verifique sua internet e tente novamente.");
@@ -88,16 +113,6 @@ export function CpfForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Input
-        label="Nome completo"
-        name="nome"
-        placeholder="Como você se chama?"
-        value={nome}
-        onChange={(e) => setNome(e.target.value)}
-        autoComplete="name"
-        autoFocus
-      />
-
-      <Input
         label="CPF"
         name="cpf"
         inputMode="numeric"
@@ -105,9 +120,30 @@ export function CpfForm() {
         value={cpf}
         onChange={(e) => handleCpfChange(e.target.value)}
         autoComplete="off"
-        error={error}
+        autoFocus={etapa === "cpf"}
         maxLength={14}
+        disabled={etapa === "nome"}
       />
+
+      {etapa === "nome" && (
+        <>
+          <p className="text-xs text-muted -mt-1">
+            Não conseguimos validar seu CPF na base oficial. Informe seu nome
+            completo pra continuar.
+          </p>
+          <Input
+            label="Nome completo"
+            name="nome"
+            placeholder="Como você se chama?"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            autoComplete="name"
+            autoFocus
+          />
+        </>
+      )}
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       <Turnstile onToken={setTurnstileToken} onExpired={() => setTurnstileToken(null)} />
 

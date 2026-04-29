@@ -9,7 +9,7 @@ import { verifyTurnstile } from "@/lib/turnstile";
 
 const Body = z.object({
   cpf: z.string(),
-  nome: z.string().min(2).max(120),
+  nome: z.string().min(2).max(120).optional(),
   fingerprint: z.string().nullable().optional(),
   turnstileToken: z.string().nullable().optional(),
 });
@@ -170,48 +170,57 @@ async function handleIdentificar(req: Request) {
     }
   }
 
-  const nomeAutodeclarado = parsed.data.nome.trim();
+  const nomeAutodeclarado = parsed.data.nome?.trim() ?? "";
 
   // Decide se este votante entra no sample SPC (auditoria)
   const consultarSpc = deveConsultarSPC();
-  let nomeFinal = nomeAutodeclarado;
+  let nomeFinal: string | null = null;
   let spcValidado = false;
+  let source: "spc" | "autodeclarado" = "autodeclarado";
 
   if (consultarSpc) {
     const lookup = await consultarCpfSpc(cpf);
     if (lookup.ok) {
-      // Se o nome SPC bater minimamente com o autodeclarado, valida.
-      // (Se não bater, ainda permite passar — sample é só auditorial, não bloqueante.)
       nomeFinal = lookup.nome;
       spcValidado = true;
-      const a = normalizarNome(lookup.nome);
-      const b = normalizarNome(nomeAutodeclarado);
-      const primeiroNomeA = a.split(" ")[0] ?? "";
-      const primeiroNomeB = b.split(" ")[0] ?? "";
-      if (primeiroNomeA && primeiroNomeB && primeiroNomeA !== primeiroNomeB) {
-        console.warn(
-          "[identificar] SPC mismatch:",
-          { autodeclarado: nomeAutodeclarado, spc: lookup.nome }
-        );
+      source = "spc";
+      // Se o usuario tambem digitou nome, registra divergencia mas nao bloqueia
+      if (nomeAutodeclarado) {
+        const a = normalizarNome(lookup.nome);
+        const b = normalizarNome(nomeAutodeclarado);
+        const primeiroNomeA = a.split(" ")[0] ?? "";
+        const primeiroNomeB = b.split(" ")[0] ?? "";
+        if (primeiroNomeA && primeiroNomeB && primeiroNomeA !== primeiroNomeB) {
+          console.warn("[identificar] SPC mismatch:", {
+            autodeclarado: nomeAutodeclarado,
+            spc: lookup.nome,
+          });
+        }
       }
     } else {
-      // Falha SPC não bloqueia — apenas registra como não validado
       console.warn("[identificar] SPC falhou no sample:", lookup.motivo);
     }
   }
 
-  // Não persiste o votante ainda — só após a selfie ser validada (em /api/selfie).
-  // Guarda os dados num cookie httpOnly de curta duração.
+  // Se nao foi pra SPC e nao temos nome autodeclarado, pede o nome ao usuario.
+  // Nao persiste pre-cadastro — frontend faz nova chamada com cpf + nome.
+  if (!nomeFinal && !nomeAutodeclarado) {
+    return NextResponse.json({ ok: true, needName: true });
+  }
+
+  // Caso contrario, persiste o pre-cadastro com o melhor nome disponivel
+  // (SPC > autodeclarado).
+  const nomePreCadastro = nomeFinal ?? nomeAutodeclarado;
   void userAgent; // ip/userAgent são lidos novamente no momento da selfie
   await setPreCadastro({
     edicao_id: edicao.id,
     cpf,
     cpf_hash: cpfHash,
-    nome: nomeFinal,
-    nome_autodeclarado: nomeAutodeclarado,
+    nome: nomePreCadastro,
+    nome_autodeclarado: nomeAutodeclarado || nomePreCadastro,
     spc_validado: spcValidado,
     fingerprint,
   });
 
-  return NextResponse.json({ ok: true, nome: nomeFinal });
+  return NextResponse.json({ ok: true, nome: nomePreCadastro, source });
 }
