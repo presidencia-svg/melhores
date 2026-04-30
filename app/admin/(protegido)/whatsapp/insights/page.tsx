@@ -5,13 +5,17 @@ import { fetchMetaInsights } from "@/lib/meta-whatsapp/insights";
 import {
   AlertTriangle,
   CheckCircle2,
+  Flame,
+  Gauge,
   MessageSquare,
   Send,
+  Smartphone,
   TrendingUp,
   Trophy,
   Users,
   Vote,
   XCircle,
+  Zap,
 } from "lucide-react";
 
 const PERIODOS = [7, 14, 30, 60, 90] as const;
@@ -30,6 +34,30 @@ const CATEGORY_LABEL: Record<string, string> = {
   UNKNOWN: "—",
 };
 
+const CANAL_LABEL: Record<string, string> = {
+  meta: "Meta API",
+  zapi: "Z-API",
+  sms: "SMS (Zenvia)",
+  desconhecido: "—",
+};
+
+const MOTIVO_LABEL: Record<string, string> = {
+  manual: "Manual",
+  auto_empate: "Auto (empate)",
+};
+
+const ORIGEM_LABEL: Record<string, string> = {
+  ios: "iPhone/iPad",
+  android: "Android",
+  mac: "Mac",
+  windows: "Windows",
+  linux: "Linux",
+  outro: "Outro",
+  desconhecido: "Não informado",
+};
+
+const DIAS_SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+
 function pct(num: number, den: number): number {
   return den > 0 ? (num / den) * 100 : 0;
 }
@@ -46,6 +74,36 @@ function clampDays(input: string | undefined): number {
   return n;
 }
 
+type FunilRow = {
+  cadastros: number;
+  spc_validados: number;
+  wa_validados: number;
+  votaram: number;
+  completaram: number;
+};
+
+type RoiRow = {
+  motivo: string;
+  canal: string;
+  enviados: number;
+  converteram: number;
+  votos_gerados: number;
+};
+
+type HeatmapRow = { dow: number; hora: number; total: number };
+
+type VelocidadeRow = { hora: string; total: number };
+
+type AceleracaoRow = {
+  subcategoria_id: string;
+  subcategoria_nome: string;
+  votos_24h: number;
+  votos_24h_antes: number;
+  delta: number;
+};
+
+type OrigemRow = { origem: string; total: number };
+
 export default async function WhatsAppInsightsPage({
   searchParams,
 }: {
@@ -60,6 +118,12 @@ export default async function WhatsAppInsightsPage({
 
   const [
     metaInsights,
+    funilRes,
+    roiRes,
+    heatmapRes,
+    velocidadeRes,
+    aceleracaoRes,
+    origemRes,
     otpResumoRes,
     votosResumoRes,
     votantesPeriodoRes,
@@ -72,6 +136,12 @@ export default async function WhatsAppInsightsPage({
     otpPorDiaRes,
   ] = await Promise.all([
     fetchMetaInsights(days),
+    supabase.rpc("insights_funil", { dias: days }),
+    supabase.rpc("insights_incentivo_roi", { dias: days }),
+    supabase.rpc("insights_votos_heatmap", { dias: Math.min(days, 14) }),
+    supabase.from("v_votos_velocidade_48h").select("hora, total"),
+    supabase.rpc("insights_subs_aceleracao"),
+    supabase.rpc("insights_origem", { dias: days }),
     supabase.rpc("insights_otp_periodo", { dias: days }),
     supabase.rpc("insights_votos_periodo", { dias: days }),
     supabase
@@ -100,6 +170,13 @@ export default async function WhatsAppInsightsPage({
     supabase.from("v_otp_por_dia").select("dia, total"),
   ]);
 
+  const funil = (funilRes.data?.[0] ?? null) as FunilRow | null;
+  const roi = (roiRes.data ?? []) as RoiRow[];
+  const heatmap = (heatmapRes.data ?? []) as HeatmapRow[];
+  const velocidade = (velocidadeRes.data ?? []) as VelocidadeRow[];
+  const aceleracao = (aceleracaoRes.data ?? []) as AceleracaoRow[];
+  const origem = (origemRes.data ?? []) as OrigemRow[];
+
   const otpResumo = (otpResumoRes.data?.[0] ?? null) as
     | { total: number; validados: number; tentativas_media: number | string }
     | null;
@@ -120,7 +197,9 @@ export default async function WhatsAppInsightsPage({
   const incentivosEnviados = incentivosRes.count ?? 0;
 
   const conversao = pct(votantesQueVotaram, votantesPeriodo);
+  const completou = funil ? pct(funil.completaram, funil.cadastros) : 0;
 
+  // Subs acirradas (deriva de v_resultados — ja vem da query existente)
   type Linha = { nome: string; votos: number };
   const bySub: Record<string, { nome: string; cands: Linha[] }> = {};
   for (const r of resultadosRes.data ?? []) {
@@ -146,6 +225,7 @@ export default async function WhatsAppInsightsPage({
     .sort((a, b) => a.diff - b.diff)
     .slice(0, 10);
 
+  // Atividade diaria (votos + OTP por dia) — mantida pra serie historica
   const seriaPorDia: Record<string, { otp: number; votos: number }> = {};
   for (let i = 0; i < days; i++) {
     const d = new Date(nowMs - i * 86_400_000).toISOString().slice(0, 10);
@@ -168,16 +248,39 @@ export default async function WhatsAppInsightsPage({
   const totalDelivered = metaInsights?.templates.reduce((a, t) => a + t.delivered, 0) ?? 0;
   const totalRead = metaInsights?.templates.reduce((a, t) => a + t.read, 0) ?? 0;
 
+  // Heatmap: matriz 7 dias x 24 horas
+  const heatmapMatrix: number[][] = Array.from({ length: 7 }, () =>
+    Array.from({ length: 24 }, () => 0)
+  );
+  for (const h of heatmap) {
+    if (h.dow >= 0 && h.dow < 7 && h.hora >= 0 && h.hora < 24) {
+      heatmapMatrix[h.dow]![h.hora] = h.total;
+    }
+  }
+  const heatmapMax = Math.max(1, ...heatmap.map((h) => h.total));
+
+  // Velocidade max
+  const velocidadeMax = Math.max(1, ...velocidade.map((v) => v.total));
+  const velocidadeTotal = velocidade.reduce((a, v) => a + v.total, 0);
+
+  // Origem total
+  const origemTotal = origem.reduce((a, o) => a + o.total, 0);
+
+  // ROI agregado
+  const roiTotalEnviados = roi.reduce((a, r) => a + r.enviados, 0);
+  const roiTotalConverteram = roi.reduce((a, r) => a + r.converteram, 0);
+  const roiTotalVotos = roi.reduce((a, r) => a + r.votos_gerados, 0);
+
   return (
     <div className="p-8 space-y-6">
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-3xl font-bold text-cdl-blue flex items-center gap-2">
             <MessageSquare className="w-7 h-7 text-cdl-green" />
-            Insights WhatsApp
+            Insights
           </h1>
           <p className="text-muted mt-1">
-            Métricas internas (Supabase) + entrega real da Meta Cloud API
+            Operação interna (Supabase) + entrega via Meta Cloud API
           </p>
         </div>
         <nav className="flex gap-1 bg-cream-100 border border-[rgba(10,42,94,0.15)] rounded-lg p-1">
@@ -195,6 +298,7 @@ export default async function WhatsAppInsightsPage({
         </nav>
       </header>
 
+      {/* KPIs principais */}
       <section className="grid gap-4 grid-cols-2 md:grid-cols-4">
         <Kpi
           icon={<Users className="w-4 h-4" />}
@@ -210,9 +314,10 @@ export default async function WhatsAppInsightsPage({
         />
         <Kpi
           icon={<CheckCircle2 className="w-4 h-4 text-emerald-600" />}
-          label="WhatsApps validados"
-          value={validadosTotal.toLocaleString("pt-BR")}
-          sub={`${pct(validadosTotal, votantesTotal).toFixed(1)}% dos votantes`}
+          label="Concluíram votação"
+          value={`${completou.toFixed(1)}%`}
+          sub={`${(funil?.completaram ?? 0).toLocaleString("pt-BR")} votaram em todas as subs`}
+          tone={completou < 30 ? "warn" : "ok"}
         />
         <Kpi
           icon={<TrendingUp className="w-4 h-4 text-cdl-blue" />}
@@ -222,32 +327,223 @@ export default async function WhatsAppInsightsPage({
         />
       </section>
 
-      <section className="grid gap-4 grid-cols-2 md:grid-cols-4">
-        <Kpi
-          label="OTPs solicitados"
-          value={otpsTotal.toLocaleString("pt-BR")}
-          sub={`${otpsTentativasMedias.toFixed(1)} tentativas/código (média)`}
-        />
-        <Kpi
-          label="OTPs validados"
-          value={otpsValidados.toLocaleString("pt-BR")}
-          sub={`${pct(otpsValidados, otpsTotal).toFixed(1)}%`}
-          tone={pct(otpsValidados, otpsTotal) < 70 ? "warn" : "ok"}
-        />
-        <Kpi
-          icon={<Send className="w-4 h-4" />}
-          label="Parciais disparadas"
-          value={parciaisEnviadas.toLocaleString("pt-BR")}
-          sub="no período"
-        />
-        <Kpi
-          icon={<Send className="w-4 h-4" />}
-          label="Incentivos disparados"
-          value={incentivosEnviados.toLocaleString("pt-BR")}
-          sub="no período"
-        />
+      {/* Funil de conversao */}
+      <Card>
+        <CardHeader className="flex items-center gap-2">
+          <Gauge className="w-5 h-5 text-cdl-blue" />
+          <h2 className="font-display text-xl font-semibold text-cdl-blue">
+            Funil de conversão ({days}d)
+          </h2>
+          <span className="text-xs text-muted ml-auto">
+            cada barra mostra % do passo anterior
+          </span>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {funil && funil.cadastros > 0 ? (
+            <Funil funil={funil} />
+          ) : (
+            <p className="text-sm text-muted py-6 text-center">
+              Sem cadastros no período.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ROI do incentivo */}
+      <Card>
+        <CardHeader className="flex items-center gap-2">
+          <Zap className="w-5 h-5 text-cdl-blue" />
+          <h2 className="font-display text-xl font-semibold text-cdl-blue">
+            ROI do incentivo ({days}d)
+          </h2>
+          <span className="text-xs text-muted ml-auto">
+            envios → quantos voltaram a votar em até 24h
+          </span>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {roi.length === 0 ? (
+            <p className="text-sm text-muted py-6 text-center">
+              Sem disparos de incentivo no período.
+            </p>
+          ) : (
+            <>
+              <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-4">
+                <Kpi
+                  icon={<Send className="w-4 h-4" />}
+                  label="Disparos"
+                  value={roiTotalEnviados.toLocaleString("pt-BR")}
+                />
+                <Kpi
+                  label="Converteram"
+                  value={roiTotalConverteram.toLocaleString("pt-BR")}
+                  sub={`${pct(roiTotalConverteram, roiTotalEnviados).toFixed(1)}% taxa`}
+                  tone={
+                    pct(roiTotalConverteram, roiTotalEnviados) >= 15 ? "ok" : "warn"
+                  }
+                />
+                <Kpi
+                  icon={<Vote className="w-4 h-4" />}
+                  label="Votos gerados"
+                  value={roiTotalVotos.toLocaleString("pt-BR")}
+                  sub={`${(roiTotalVotos / Math.max(1, roiTotalConverteram)).toFixed(1)} votos/convertido`}
+                />
+                <Kpi
+                  label="Custo por voto"
+                  value={
+                    metaInsights && roiTotalVotos > 0
+                      ? formatBRL(
+                          metaInsights.conversations.total_cost / roiTotalVotos
+                        )
+                      : "—"
+                  }
+                  sub="custo Meta ÷ votos gerados"
+                />
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[rgba(10,42,94,0.15)] text-left text-xs text-muted uppercase tracking-wide">
+                    <th className="py-2 pr-3">Motivo</th>
+                    <th className="py-2 pr-3">Canal</th>
+                    <th className="py-2 pr-3 text-right">Enviados</th>
+                    <th className="py-2 pr-3 text-right">Converteram</th>
+                    <th className="py-2 pr-3 text-right">Taxa</th>
+                    <th className="py-2 text-right">Votos gerados</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[rgba(10,42,94,0.06)]">
+                  {roi.map((r) => {
+                    const taxa = pct(r.converteram, r.enviados);
+                    return (
+                      <tr key={`${r.motivo}-${r.canal}`}>
+                        <td className="py-2 pr-3">{MOTIVO_LABEL[r.motivo] ?? r.motivo}</td>
+                        <td className="py-2 pr-3 text-xs">
+                          {CANAL_LABEL[r.canal] ?? r.canal}
+                        </td>
+                        <td className="py-2 pr-3 text-right font-mono">
+                          {r.enviados.toLocaleString("pt-BR")}
+                        </td>
+                        <td className="py-2 pr-3 text-right font-mono">
+                          {r.converteram.toLocaleString("pt-BR")}
+                        </td>
+                        <td
+                          className={`py-2 pr-3 text-right font-semibold ${
+                            taxa >= 20
+                              ? "text-emerald-700"
+                              : taxa >= 10
+                                ? "text-amber-600"
+                                : "text-rose-600"
+                          }`}
+                        >
+                          {taxa.toFixed(1)}%
+                        </td>
+                        <td className="py-2 text-right font-mono">
+                          {r.votos_gerados.toLocaleString("pt-BR")}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Velocidade + Subs em aceleracao lado a lado */}
+      <section className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex items-center gap-2">
+            <Gauge className="w-5 h-5 text-cdl-blue" />
+            <h2 className="font-display text-xl font-semibold text-cdl-blue">
+              Velocidade (48h)
+            </h2>
+            <span className="text-xs text-muted ml-auto">
+              {velocidadeTotal.toLocaleString("pt-BR")} votos
+            </span>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {velocidade.length === 0 ? (
+              <p className="text-sm text-muted py-6 text-center">Sem dados.</p>
+            ) : (
+              <Velocidade rows={velocidade} max={velocidadeMax} />
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex items-center gap-2">
+            <Flame className="w-5 h-5 text-cdl-blue" />
+            <h2 className="font-display text-xl font-semibold text-cdl-blue">
+              Subcategorias em aceleração
+            </h2>
+            <span className="text-xs text-muted ml-auto">24h vs 24h anteriores</span>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {aceleracao.length === 0 ? (
+              <p className="text-sm text-muted py-6 text-center">
+                Sem votos suficientes nas últimas 48h.
+              </p>
+            ) : (
+              <Aceleracao rows={aceleracao} />
+            )}
+          </CardContent>
+        </Card>
       </section>
 
+      {/* Heatmap + Origem lado a lado */}
+      <section className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex items-center gap-2">
+            <h2 className="font-display text-xl font-semibold text-cdl-blue">
+              Quando a galera vota (heatmap)
+            </h2>
+            <span className="text-xs text-muted ml-auto">
+              últimos {Math.min(days, 14)}d · fuso América/Maceió
+            </span>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <Heatmap matrix={heatmapMatrix} max={heatmapMax} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex items-center gap-2">
+            <Smartphone className="w-5 h-5 text-cdl-blue" />
+            <h2 className="font-display text-xl font-semibold text-cdl-blue">
+              Origem
+            </h2>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {origem.length === 0 ? (
+              <p className="text-sm text-muted py-6 text-center">Sem dados.</p>
+            ) : (
+              <div className="space-y-2">
+                {origem.map((o) => {
+                  const p = pct(o.total, origemTotal);
+                  return (
+                    <div key={o.origem} className="text-xs">
+                      <div className="flex justify-between mb-0.5">
+                        <span>{ORIGEM_LABEL[o.origem] ?? o.origem}</span>
+                        <span className="font-mono text-muted">
+                          {o.total.toLocaleString("pt-BR")} · {p.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="bg-cream-200 rounded h-2 overflow-hidden">
+                        <div
+                          className="bg-cdl-blue h-full"
+                          style={{ width: `${p}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Subs acirradas */}
       <Card>
         <CardHeader className="flex items-center gap-2">
           <Trophy className="w-5 h-5 text-cdl-blue" />
@@ -292,10 +588,38 @@ export default async function WhatsAppInsightsPage({
         </CardContent>
       </Card>
 
+      {/* Operacao WhatsApp (interna) */}
+      <section className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        <Kpi
+          label="OTPs solicitados"
+          value={otpsTotal.toLocaleString("pt-BR")}
+          sub={`${otpsTentativasMedias.toFixed(1)} tentativas/código (média)`}
+        />
+        <Kpi
+          label="OTPs validados"
+          value={otpsValidados.toLocaleString("pt-BR")}
+          sub={`${pct(otpsValidados, otpsTotal).toFixed(1)}%`}
+          tone={pct(otpsValidados, otpsTotal) < 70 ? "warn" : "ok"}
+        />
+        <Kpi
+          icon={<Send className="w-4 h-4" />}
+          label="Parciais disparadas"
+          value={parciaisEnviadas.toLocaleString("pt-BR")}
+          sub="no período"
+        />
+        <Kpi
+          icon={<Send className="w-4 h-4" />}
+          label="Incentivos disparados"
+          value={incentivosEnviados.toLocaleString("pt-BR")}
+          sub="no período"
+        />
+      </section>
+
+      {/* Atividade diaria */}
       <Card>
         <CardHeader>
           <h2 className="font-display text-xl font-semibold text-cdl-blue">
-            Atividade diária ({days} dias)
+            Atividade diária ({days}d)
           </h2>
         </CardHeader>
         <CardContent className="pt-0 space-y-1">
@@ -332,6 +656,7 @@ export default async function WhatsAppInsightsPage({
         </CardContent>
       </Card>
 
+      {/* Saude da Meta + Performance por template (rodape) */}
       {metaInsights ? (
         <>
           <section className="grid gap-4 md:grid-cols-2">
@@ -452,39 +777,6 @@ export default async function WhatsAppInsightsPage({
               )}
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <h2 className="font-display text-xl font-semibold text-cdl-blue">
-                Conversas por categoria
-              </h2>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {metaInsights.conversations.by_category.length === 0 ? (
-                <p className="text-sm text-muted py-6 text-center">Sem dados no período.</p>
-              ) : (
-                <div className="border-t border-[rgba(10,42,94,0.1)] divide-y divide-[rgba(10,42,94,0.06)]">
-                  {metaInsights.conversations.by_category.map((c) => (
-                    <div
-                      key={c.category}
-                      className="py-2.5 grid grid-cols-12 gap-2 text-sm items-center"
-                    >
-                      <span className="col-span-5 font-medium">
-                        {CATEGORY_LABEL[c.category] ?? c.category}
-                      </span>
-                      <span className="col-span-3 text-right font-mono">
-                        {c.conversation.toLocaleString("pt-BR")}
-                      </span>
-                      <span className="col-span-2 text-right text-xs text-muted">
-                        {pct(c.conversation, metaInsights.conversations.total).toFixed(1)}%
-                      </span>
-                      <span className="col-span-2 text-right">{formatBRL(c.cost)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </>
       ) : (
         <Card>
@@ -505,6 +797,21 @@ export default async function WhatsAppInsightsPage({
           </CardContent>
         </Card>
       )}
+
+      {/* Validados total — referencia de longo prazo */}
+      <section className="grid gap-4 grid-cols-2 md:grid-cols-2">
+        <Kpi
+          icon={<CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+          label="WhatsApps validados (lifetime)"
+          value={validadosTotal.toLocaleString("pt-BR")}
+          sub={`${pct(validadosTotal, votantesTotal).toFixed(1)}% do total de votantes`}
+        />
+        <Kpi
+          icon={<Vote className="w-4 h-4" />}
+          label="Total de votantes (lifetime)"
+          value={votantesTotal.toLocaleString("pt-BR")}
+        />
+      </section>
 
       <Card>
         <CardHeader className="flex items-center gap-2">
@@ -533,6 +840,179 @@ export default async function WhatsAppInsightsPage({
           </ul>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function Funil({ funil }: { funil: FunilRow }) {
+  const steps = [
+    { label: "Cadastros", value: funil.cadastros },
+    { label: "SPC validado", value: funil.spc_validados },
+    { label: "WhatsApp validado", value: funil.wa_validados },
+    { label: "Votaram (≥1 sub)", value: funil.votaram },
+    { label: "Votaram em todas", value: funil.completaram },
+  ];
+  const max = Math.max(1, funil.cadastros);
+  return (
+    <div className="space-y-2">
+      {steps.map((s, i) => {
+        const prev = i === 0 ? funil.cadastros : steps[i - 1]!.value;
+        const taxaPasso = pct(s.value, prev);
+        const taxaTopo = pct(s.value, funil.cadastros);
+        return (
+          <div key={s.label} className="grid grid-cols-12 gap-2 items-center text-sm">
+            <span className="col-span-3 text-cdl-blue font-medium">{s.label}</span>
+            <div className="col-span-7 bg-cream-200 rounded h-6 overflow-hidden relative">
+              <div
+                className="bg-cdl-blue h-full flex items-center px-2 text-white text-xs font-mono"
+                style={{ width: `${(s.value / max) * 100}%` }}
+              >
+                {s.value.toLocaleString("pt-BR")}
+              </div>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted font-mono">
+                {taxaTopo.toFixed(1)}%
+              </span>
+            </div>
+            <span
+              className={`col-span-2 text-right text-xs font-mono ${
+                i === 0
+                  ? "text-muted"
+                  : taxaPasso >= 80
+                    ? "text-emerald-700"
+                    : taxaPasso >= 50
+                      ? "text-amber-600"
+                      : "text-rose-600"
+              }`}
+            >
+              {i === 0 ? "—" : `${taxaPasso.toFixed(1)}% do passo`}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Velocidade({ rows, max }: { rows: VelocidadeRow[]; max: number }) {
+  const fmt = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Maceio",
+    hour: "2-digit",
+    hour12: false,
+  });
+  const lastIdx = rows.length - 1;
+  return (
+    <div>
+      <div className="flex items-end gap-[2px] h-32">
+        {rows.map((r, i) => {
+          const h = (r.total / max) * 100;
+          return (
+            <div
+              key={r.hora}
+              className="flex-1 bg-cream-200 rounded-sm relative group"
+              style={{ minWidth: 4 }}
+              title={`${new Date(r.hora).toLocaleString("pt-BR", { timeZone: "America/Maceio" })}: ${r.total} votos`}
+            >
+              <div
+                className={`absolute bottom-0 left-0 right-0 ${
+                  i === lastIdx ? "bg-cdl-green" : "bg-cdl-blue"
+                } rounded-sm`}
+                style={{ height: `${h}%` }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-between text-[10px] text-muted mt-1 font-mono">
+        <span>−48h</span>
+        <span>−36h</span>
+        <span>−24h</span>
+        <span>−12h</span>
+        <span>agora ({fmt.format(new Date())}h)</span>
+      </div>
+    </div>
+  );
+}
+
+function Aceleracao({ rows }: { rows: AceleracaoRow[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.votos_24h));
+  return (
+    <div className="border-t border-[rgba(10,42,94,0.1)] divide-y divide-[rgba(10,42,94,0.06)]">
+      {rows.map((r) => (
+        <div
+          key={r.subcategoria_id}
+          className="py-2 grid grid-cols-12 gap-2 items-center text-sm"
+        >
+          <span className="col-span-6 font-medium text-cdl-blue truncate">
+            {r.subcategoria_nome}
+          </span>
+          <div className="col-span-4 bg-cream-200 rounded h-3 overflow-hidden">
+            <div
+              className="bg-cdl-blue h-full"
+              style={{ width: `${(r.votos_24h / max) * 100}%` }}
+            />
+          </div>
+          <span className="col-span-1 text-right font-mono text-xs text-muted">
+            {r.votos_24h}
+          </span>
+          <span
+            className={`col-span-1 text-right font-mono text-xs font-semibold ${
+              r.delta > 0
+                ? "text-emerald-700"
+                : r.delta < 0
+                  ? "text-rose-600"
+                  : "text-muted"
+            }`}
+          >
+            {r.delta > 0 ? "+" : ""}
+            {r.delta}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Heatmap({ matrix, max }: { matrix: number[][]; max: number }) {
+  // Densidade de cor proporcional ao total
+  function bg(total: number): string {
+    if (total === 0) return "bg-cream-200";
+    const p = total / max;
+    if (p > 0.75) return "bg-cdl-blue";
+    if (p > 0.5) return "bg-cdl-blue/75";
+    if (p > 0.25) return "bg-cdl-blue/50";
+    if (p > 0.1) return "bg-cdl-blue/25";
+    return "bg-cdl-blue/10";
+  }
+  return (
+    <div className="overflow-x-auto">
+      <div className="inline-block min-w-full">
+        <div className="flex gap-[2px] mb-1 pl-8">
+          {Array.from({ length: 24 }).map((_, h) => (
+            <div
+              key={h}
+              className="flex-1 text-[9px] text-muted text-center font-mono"
+              style={{ minWidth: 18 }}
+            >
+              {h}
+            </div>
+          ))}
+        </div>
+        {matrix.map((row, dow) => (
+          <div key={dow} className="flex gap-[2px] mb-[2px] items-center">
+            <span className="w-7 text-[10px] text-muted font-mono">
+              {DIAS_SEMANA[dow]}
+            </span>
+            {row.map((total, hora) => (
+              <div
+                key={hora}
+                className={`flex-1 h-5 rounded-sm ${bg(total)}`}
+                style={{ minWidth: 18 }}
+                title={`${DIAS_SEMANA[dow]} ${hora}h — ${total} votos`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

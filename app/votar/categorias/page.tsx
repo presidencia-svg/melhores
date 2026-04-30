@@ -7,6 +7,7 @@ import { ChevronRight, Lock } from "lucide-react";
 import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { SmallCaps, Divider } from "@/components/brand/Marks";
+import { seededShuffle } from "@/lib/utils";
 
 export default async function CategoriasPage() {
   const sessao = await getVotanteSessao();
@@ -31,12 +32,15 @@ export default async function CategoriasPage() {
     );
   }
 
-  const { data: categorias } = await supabase
+  const { data: categoriasRaw } = await supabase
     .from("categorias")
     .select("id, nome, slug, descricao, icone, subcategorias(id, nome, slug, ordem)")
     .eq("edicao_id", edicao.id)
-    .eq("ativa", true)
-    .order("nome");
+    .eq("ativa", true);
+
+  // Ordem aleatoria estavel por votante: evita favorecer a 1a categoria alfabetica
+  // (ex.: Alimentacao). Mesma sessao = mesma ordem; sessoes diferentes = ordens diferentes.
+  const categorias = seededShuffle(categoriasRaw ?? [], sessao.id);
 
   const { data: votos } = await supabase
     .from("votos")
@@ -74,8 +78,9 @@ export default async function CategoriasPage() {
         </div>
 
         <div className="flex flex-col gap-4">
-          {(categorias ?? []).map((cat) => {
-            const subs = (cat.subcategorias ?? []).slice().sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+          {categorias.map((cat) => {
+            // Subs tambem aleatorias e estaveis por votante+categoria, pelo mesmo motivo
+            const subs = seededShuffle(cat.subcategorias ?? [], `${sessao.id}:${cat.id}`);
             return (
               <Card key={cat.id}>
                 <CardContent className="!p-0">

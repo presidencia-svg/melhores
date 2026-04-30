@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/incentivo-empate",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/parcial",
+      "schedule": "5,15,25,35,45,55 * * * *"
     }
   ]
 }

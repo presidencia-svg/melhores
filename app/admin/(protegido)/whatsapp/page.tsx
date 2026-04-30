@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Download, MessageSquare } from "lucide-react";
 import { IncentivoSection } from "./IncentivoSection";
 import { AutoIncentivoSection } from "./AutoIncentivoSection";
+import { AutoParcialSection } from "./AutoParcialSection";
 import { ParcialSection } from "./ParcialSection";
 import { StatusBanner } from "./StatusBanner";
 
@@ -62,6 +63,7 @@ export default async function WhatsAppPage() {
 
       <StatusBanner />
       <AutoIncentivoSection />
+      <AutoParcialSection />
       <IncentivoSection />
       <ParcialSection />
     </div>

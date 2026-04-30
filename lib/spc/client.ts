@@ -61,7 +61,7 @@ export async function consultarCpfSpc(cpf: string): Promise<SpcLookupResult> {
   // 2) Chamada SPC
   const ambiente = (process.env.SPC_AMBIENTE ?? "homologacao") as "homologacao" | "producao";
   const url = ambiente === "producao" ? ENDPOINTS.producao : ENDPOINTS.homologacao;
-  const codigoProduto = process.env.SPC_CODIGO_PRODUTO ?? "325";
+  const codigoProduto = process.env.SPC_CODIGO_PRODUTO ?? "11";
   const user = process.env.SPC_USER;
   const password = process.env.SPC_PASSWORD;
 
