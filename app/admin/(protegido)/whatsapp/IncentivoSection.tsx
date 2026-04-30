@@ -194,17 +194,20 @@ export function IncentivoSection() {
         )}
 
         <div className="flex items-end gap-3 mb-4 flex-wrap">
-          <div className="flex-1 max-w-[200px]">
+          <div className="flex-1 max-w-[220px]">
             <label className="text-xs text-muted block mb-1">
               Diferença máxima (votos)
             </label>
             <Input
               type="number"
-              min={0}
+              min={1}
               max={100}
               value={threshold}
-              onChange={(e) => setThreshold(Number.parseInt(e.target.value || "0", 10))}
+              onChange={(e) => setThreshold(Math.max(1, Number.parseInt(e.target.value || "1", 10)))}
             />
+            <p className="text-[10px] text-muted mt-1">
+              Empates ficam por conta do auto-incentivo.
+            </p>
           </div>
           <div className="flex-1 max-w-[200px]">
             <label className="text-xs text-muted block mb-1">
