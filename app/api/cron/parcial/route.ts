@@ -11,7 +11,7 @@ const META_TEMPLATE_PARCIAL =
 const META_TEMPLATE_LANG = process.env.META_TEMPLATE_LANG ?? "pt_BR";
 
 // Limites do disparo automatico
-const CAP_HORA = 200;                   // max 200 envios/h (todos os disparos somados)
+const CAP_HORA = 300;                   // max 300 envios/h (todos os disparos somados)
 const CAP_DIA_DEFAULT = 1200;           // valor padrao quando admin nao configurou
 const LOTE_MAX = 80;                    // max por execucao do cron (~5min com pacing)
 const JANELA_HORA_INICIO = 8;           // 8h America/Maceio

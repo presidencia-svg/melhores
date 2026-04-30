@@ -124,7 +124,7 @@ export function AutoParcialSection() {
               </h2>
               <p className="text-xs text-muted mt-1 max-w-md">
                 A cada 10min envia parcial personalizada pra quem já votou.
-                Janela 8h–21h Nordeste, cap 200/h, 1 envio por pessoa (lifetime),
+                Janela 8h–21h Nordeste, cap 300/h, 1 envio por pessoa (lifetime),
                 espera 30min após o último voto.
               </p>
             </div>
@@ -190,7 +190,7 @@ export function AutoParcialSection() {
             <p className="font-display-bold text-navy-800 text-lg">
               {estado.envios.hora}
             </p>
-            <p className="text-[10px] text-muted">de 200</p>
+            <p className="text-[10px] text-muted">de 300</p>
           </div>
           <div className="rounded-md bg-cream-100 py-2">
             <p className="kicker text-muted" style={{ fontSize: 9 }}>
