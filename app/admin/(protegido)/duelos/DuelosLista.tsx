@@ -216,11 +216,12 @@ function CardStory({
   acirrado: boolean;
 }) {
   // Dimensoes Instagram Stories: 1080x1920.
-  // pt/pb generosos pra respeitar a "safe zone" do IG: ~250px topo (username + X)
-  // e ~250px base (caixa de resposta) — sao cortados no preview do feed.
+  // pt/pb generosos pra respeitar a "safe zone" do IG: ~260px topo (username + X)
+  // e ~260px base (caixa de resposta) — sao cortados no preview do feed.
+  // Tipografia toda dimensionada pra leitura no celular (1080px de largura).
   return (
     <article
-      className="flex flex-col px-16 relative text-white"
+      className="flex flex-col px-14 relative text-white"
       style={{
         width: 1080,
         height: 1920,
@@ -228,64 +229,97 @@ function CardStory({
         paddingBottom: 260,
         backgroundColor: "#0a2a5e",
         backgroundImage:
-          "radial-gradient(circle at 30% 20%, rgba(255,215,0,0.15) 0%, transparent 60%)",
+          "radial-gradient(circle at 50% 0%, rgba(255,215,0,0.18) 0%, transparent 55%), radial-gradient(circle at 50% 100%, rgba(0,168,89,0.12) 0%, transparent 50%)",
       }}
     >
-      <div className="text-center text-base uppercase tracking-[0.25em] font-semibold opacity-80">
-        Melhores do Ano CDL
+      {/* Top: marca + nome da sub */}
+      <div>
+        <div
+          className="text-center uppercase tracking-[0.3em] font-bold opacity-90"
+          style={{ fontSize: 36 }}
+        >
+          Melhores do Ano · CDL Aracaju
+        </div>
         {acirrado && (
-          <span className="flex items-center justify-center gap-2 mt-3 text-amber-300">
-            <Flame className="w-5 h-5" />
+          <div
+            className="flex items-center justify-center gap-3 mt-4 text-amber-300 font-bold uppercase tracking-[0.2em]"
+            style={{ fontSize: 30 }}
+          >
+            <Flame className="w-9 h-9" />
             acirrado
-          </span>
+          </div>
         )}
+
+        <h2
+          className="font-display font-bold mt-8 leading-[1.0] text-center"
+          style={{ fontSize: 132 }}
+        >
+          {duelo.subcategoria_nome}
+        </h2>
+
+        <p
+          className="font-light text-amber-300 mt-5 italic text-center"
+          style={{ fontSize: 44 }}
+        >
+          Quem ainda vai virar o jogo?
+        </p>
       </div>
 
-      <h2 className="font-display text-8xl font-bold mt-6 leading-[1.05] text-center">
-        {duelo.subcategoria_nome}
-      </h2>
-
-      <p className="text-2xl font-light text-amber-300 mt-4 italic text-center">
-        Quem ainda vai virar o jogo?
-      </p>
-
-      <div className="flex-1 flex flex-col items-center justify-center gap-10">
+      {/* Meio: duelo */}
+      <div className="flex-1 flex flex-col items-center justify-center gap-8">
         <Lado
           nome={duelo.top1_nome}
           foto={duelo.top1_foto}
           pct={pct1}
           ganhando
           big
-          fotoSize={280}
+          fotoSize={240}
         />
 
-        <div className="font-display italic text-7xl text-amber-300">vs</div>
+        <div
+          className="font-display italic text-amber-300 leading-none"
+          style={{ fontSize: 96 }}
+        >
+          vs
+        </div>
 
         <Lado
           nome={duelo.top2_nome}
           foto={duelo.top2_foto}
           pct={pct2}
           big
-          fotoSize={280}
+          fotoSize={240}
         />
       </div>
 
-      <div className="h-6 rounded-full bg-white/10 overflow-hidden flex mt-6">
-        <div className="bg-amber-300 h-full" style={{ width: `${pct1}%` }} />
-        <div className="bg-white h-full" style={{ width: `${pct2}%` }} />
-      </div>
-      <div className="flex justify-between text-xl font-mono mt-3 opacity-90">
-        <span>{pct1.toFixed(1)}%</span>
-        <span className="opacity-70">diferença de {duelo.diff_pct}%</span>
-        <span>{pct2.toFixed(1)}%</span>
-      </div>
+      {/* Bottom: barra + CTA */}
+      <div>
+        <div className="h-8 rounded-full bg-white/15 overflow-hidden flex">
+          <div className="bg-amber-300 h-full" style={{ width: `${pct1}%` }} />
+          <div className="bg-white h-full" style={{ width: `${pct2}%` }} />
+        </div>
+        <div
+          className="flex justify-between font-mono mt-4 opacity-90"
+          style={{ fontSize: 32 }}
+        >
+          <span>{pct1.toFixed(1)}%</span>
+          <span className="opacity-70">diferença de {duelo.diff_pct}%</span>
+          <span>{pct2.toFixed(1)}%</span>
+        </div>
 
-      <p className="text-center text-3xl mt-8 font-bold">
-        Ainda dá tempo de virar!
-      </p>
-      <p className="text-center text-2xl mt-2 text-amber-300 font-semibold">
-        votar.cdlaju.com.br
-      </p>
+        <p
+          className="text-center font-bold leading-tight"
+          style={{ fontSize: 64, marginTop: 56 }}
+        >
+          Ainda dá tempo de virar!
+        </p>
+        <p
+          className="text-center text-amber-300 font-bold mt-3"
+          style={{ fontSize: 48 }}
+        >
+          votar.cdlaju.com.br
+        </p>
+      </div>
     </article>
   );
 }
@@ -335,17 +369,19 @@ function Lado({
         )}
       </div>
       <p
-        className={`font-semibold text-center line-clamp-2 leading-tight ${
-          big ? "text-4xl mt-6" : "text-sm mt-2"
+        className={`font-bold text-center line-clamp-2 leading-tight ${
+          big ? "" : "text-sm mt-2"
         }`}
+        style={big ? { fontSize: 56, marginTop: 24 } : undefined}
         title={nome}
       >
         {nome}
       </p>
       <p
-        className={`font-display ${pctColor} ${
-          big ? "text-7xl mt-4" : "text-2xl mt-1"
+        className={`font-display ${pctColor} leading-none ${
+          big ? "" : "text-2xl mt-1"
         }`}
+        style={big ? { fontSize: 112, marginTop: 12 } : undefined}
       >
         {pct.toFixed(1)}%
       </p>
