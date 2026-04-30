@@ -12,7 +12,7 @@ const META_TEMPLATE_LANG = process.env.META_TEMPLATE_LANG ?? "pt_BR";
 
 // Limites do disparo automatico
 const CAP_HORA = 200;                   // max 200 envios/h (todos os disparos somados)
-const CAP_DIA = 1200;                   // pedido do CDL: 1200/dia
+const CAP_DIA_DEFAULT = 1200;           // valor padrao quando admin nao configurou
 const LOTE_MAX = 80;                    // max por execucao do cron (~5min com pacing)
 const JANELA_HORA_INICIO = 8;           // 8h America/Maceio
 const JANELA_HORA_FIM = 21;             // 21h
@@ -117,16 +117,19 @@ async function handle(req: Request) {
 
   const supabase = createSupabaseAdminClient();
 
-  // 1. Toggle on/off
-  const { data: cfg } = await supabase
+  // 1. Toggle on/off + cap diario configuravel pelo admin
+  const { data: cfgs } = await supabase
     .from("app_config")
-    .select("valor")
-    .eq("chave", "auto_parcial")
-    .maybeSingle();
-  const ligado = (cfg?.valor ?? "off") === "on";
+    .select("chave, valor")
+    .in("chave", ["auto_parcial", "auto_parcial_cap_dia"]);
+  const cfgMap = new Map((cfgs ?? []).map((c) => [c.chave, c.valor]));
+  const ligado = (cfgMap.get("auto_parcial") ?? "off") === "on";
   if (!ligado) {
     return NextResponse.json({ ok: true, skip: "desligado" });
   }
+  const capDiaRaw = cfgMap.get("auto_parcial_cap_dia");
+  const capDiaParsed = capDiaRaw ? parseInt(capDiaRaw, 10) : CAP_DIA_DEFAULT;
+  const capDia = Number.isFinite(capDiaParsed) ? capDiaParsed : CAP_DIA_DEFAULT;
 
   // 2. Janela horaria
   if (!dentroDaJanela()) {
@@ -147,7 +150,7 @@ async function handle(req: Request) {
       .gte("parcial_enviada_em", umDiaAtras),
   ]);
   const restanteHora = Math.max(0, CAP_HORA - (enviadosHora ?? 0));
-  const restanteDia = Math.max(0, CAP_DIA - (enviadosDia ?? 0));
+  const restanteDia = Math.max(0, capDia - (enviadosDia ?? 0));
   const cota = Math.min(restanteHora, restanteDia, LOTE_MAX);
   if (cota <= 0) {
     return NextResponse.json({

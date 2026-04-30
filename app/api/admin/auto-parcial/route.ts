@@ -3,7 +3,17 @@ import { z } from "zod";
 import { isAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
-const Body = z.object({ ligado: z.boolean() });
+// Aceita ligado e/ou cap_dia — um, outro ou os dois.
+const Body = z
+  .object({
+    ligado: z.boolean().optional(),
+    cap_dia: z.number().int().min(0).max(10000).optional(),
+  })
+  .refine((b) => b.ligado !== undefined || b.cap_dia !== undefined, {
+    message: "Informe ligado e/ou cap_dia",
+  });
+
+const CAP_DIA_DEFAULT = 1200;
 
 export async function GET() {
   if (!(await isAdmin())) {
@@ -15,16 +25,15 @@ export async function GET() {
   const umDiaAtras = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
 
   const [
-    { data: cfg },
+    { data: cfgs },
     { count: hora },
     { count: dia },
     { data: stats },
   ] = await Promise.all([
     supabase
       .from("app_config")
-      .select("valor")
-      .eq("chave", "auto_parcial")
-      .maybeSingle(),
+      .select("chave, valor")
+      .in("chave", ["auto_parcial", "auto_parcial_cap_dia"]),
     supabase
       .from("votantes")
       .select("*", { head: true, count: "exact" })
@@ -39,8 +48,13 @@ export async function GET() {
       .maybeSingle(),
   ]);
 
+  const map = new Map((cfgs ?? []).map((c) => [c.chave, c.valor]));
+  const capDiaRaw = map.get("auto_parcial_cap_dia");
+  const capDia = capDiaRaw ? parseInt(capDiaRaw, 10) : CAP_DIA_DEFAULT;
+
   return NextResponse.json({
-    ligado: (cfg?.valor ?? "off") === "on",
+    ligado: (map.get("auto_parcial") ?? "off") === "on",
+    cap_dia: Number.isFinite(capDia) ? capDia : CAP_DIA_DEFAULT,
     envios: { hora: hora ?? 0, dia: dia ?? 0 },
     fila: {
       total: stats?.total ?? 0,
@@ -61,10 +75,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   }
   const supabase = createSupabaseAdminClient();
-  await supabase.from("app_config").upsert({
-    chave: "auto_parcial",
-    valor: parsed.data.ligado ? "on" : "off",
-    atualizado_em: new Date().toISOString(),
-  });
-  return NextResponse.json({ ok: true, ligado: parsed.data.ligado });
+  const agora = new Date().toISOString();
+
+  const upserts: { chave: string; valor: string; atualizado_em: string }[] = [];
+  if (parsed.data.ligado !== undefined) {
+    upserts.push({
+      chave: "auto_parcial",
+      valor: parsed.data.ligado ? "on" : "off",
+      atualizado_em: agora,
+    });
+  }
+  if (parsed.data.cap_dia !== undefined) {
+    upserts.push({
+      chave: "auto_parcial_cap_dia",
+      valor: String(parsed.data.cap_dia),
+      atualizado_em: agora,
+    });
+  }
+
+  if (upserts.length > 0) {
+    await supabase.from("app_config").upsert(upserts);
+  }
+
+  return NextResponse.json({ ok: true });
 }

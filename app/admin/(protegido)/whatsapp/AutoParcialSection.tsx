@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Send, Clock } from "lucide-react";
+import { Send, Clock, Check } from "lucide-react";
 
 type Estado = {
   ligado: boolean;
+  cap_dia: number;
   envios: { hora: number; dia: number };
   fila: { total: number; ja_receberam: number; na_fila: number; enviadas_hoje: number };
 };
@@ -14,11 +15,17 @@ export function AutoParcialSection() {
   const [estado, setEstado] = useState<Estado | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [capInput, setCapInput] = useState<string>("");
+  const [capSalvo, setCapSalvo] = useState(false);
 
   const carregar = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/auto-parcial", { cache: "no-store" });
-      if (res.ok) setEstado(await res.json());
+      if (res.ok) {
+        const d = (await res.json()) as Estado;
+        setEstado(d);
+        setCapInput((prev) => (prev === "" ? String(d.cap_dia) : prev));
+      }
     } catch {
       // ignora
     }
@@ -48,6 +55,40 @@ export function AutoParcialSection() {
       }
     } catch {
       setErro("Erro de conexão");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function salvarCap() {
+    if (!estado || salvando) return;
+    const n = parseInt(capInput, 10);
+    if (!Number.isFinite(n) || n < 0 || n > 10000) {
+      setErro("Cap inválido (0–10000)");
+      setCapInput(String(estado.cap_dia));
+      return;
+    }
+    if (n === estado.cap_dia) return; // sem mudanca
+    setSalvando(true);
+    setErro(null);
+    try {
+      const res = await fetch("/api/admin/auto-parcial", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cap_dia: n }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErro(data.error ?? "Falha ao salvar");
+        setCapInput(String(estado.cap_dia));
+      } else {
+        setCapSalvo(true);
+        setTimeout(() => setCapSalvo(false), 2000);
+        await carregar();
+      }
+    } catch {
+      setErro("Erro de conexão");
+      setCapInput(String(estado.cap_dia));
     } finally {
       setSalvando(false);
     }
@@ -84,8 +125,8 @@ export function AutoParcialSection() {
               <p className="text-xs text-muted mt-1 max-w-md">
                 A cada 10min envia parcial personalizada pra quem já votou e tem
                 ao menos 1 sub acirrada (≤ 30% diff). Janela 8h–21h Nordeste,
-                cap 200/h e <strong>1.200/dia</strong>, 1 envio por pessoa
-                (lifetime), espera 1h após o último voto.
+                cap 200/h, 1 envio por pessoa (lifetime), espera 1h após o
+                último voto.
               </p>
             </div>
           </div>
@@ -105,6 +146,34 @@ export function AutoParcialSection() {
           </button>
         </div>
 
+        <div className="mt-4 flex items-center gap-3 text-sm">
+          <label htmlFor="cap-dia" className="text-navy-800 font-medium">
+            Limite diário:
+          </label>
+          <input
+            id="cap-dia"
+            type="number"
+            min={0}
+            max={10000}
+            step={50}
+            value={capInput}
+            onChange={(e) => setCapInput(e.target.value)}
+            onBlur={salvarCap}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+            }}
+            disabled={salvando}
+            className="w-24 rounded border border-[rgba(10,42,94,0.2)] bg-white px-2 py-1 text-sm font-mono text-navy-800 focus:border-cdl-blue focus:outline-none focus:ring-1 focus:ring-cdl-blue disabled:opacity-50"
+          />
+          <span className="text-xs text-muted">mensagens/dia</span>
+          {capSalvo && (
+            <span className="inline-flex items-center gap-1 text-xs text-green-700 font-medium">
+              <Check className="w-3 h-3" />
+              salvo
+            </span>
+          )}
+        </div>
+
         <div className="mt-4 grid grid-cols-4 gap-3 text-center">
           <div className="rounded-md bg-cream-100 py-2">
             <p className="kicker text-muted" style={{ fontSize: 9 }}>
@@ -122,7 +191,9 @@ export function AutoParcialSection() {
             <p className="font-display-bold text-navy-800 text-lg">
               {estado.envios.dia}
             </p>
-            <p className="text-[10px] text-muted">de 1.200</p>
+            <p className="text-[10px] text-muted">
+              de {estado.cap_dia.toLocaleString("pt-BR")}
+            </p>
           </div>
           <div className="rounded-md bg-cream-100 py-2">
             <p className="kicker text-muted" style={{ fontSize: 9 }}>
