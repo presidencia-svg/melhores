@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { normalizarNome } from "@/lib/utils";
+import { normalizarNome, nomeCandidatoValido } from "@/lib/utils";
 
 const Body = z.object({
   subcategoria_id: z.string().uuid(),
@@ -23,6 +23,11 @@ export async function POST(req: Request) {
       { error: "Dados inválidos", detalhe: parsed.error.flatten() },
       { status: 400 }
     );
+  }
+
+  const validacao = nomeCandidatoValido(parsed.data.nome);
+  if (!validacao.ok) {
+    return NextResponse.json({ error: validacao.motivo }, { status: 400 });
   }
 
   const supabase = createSupabaseAdminClient();

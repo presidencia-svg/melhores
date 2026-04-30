@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { normalizarNome } from "@/lib/utils";
+import { normalizarNome, nomeCandidatoValido } from "@/lib/utils";
 
 const Body = z.object({
   subcategoriaId: z.string().uuid(),
@@ -26,6 +26,12 @@ export async function POST(req: Request) {
 
   const supabase = createSupabaseAdminClient();
   const nomeOriginal = parsed.data.nome.trim();
+
+  const validacao = nomeCandidatoValido(nomeOriginal);
+  if (!validacao.ok) {
+    return NextResponse.json({ error: validacao.motivo }, { status: 400 });
+  }
+
   const nomeNorm = normalizarNome(nomeOriginal);
 
   // 1) Fuzzy match — se já existe candidato parecido na mesma subcategoria, reutiliza

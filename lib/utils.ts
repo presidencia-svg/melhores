@@ -15,9 +15,26 @@ export function normalizarNome(nome: string): string {
   return nome
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/@/g, "") // remove @ \u2014 nao tem lugar em nome de candidato
     .toLowerCase()
     .trim()
     .replace(/\s+/g, " ");
+}
+
+// Bloqueia tentativas de gambiarra pra ficar 1o na ordem alfabetica.
+// Rejeita nomes com @ em qualquer posicao OU comecando com caractere
+// que nao seja letra/numero (ex: !, #, _, *, .).
+export function nomeCandidatoValido(nome: string): { ok: true } | { ok: false; motivo: string } {
+  const trimmed = nome.trim();
+  if (trimmed.length < 2) return { ok: false, motivo: "Nome muito curto" };
+  if (trimmed.includes("@")) {
+    return { ok: false, motivo: "O nome n\u00e3o pode conter @" };
+  }
+  // Primeiro caractere precisa ser letra (com ou sem acento) ou numero
+  if (!/^[\p{L}\p{N}]/u.test(trimmed)) {
+    return { ok: false, motivo: "O nome precisa come\u00e7ar com letra ou n\u00famero" };
+  }
+  return { ok: true };
 }
 
 // Embaralha um array de forma deterministica a partir de uma seed string.

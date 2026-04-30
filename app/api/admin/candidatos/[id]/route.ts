@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { normalizarNome } from "@/lib/utils";
+import { normalizarNome, nomeCandidatoValido } from "@/lib/utils";
 
 const PatchBody = z.object({
   nome: z.string().min(2).max(120).optional(),
@@ -19,6 +19,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const json = await req.json().catch(() => ({}));
   const parsed = PatchBody.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
+
+  if (parsed.data.nome) {
+    const validacao = nomeCandidatoValido(parsed.data.nome);
+    if (!validacao.ok) {
+      return NextResponse.json({ error: validacao.motivo }, { status: 400 });
+    }
+  }
 
   const update: Record<string, unknown> = { ...parsed.data };
   if (parsed.data.nome) {
