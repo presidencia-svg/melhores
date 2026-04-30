@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Swords } from "lucide-react";
 import { DuelosLista, type Duelo } from "./DuelosLista";
+import { AtualizarBtn } from "./AtualizarBtn";
 
 const TOPS = [10, 25, 50, "all"] as const;
 
@@ -46,25 +47,28 @@ export default async function DuelosPage({
             Baixa em formato Feed (1:1) ou Story (9:16) pra postar no Instagram.
           </p>
         </div>
-        <nav className="flex gap-1 bg-cream-100 border border-[rgba(10,42,94,0.15)] rounded-lg p-1">
-          {TOPS.map((p) => {
-            const param = String(p);
-            const ativo =
-              (limit === null && p === "all") ||
-              (limit !== null && p === limit);
-            return (
-              <Link
-                key={param}
-                href={`/admin/duelos?top=${param}`}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  ativo ? "bg-cdl-blue text-white" : "text-cdl-blue hover:bg-cdl-blue/10"
-                }`}
-              >
-                {p === "all" ? "todas" : `top ${p}`}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="flex items-center gap-3 flex-wrap">
+          <nav className="flex gap-1 bg-cream-100 border border-[rgba(10,42,94,0.15)] rounded-lg p-1">
+            {TOPS.map((p) => {
+              const param = String(p);
+              const ativo =
+                (limit === null && p === "all") ||
+                (limit !== null && p === limit);
+              return (
+                <Link
+                  key={param}
+                  href={`/admin/duelos?top=${param}`}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    ativo ? "bg-cdl-blue text-white" : "text-cdl-blue hover:bg-cdl-blue/10"
+                  }`}
+                >
+                  {p === "all" ? "todas" : `top ${p}`}
+                </Link>
+              );
+            })}
+          </nav>
+          <AtualizarBtn />
+        </div>
       </header>
 
       {lista.length === 0 ? (
