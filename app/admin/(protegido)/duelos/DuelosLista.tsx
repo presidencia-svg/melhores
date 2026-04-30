@@ -162,7 +162,7 @@ function CardFeed({
         )}
       </div>
 
-      <h2 className="font-display text-xl font-bold mt-1 leading-tight line-clamp-2">
+      <h2 className="font-display text-3xl font-bold mt-2 leading-[1.05] line-clamp-2">
         {duelo.subcategoria_nome}
       </h2>
 
@@ -237,7 +237,7 @@ function CardStory({
         )}
       </div>
 
-      <h2 className="font-display text-6xl font-bold mt-8 leading-tight">
+      <h2 className="font-display text-8xl font-bold mt-8 leading-[1.05]">
         {duelo.subcategoria_nome}
       </h2>
 
