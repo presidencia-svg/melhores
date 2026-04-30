@@ -146,7 +146,7 @@ export function AutoParcialSection() {
           </button>
         </div>
 
-        <div className="mt-4 flex items-center gap-3 text-sm">
+        <div className="mt-4 flex items-center gap-3 text-sm flex-wrap">
           <label htmlFor="cap-dia" className="text-navy-800 font-medium">
             Limite diário:
           </label>
@@ -158,14 +158,23 @@ export function AutoParcialSection() {
             step={50}
             value={capInput}
             onChange={(e) => setCapInput(e.target.value)}
-            onBlur={salvarCap}
             onKeyDown={(e) => {
-              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              if (e.key === "Enter") {
+                e.preventDefault();
+                salvarCap();
+              }
             }}
             disabled={salvando}
             className="w-24 rounded border border-[rgba(10,42,94,0.2)] bg-white px-2 py-1 text-sm font-mono text-navy-800 focus:border-cdl-blue focus:outline-none focus:ring-1 focus:ring-cdl-blue disabled:opacity-50"
           />
           <span className="text-xs text-muted">mensagens/dia</span>
+          <button
+            onClick={salvarCap}
+            disabled={salvando || parseInt(capInput, 10) === estado.cap_dia}
+            className="rounded bg-cdl-blue text-white px-3 py-1 text-xs font-medium hover:bg-cdl-blue-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {salvando ? "Salvando…" : "Salvar"}
+          </button>
           {capSalvo && (
             <span className="inline-flex items-center gap-1 text-xs text-green-700 font-medium">
               <Check className="w-3 h-3" />
