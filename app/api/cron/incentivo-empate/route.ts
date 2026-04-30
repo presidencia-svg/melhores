@@ -20,7 +20,7 @@ const META_TEMPLATE_INCENTIVO_EMPATE =
 const META_TEMPLATE_LANG = process.env.META_TEMPLATE_LANG ?? "pt_BR";
 
 // Limites do disparo automatico
-const COOLDOWN_HORAS = 48;             // 2 dias entre incentivos pra mesma pessoa
+const COOLDOWN_HORAS = 24;             // 24h global cross-campaign — alinhado com parcial
 const CAP_HORA = 200;                  // max 200 envios na ultima hora (todos os disparos)
 const CAP_DIA = 1000;                  // max 1000 envios nas ultimas 24h
 const LOTE_MAX = 80;                   // max por execucao do cron

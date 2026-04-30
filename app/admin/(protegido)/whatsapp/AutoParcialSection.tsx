@@ -125,7 +125,8 @@ export function AutoParcialSection() {
               <p className="text-xs text-muted mt-1 max-w-md">
                 A cada 10min envia parcial personalizada pra quem já votou.
                 Janela 8h–21h Nordeste, cap 300/h, 1 envio por pessoa (lifetime),
-                espera 30min após o último voto.
+                espera 30min após o último voto. Cooldown de 24h cross-campaign
+                (não envia se já recebeu incentivo nas últimas 24h).
               </p>
             </div>
           </div>

@@ -83,7 +83,8 @@ export function AutoIncentivoSection() {
               <p className="text-xs text-muted mt-1 max-w-md">
                 A cada 10min, o sistema verifica subcategorias empatadas e dispara
                 WhatsApp pra quem votou nos dois lados — pra ajudar a desempatar.
-                Cooldown de 2 dias por pessoa, janela 8h–21h, max 200/h e 1.000/dia.
+                Cooldown de 24h cross-campaign (não envia se já mandaram parcial
+                ou outro incentivo nas últimas 24h), janela 8h–21h, max 200/h e 1.000/dia.
               </p>
             </div>
           </div>
