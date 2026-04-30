@@ -123,10 +123,9 @@ export function AutoParcialSection() {
                 Auto-parcial personalizada
               </h2>
               <p className="text-xs text-muted mt-1 max-w-md">
-                A cada 10min envia parcial personalizada pra quem já votou e tem
-                ao menos 1 sub acirrada (≤ 30% diff). Janela 8h–21h Nordeste,
-                cap 200/h, 1 envio por pessoa (lifetime), espera 1h após o
-                último voto.
+                A cada 10min envia parcial personalizada pra quem já votou.
+                Janela 8h–21h Nordeste, cap 200/h, 1 envio por pessoa (lifetime),
+                espera 30min após o último voto.
               </p>
             </div>
           </div>

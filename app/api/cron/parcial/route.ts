@@ -16,8 +16,8 @@ const CAP_DIA_DEFAULT = 1200;           // valor padrao quando admin nao configu
 const LOTE_MAX = 80;                    // max por execucao do cron (~5min com pacing)
 const JANELA_HORA_INICIO = 8;           // 8h America/Maceio
 const JANELA_HORA_FIM = 21;             // 21h
-const MIN_MINUTOS_APOS_VOTO = 60;       // espera 1h depois do ultimo voto antes de mandar
-const MAX_DIFF_PCT = 30;                // so envia pra quem tem ao menos 1 sub <= 30% diff
+const MIN_MINUTOS_APOS_VOTO = 30;       // espera 30min depois do ultimo voto (era 60)
+const MAX_DIFF_PCT = 100;               // sem filtro de diff — manda pra todos elegives (era 30)
 
 type ElegivelParcial = {
   votante_id: string;
