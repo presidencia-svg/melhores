@@ -215,44 +215,48 @@ function CardStory({
   pct2: number;
   acirrado: boolean;
 }) {
-  // Dimensoes Instagram Stories: 1080x1920
+  // Dimensoes Instagram Stories: 1080x1920.
+  // pt/pb generosos pra respeitar a "safe zone" do IG: ~250px topo (username + X)
+  // e ~250px base (caixa de resposta) — sao cortados no preview do feed.
   return (
     <article
-      className="flex flex-col p-16 relative text-white"
+      className="flex flex-col px-16 relative text-white"
       style={{
         width: 1080,
         height: 1920,
+        paddingTop: 260,
+        paddingBottom: 260,
         backgroundColor: "#0a2a5e",
         backgroundImage:
           "radial-gradient(circle at 30% 20%, rgba(255,215,0,0.15) 0%, transparent 60%)",
       }}
     >
-      <div className="flex items-center justify-between text-base uppercase tracking-[0.25em] font-semibold opacity-80">
-        <span>Melhores do Ano CDL</span>
+      <div className="text-center text-base uppercase tracking-[0.25em] font-semibold opacity-80">
+        Melhores do Ano CDL
         {acirrado && (
-          <span className="flex items-center gap-2 text-amber-300">
+          <span className="flex items-center justify-center gap-2 mt-3 text-amber-300">
             <Flame className="w-5 h-5" />
             acirrado
           </span>
         )}
       </div>
 
-      <h2 className="font-display text-8xl font-bold mt-8 leading-[1.05]">
+      <h2 className="font-display text-8xl font-bold mt-6 leading-[1.05] text-center">
         {duelo.subcategoria_nome}
       </h2>
 
-      <p className="text-2xl font-light text-amber-300 mt-4 italic">
+      <p className="text-2xl font-light text-amber-300 mt-4 italic text-center">
         Quem ainda vai virar o jogo?
       </p>
 
-      <div className="flex-1 flex flex-col items-center justify-center gap-12">
+      <div className="flex-1 flex flex-col items-center justify-center gap-10">
         <Lado
           nome={duelo.top1_nome}
           foto={duelo.top1_foto}
           pct={pct1}
           ganhando
           big
-          fotoSize={300}
+          fotoSize={280}
         />
 
         <div className="font-display italic text-7xl text-amber-300">vs</div>
@@ -262,11 +266,11 @@ function CardStory({
           foto={duelo.top2_foto}
           pct={pct2}
           big
-          fotoSize={300}
+          fotoSize={280}
         />
       </div>
 
-      <div className="h-6 rounded-full bg-white/10 overflow-hidden flex mt-8">
+      <div className="h-6 rounded-full bg-white/10 overflow-hidden flex mt-6">
         <div className="bg-amber-300 h-full" style={{ width: `${pct1}%` }} />
         <div className="bg-white h-full" style={{ width: `${pct2}%` }} />
       </div>
@@ -276,7 +280,7 @@ function CardStory({
         <span>{pct2.toFixed(1)}%</span>
       </div>
 
-      <p className="text-center text-3xl mt-12 font-bold">
+      <p className="text-center text-3xl mt-8 font-bold">
         Ainda dá tempo de virar!
       </p>
       <p className="text-center text-2xl mt-2 text-amber-300 font-semibold">
