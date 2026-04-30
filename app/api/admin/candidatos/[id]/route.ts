@@ -33,6 +33,42 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const supabase = createSupabaseAdminClient();
+
+  // Se mudando nome, status pra aprovado, ou subcategoria — checa duplicata
+  // dentro da subcategoria final
+  const precisaCheck =
+    parsed.data.nome !== undefined ||
+    parsed.data.subcategoria_id !== undefined ||
+    parsed.data.status === "aprovado";
+  if (precisaCheck) {
+    const { data: atual } = await supabase
+      .from("candidatos")
+      .select("id, nome_normalizado, subcategoria_id, status")
+      .eq("id", id)
+      .maybeSingle();
+    if (atual) {
+      const nomeFinal = (update.nome_normalizado as string | undefined) ?? atual.nome_normalizado;
+      const subFinal = (parsed.data.subcategoria_id ?? atual.subcategoria_id) as string;
+      const statusFinal = (parsed.data.status ?? atual.status) as string;
+      if (statusFinal === "aprovado") {
+        const { data: dup } = await supabase
+          .from("candidatos")
+          .select("id, nome")
+          .eq("subcategoria_id", subFinal)
+          .eq("nome_normalizado", nomeFinal)
+          .eq("status", "aprovado")
+          .neq("id", id)
+          .maybeSingle();
+        if (dup) {
+          return NextResponse.json(
+            { error: `Já existe candidato "${dup.nome}" nessa subcategoria` },
+            { status: 409 }
+          );
+        }
+      }
+    }
+  }
+
   const { error } = await supabase.from("candidatos").update(update).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

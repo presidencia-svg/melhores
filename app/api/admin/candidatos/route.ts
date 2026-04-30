@@ -31,12 +31,29 @@ export async function POST(req: Request) {
   }
 
   const supabase = createSupabaseAdminClient();
+  const nomeNorm = normalizarNome(parsed.data.nome);
+
+  // Bloqueia nome duplicado na mesma subcategoria (entre aprovados)
+  const { data: existente } = await supabase
+    .from("candidatos")
+    .select("id, nome")
+    .eq("subcategoria_id", parsed.data.subcategoria_id)
+    .eq("nome_normalizado", nomeNorm)
+    .eq("status", "aprovado")
+    .maybeSingle();
+  if (existente) {
+    return NextResponse.json(
+      { error: `Já existe candidato "${existente.nome}" nessa subcategoria` },
+      { status: 409 }
+    );
+  }
+
   const { data, error } = await supabase
     .from("candidatos")
     .insert({
       subcategoria_id: parsed.data.subcategoria_id,
       nome: parsed.data.nome,
-      nome_normalizado: normalizarNome(parsed.data.nome),
+      nome_normalizado: nomeNorm,
       descricao: parsed.data.descricao || null,
       foto_url: parsed.data.foto_url || null,
       origem: "oficial",
