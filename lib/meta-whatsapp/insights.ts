@@ -51,6 +51,9 @@ export interface MetaInsights {
     daily: DailyConversationPoint[];
   };
   errors: { template_analytics?: string; conversation_analytics?: string; templates_list?: string };
+  // Raw response da Meta — pra debug. So preenchido em modo debug.
+  raw_conversation_response?: unknown;
+  raw_template_response?: unknown;
 }
 
 interface TemplateAnalyticsPoint {
@@ -72,7 +75,10 @@ interface ConversationAnalyticsPoint {
   conversation_type?: string;
 }
 
-export async function fetchMetaInsights(days: number): Promise<MetaInsights | null> {
+export async function fetchMetaInsights(
+  days: number,
+  options: { debug?: boolean } = {}
+): Promise<MetaInsights | null> {
   const token = process.env.META_WHATSAPP_TOKEN;
   const wabaId = process.env.META_WABA_ID;
   const phoneIdsRaw = process.env.META_WHATSAPP_PHONE_IDS || "";
@@ -195,5 +201,11 @@ export async function fetchMetaInsights(days: number): Promise<MetaInsights | nu
       conversation_analytics: conversationRes.error,
       templates_list: templatesListRes.error,
     },
+    ...(options.debug
+      ? {
+          raw_conversation_response: conversationRes.data ?? conversationRes.error,
+          raw_template_response: templateRes.data ?? templateRes.error,
+        }
+      : {}),
   };
 }
