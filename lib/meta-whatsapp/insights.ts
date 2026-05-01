@@ -119,8 +119,9 @@ export async function fetchMetaInsights(days: number): Promise<MetaInsights | nu
     })
   );
 
+  const metricTypesParam = encodeURIComponent('["SENT","DELIVERED","READ","CLICKED"]');
   const templateRes = await fetchJson(
-    `${wabaId}/template_analytics?start=${start}&end=${now}&granularity=DAILY&metric_types=["SENT","DELIVERED","READ","CLICKED"]`
+    `${wabaId}/template_analytics?start=${start}&end=${now}&granularity=DAILY&metric_types=${metricTypesParam}`
   );
   const templatePoints: TemplateAnalyticsPoint[] =
     ((templateRes.data?.data as Array<{ data_points?: TemplateAnalyticsPoint[] }>)?.[0]
@@ -152,8 +153,9 @@ export async function fetchMetaInsights(days: number): Promise<MetaInsights | nu
     agg.clicked += (p.clicked || []).reduce((acc, c) => acc + (c.count || 0), 0);
   }
 
+  const dimensionsParam = encodeURIComponent('["CONVERSATION_CATEGORY"]');
   const conversationRes = await fetchJson(
-    `${wabaId}/conversation_analytics?start=${start}&end=${now}&granularity=DAILY&dimensions=["CONVERSATION_CATEGORY"]`
+    `${wabaId}/conversation_analytics?start=${start}&end=${now}&granularity=DAILY&dimensions=${dimensionsParam}`
   );
   const conversationPoints: ConversationAnalyticsPoint[] =
     ((conversationRes.data?.conversation_analytics as { data?: Array<{ data_points?: ConversationAnalyticsPoint[] }> })

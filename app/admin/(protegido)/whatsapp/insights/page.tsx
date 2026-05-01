@@ -62,8 +62,15 @@ function pct(num: number, den: number): number {
   return den > 0 ? (num / den) * 100 : 0;
 }
 
-function formatBRL(v: number): string {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+// Meta cobra a maioria dos WABAs em USD. Se sua conta for BRL, troca via
+// env var META_CURRENCY=BRL.
+const META_CURRENCY = process.env.META_CURRENCY || "USD";
+
+function formatMoney(v: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: META_CURRENCY,
+  }).format(v);
 }
 
 // Custo Meta filtrado por categoria — pra ROI ficar comparavel:
@@ -404,7 +411,7 @@ export default async function WhatsAppInsightsPage({
                   label="Custo por voto"
                   value={
                     metaInsights && roiTotalVotos > 0
-                      ? formatBRL(custoMarketing(metaInsights) / roiTotalVotos)
+                      ? formatMoney(custoMarketing(metaInsights) / roiTotalVotos)
                       : "—"
                   }
                   sub="custo Meta marketing ÷ votos gerados"
@@ -501,7 +508,7 @@ export default async function WhatsAppInsightsPage({
                 label="Custo por voto"
                 value={
                   metaInsights && parcialRoi.votos_gerados > 0
-                    ? formatBRL(
+                    ? formatMoney(
                         custoMarketing(metaInsights) / parcialRoi.votos_gerados
                       )
                     : "—"
@@ -780,7 +787,7 @@ export default async function WhatsAppInsightsPage({
             <Kpi
               label="Conversas Meta"
               value={metaInsights.conversations.total.toLocaleString("pt-BR")}
-              sub={`Custo: ${formatBRL(metaInsights.conversations.total_cost)}`}
+              sub={`Custo: ${formatMoney(metaInsights.conversations.total_cost)}`}
             />
           </section>
 
@@ -880,10 +887,10 @@ export default async function WhatsAppInsightsPage({
                             {pct(c.conversation, totalConv).toFixed(1)}%
                           </td>
                           <td className="py-2 pr-3 text-right font-mono">
-                            {formatBRL(c.cost)}
+                            {formatMoney(c.cost)}
                           </td>
                           <td className="py-2 text-right font-mono">
-                            {formatBRL(cpc)}
+                            {formatMoney(cpc)}
                           </td>
                         </tr>
                       );
@@ -895,10 +902,10 @@ export default async function WhatsAppInsightsPage({
                       </td>
                       <td className="py-2 pr-3 text-right text-xs text-muted">100%</td>
                       <td className="py-2 pr-3 text-right font-mono">
-                        {formatBRL(metaInsights.conversations.total_cost)}
+                        {formatMoney(metaInsights.conversations.total_cost)}
                       </td>
                       <td className="py-2 text-right font-mono">
-                        {formatBRL(
+                        {formatMoney(
                           metaInsights.conversations.total > 0
                             ? metaInsights.conversations.total_cost /
                                 metaInsights.conversations.total
