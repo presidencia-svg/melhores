@@ -66,6 +66,14 @@ function formatBRL(v: number): string {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 }
 
+// Custo Meta filtrado por categoria — pra ROI ficar comparavel:
+// AUTHENTICATION (OTP) nao deveria contar em custo de marketing/parcial.
+function custoMarketing(meta: { conversations: { by_category: { category: string; cost: number }[] } }): number {
+  return meta.conversations.by_category
+    .filter((c) => c.category === "MARKETING")
+    .reduce((a, c) => a + c.cost, 0);
+}
+
 function clampDays(input: string | undefined): number {
   const n = parseInt(input ?? "7", 10);
   if (!Number.isFinite(n)) return 7;
@@ -120,6 +128,7 @@ export default async function WhatsAppInsightsPage({
     metaInsights,
     funilRes,
     roiRes,
+    parcialRoiRes,
     heatmapRes,
     velocidadeRes,
     aceleracaoRes,
@@ -138,6 +147,7 @@ export default async function WhatsAppInsightsPage({
     fetchMetaInsights(days),
     supabase.rpc("insights_funil", { dias: days }),
     supabase.rpc("insights_incentivo_roi", { dias: days }),
+    supabase.rpc("insights_parcial_roi", { dias: days }),
     supabase.rpc("insights_votos_heatmap", { dias: Math.min(days, 14) }),
     supabase.from("v_votos_velocidade_48h").select("hora, total"),
     supabase.rpc("insights_subs_aceleracao"),
@@ -172,6 +182,9 @@ export default async function WhatsAppInsightsPage({
 
   const funil = (funilRes.data?.[0] ?? null) as FunilRow | null;
   const roi = (roiRes.data ?? []) as RoiRow[];
+  const parcialRoi = (parcialRoiRes.data?.[0] ?? null) as
+    | { enviados: number; converteram: number; votos_gerados: number }
+    | null;
   const heatmap = (heatmapRes.data ?? []) as HeatmapRow[];
   const velocidade = (velocidadeRes.data ?? []) as VelocidadeRow[];
   const aceleracao = (aceleracaoRes.data ?? []) as AceleracaoRow[];
@@ -391,12 +404,10 @@ export default async function WhatsAppInsightsPage({
                   label="Custo por voto"
                   value={
                     metaInsights && roiTotalVotos > 0
-                      ? formatBRL(
-                          metaInsights.conversations.total_cost / roiTotalVotos
-                        )
+                      ? formatBRL(custoMarketing(metaInsights) / roiTotalVotos)
                       : "—"
                   }
-                  sub="custo Meta ÷ votos gerados"
+                  sub="custo Meta marketing ÷ votos gerados"
                 />
               </div>
               <table className="w-full text-sm">
@@ -445,6 +456,59 @@ export default async function WhatsAppInsightsPage({
                 </tbody>
               </table>
             </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ROI da parcial */}
+      <Card>
+        <CardHeader className="flex items-center gap-2">
+          <Send className="w-5 h-5 text-cdl-blue" />
+          <h2 className="font-display text-xl font-semibold text-cdl-blue">
+            ROI da parcial ({days}d)
+          </h2>
+          <span className="text-xs text-muted ml-auto">
+            envios → quantos voltaram a votar em até 24h
+          </span>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {!parcialRoi || parcialRoi.enviados === 0 ? (
+            <p className="text-sm text-muted py-6 text-center">
+              Sem disparos de parcial no período.
+            </p>
+          ) : (
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+              <Kpi
+                icon={<Send className="w-4 h-4" />}
+                label="Disparos"
+                value={parcialRoi.enviados.toLocaleString("pt-BR")}
+              />
+              <Kpi
+                label="Converteram"
+                value={parcialRoi.converteram.toLocaleString("pt-BR")}
+                sub={`${pct(parcialRoi.converteram, parcialRoi.enviados).toFixed(1)}% taxa`}
+                tone={
+                  pct(parcialRoi.converteram, parcialRoi.enviados) >= 15 ? "ok" : "warn"
+                }
+              />
+              <Kpi
+                icon={<Vote className="w-4 h-4" />}
+                label="Votos gerados"
+                value={parcialRoi.votos_gerados.toLocaleString("pt-BR")}
+                sub={`${(parcialRoi.votos_gerados / Math.max(1, parcialRoi.converteram)).toFixed(1)} votos/convertido`}
+              />
+              <Kpi
+                label="Custo por voto"
+                value={
+                  metaInsights && parcialRoi.votos_gerados > 0
+                    ? formatBRL(
+                        custoMarketing(metaInsights) / parcialRoi.votos_gerados
+                      )
+                    : "—"
+                }
+                sub="custo Meta marketing ÷ votos gerados"
+              />
+            </div>
           )}
         </CardContent>
       </Card>
@@ -775,6 +839,82 @@ export default async function WhatsAppInsightsPage({
                   </tbody>
                 </table>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <h2 className="font-display text-xl font-semibold text-cdl-blue">
+                Custo Meta por categoria
+              </h2>
+            </CardHeader>
+            <CardContent className="pt-0 overflow-x-auto">
+              {metaInsights.conversations.by_category.length === 0 ? (
+                <p className="text-sm text-muted py-6 text-center">
+                  Sem dados de custo no período.
+                </p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[rgba(10,42,94,0.15)] text-left text-xs text-muted uppercase tracking-wide">
+                      <th className="py-2 pr-3">Categoria</th>
+                      <th className="py-2 pr-3 text-right">Conversas</th>
+                      <th className="py-2 pr-3 text-right">% do total</th>
+                      <th className="py-2 pr-3 text-right">Custo total</th>
+                      <th className="py-2 text-right">Custo por conversa</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[rgba(10,42,94,0.06)]">
+                    {metaInsights.conversations.by_category.map((c) => {
+                      const cpc = c.conversation > 0 ? c.cost / c.conversation : 0;
+                      const totalConv = metaInsights.conversations.total;
+                      return (
+                        <tr key={c.category}>
+                          <td className="py-2 pr-3 font-medium">
+                            {CATEGORY_LABEL[c.category] ?? c.category}
+                          </td>
+                          <td className="py-2 pr-3 text-right font-mono">
+                            {c.conversation.toLocaleString("pt-BR")}
+                          </td>
+                          <td className="py-2 pr-3 text-right text-xs text-muted">
+                            {pct(c.conversation, totalConv).toFixed(1)}%
+                          </td>
+                          <td className="py-2 pr-3 text-right font-mono">
+                            {formatBRL(c.cost)}
+                          </td>
+                          <td className="py-2 text-right font-mono">
+                            {formatBRL(cpc)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="font-semibold border-t-2 border-[rgba(10,42,94,0.2)]">
+                      <td className="py-2 pr-3">Total</td>
+                      <td className="py-2 pr-3 text-right font-mono">
+                        {metaInsights.conversations.total.toLocaleString("pt-BR")}
+                      </td>
+                      <td className="py-2 pr-3 text-right text-xs text-muted">100%</td>
+                      <td className="py-2 pr-3 text-right font-mono">
+                        {formatBRL(metaInsights.conversations.total_cost)}
+                      </td>
+                      <td className="py-2 text-right font-mono">
+                        {formatBRL(
+                          metaInsights.conversations.total > 0
+                            ? metaInsights.conversations.total_cost /
+                                metaInsights.conversations.total
+                            : 0
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              )}
+              <p className="text-xs text-muted mt-3 leading-relaxed">
+                A Meta cobra por conversa de 24h, não por mensagem.{" "}
+                <strong>Marketing</strong> é o que paga as parciais e incentivos.{" "}
+                <strong>Authentication</strong> cobre OTPs.{" "}
+                <strong>Utility</strong> são confirmações pós-cadastro.
+              </p>
             </CardContent>
           </Card>
         </>
