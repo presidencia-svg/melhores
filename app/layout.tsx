@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Sora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { MetaPixel } from "@/components/MetaPixel";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -59,7 +60,10 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${fraunces.variable} ${sora.variable} ${jetbrains.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <MetaPixel />
+        {children}
+      </body>
     </html>
   );
 }
