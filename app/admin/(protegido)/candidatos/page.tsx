@@ -47,14 +47,28 @@ export default async function CandidatosAdminPage() {
         .select(SELECT_COLS)
         .eq("subcategoria.categoria.edicao_id", edicao!.id)
         .neq("status", "rejeitado")
+        // Ordenacao tem que ser ESTAVEL — com so .order("nome"), candidatos
+        // com mesmo nome (ex: 3 Bruno Moraes) ficam em ordem indefinida
+        // entre paginas, fazendo um aparecer em 2 paginas e outro sumir.
+        // O id como tie-breaker garante que cada linha apareca exatamente
+        // uma vez no array final.
         .order("nome")
+        .order("id")
         .range(offset, offset + PAGE_SIZE - 1)
     ).data;
   }
+  // Dedup defensivo por id — se algum lote ainda conseguir trazer duplicata
+  // (driver, race, etc), nao deixa chegar na UI.
+  const visto = new Set<string>();
   for (let offset = 0; ; offset += PAGE_SIZE) {
     const lote = await carregar(offset);
     if (!lote || lote.length === 0) break;
-    candidatos.push(...lote);
+    for (const c of lote) {
+      if (!visto.has(c.id)) {
+        visto.add(c.id);
+        candidatos.push(c);
+      }
+    }
     if (lote.length < PAGE_SIZE) break;
   }
 
