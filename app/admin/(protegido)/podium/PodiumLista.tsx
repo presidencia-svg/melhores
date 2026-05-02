@@ -319,7 +319,6 @@ function CampeaoFoto({
   nome: string;
   size: number;
 }) {
-  const inicial = nome.trim().charAt(0).toUpperCase() || "?";
   return (
     <div className="relative" style={{ width: size, height: size }}>
       {/* Glow dourado por tras */}
@@ -346,11 +345,12 @@ function CampeaoFoto({
             className="w-full h-full object-cover"
           />
         ) : (
+          // Sem foto: mostra a medalha de ouro em vez da inicial do nome
           <span
-            className="font-display text-white"
-            style={{ fontSize: size * 0.4 }}
+            aria-hidden="true"
+            style={{ fontSize: size * 0.55, lineHeight: 1 }}
           >
-            {inicial}
+            🥇
           </span>
         )}
       </div>
@@ -372,7 +372,6 @@ function Coadjuvante({
   pct: number;
   small: boolean;
 }) {
-  const inicial = nome.trim().charAt(0).toUpperCase() || "?";
   const idx = pos - 1;
   const fotoSize = small ? 56 : 160;
 
@@ -403,11 +402,12 @@ function Coadjuvante({
             className="w-full h-full object-cover"
           />
         ) : (
+          // Sem foto: medalha do lugar (🥈/🥉) em vez de inicial do nome
           <span
-            className="font-display text-white"
-            style={{ fontSize: fotoSize * 0.4 }}
+            aria-hidden="true"
+            style={{ fontSize: fotoSize * 0.55, lineHeight: 1 }}
           >
-            {inicial}
+            {MEDALHAS[idx]}
           </span>
         )}
       </div>
