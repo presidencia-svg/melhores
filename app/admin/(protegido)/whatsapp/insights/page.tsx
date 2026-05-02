@@ -336,7 +336,7 @@ export default async function WhatsAppInsightsPage({
           icon={<CheckCircle2 className="w-4 h-4 text-emerald-600" />}
           label="Concluíram votação"
           value={`${completou.toFixed(1)}%`}
-          sub={`${(funil?.completaram ?? 0).toLocaleString("pt-BR")} votaram em todas as subs`}
+          sub={`${(funil?.completaram ?? 0).toLocaleString("pt-BR")} votaram em 85+ subs`}
           tone={completou < 30 ? "warn" : "ok"}
         />
         <Kpi
@@ -997,7 +997,7 @@ function Funil({ funil }: { funil: FunilRow }) {
     { label: "SPC validado", value: funil.spc_validados },
     { label: "WhatsApp validado", value: funil.wa_validados },
     { label: "Votaram (≥1 sub)", value: funil.votaram },
-    { label: "Votaram em todas", value: funil.completaram },
+    { label: "Votaram em 85+ subs", value: funil.completaram },
   ];
   const max = Math.max(1, funil.cadastros);
   return (
