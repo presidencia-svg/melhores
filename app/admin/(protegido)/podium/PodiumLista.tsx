@@ -177,7 +177,6 @@ function CardFeed({ podium }: { podium: Podium }) {
             pos={l.pos}
             nome={l.nome}
             foto={l.foto}
-            votos={l.votos}
             pct={pctOf(l.votos, podium.total_subcat)}
             destaque={i === 0}
             small
@@ -263,7 +262,6 @@ function CardStory({ podium }: { podium: Podium }) {
             pos={l.pos}
             nome={l.nome}
             foto={l.foto}
-            votos={l.votos}
             pct={pctOf(l.votos, podium.total_subcat)}
             destaque={i === 0}
             small={false}
@@ -293,7 +291,6 @@ function LinhaPodium({
   pos,
   nome,
   foto,
-  votos,
   pct,
   destaque,
   small,
@@ -301,7 +298,6 @@ function LinhaPodium({
   pos: 1 | 2 | 3;
   nome: string;
   foto: string | null;
-  votos: number;
   pct: number;
   destaque: boolean;
   small: boolean;
@@ -346,7 +342,7 @@ function LinhaPodium({
         )}
       </div>
 
-      {/* Nome + votos */}
+      {/* Nome */}
       <div className="flex-1 min-w-0">
         <p
           className={`font-bold leading-tight line-clamp-2 ${
@@ -356,12 +352,6 @@ function LinhaPodium({
           title={nome}
         >
           {nome}
-        </p>
-        <p
-          className={`opacity-80 ${small ? "text-xs" : ""}`}
-          style={small ? undefined : { fontSize: 28, marginTop: 8 }}
-        >
-          {votos.toLocaleString("pt-BR")} votos
         </p>
       </div>
 
