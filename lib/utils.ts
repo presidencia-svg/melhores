@@ -21,12 +21,26 @@ export function normalizarNome(nome: string): string {
     .replace(/\s+/g, " ");
 }
 
-// Padroniza nome de candidato em Title Case com regras de PT
-// (preposicoes/conjuncoes minusculas no meio).
-// "INÊS MORAIS"             -> "Inês Morais"
-// "karina luduvice"         -> "Karina Luduvice"
+// Padroniza nome de candidato em Title Case com regras de PT.
+//
+// "INÊS MORAIS"               -> "Inês Morais"
+// "karina luduvice"           -> "Karina Luduvice"
 // "Frederico Costa de Morais" -> "Frederico Costa de Morais"
-const STOP_WORDS_PT = new Set(["de", "da", "do", "das", "dos", "e"]);
+// "ABG"                       -> "ABG"            (acronym preservado)
+// "AC CAR"                    -> "AC CAR"         (idem)
+// "iCred"                     -> "iCred"          (camelCase preservado)
+// "Acarajé Na Garagem"        -> "Acarajé na Garagem"
+const STOP_WORDS_PT = new Set([
+  "de", "da", "do", "das", "dos", "e",
+  "na", "no", "nas", "nos", "em",
+  "a", "o", "as", "os", "à", "às",
+  "com", "por", "pela", "pelo",
+]);
+
+// Acronym puro: 2-4 caracteres, todos maiusculos/numeros (ABG, CDL, MKT, AMG)
+const ACRONYM_RE = /^[A-Z0-9]{2,4}$/;
+// CamelCase: tem letra minuscula seguida de maiuscula (iCred, 4Live, McDonald)
+const CAMELCASE_RE = /[a-z][A-Z]/;
 
 export function tituloPT(nome: string): string {
   const limpo = nome.trim().replace(/\s+/g, " ");
@@ -34,8 +48,10 @@ export function tituloPT(nome: string): string {
   return limpo
     .split(" ")
     .map((palavra, i) => {
+      // Acronym e camelCase sao preservados como digitados (qualquer posicao)
+      if (ACRONYM_RE.test(palavra) || CAMELCASE_RE.test(palavra)) return palavra;
       const lower = palavra.toLowerCase();
-      // Primeira palavra sempre capitalizada, mesmo se for "de", "da" etc
+      // Stop-word PT fica minuscula no meio (1a palavra sempre capitalizada)
       if (i > 0 && STOP_WORDS_PT.has(lower)) return lower;
       return lower.charAt(0).toUpperCase() + lower.slice(1);
     })
