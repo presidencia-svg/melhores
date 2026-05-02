@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { ShieldCheck, Lock } from "lucide-react";
 import { CpfForm } from "./CpfForm";
 import { getVotanteSessao } from "@/lib/sessao";
+import { getSpcMode } from "@/lib/spc/mode";
 import { SmallCaps } from "@/components/brand/Marks";
 
 export default async function VotarPage() {
@@ -12,6 +13,8 @@ export default async function VotarPage() {
     if (!sessao.selfie_url) redirect("/votar/selfie");
     redirect("/votar/categorias");
   }
+
+  const spcMode = await getSpcMode();
 
   return (
     <VotoLayout step={1}>
@@ -33,7 +36,7 @@ export default async function VotarPage() {
 
         <Card>
           <CardContent>
-            <CpfForm />
+            <CpfForm spcDesligado={spcMode === "desligado"} />
           </CardContent>
         </Card>
 

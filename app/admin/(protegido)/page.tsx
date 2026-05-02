@@ -16,6 +16,7 @@ import {
   FolderTree,
 } from "lucide-react";
 import { EncerramentoCard } from "./EncerramentoCard";
+import { SpcCard } from "./SpcCard";
 
 export const revalidate = 30;
 
@@ -209,6 +210,9 @@ export default async function AdminDashboard() {
           edicaoNome={edicao.nome}
         />
       )}
+
+      {/* Toggle de consulta SPC */}
+      <SpcCard />
 
       {/* KPIs principais */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

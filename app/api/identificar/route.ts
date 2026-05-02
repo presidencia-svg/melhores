@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { hashCpf, isValidCpf, onlyDigits } from "@/lib/cpf";
 import { consultarCpfSpc } from "@/lib/spc/client";
+import { getSpcMode } from "@/lib/spc/mode";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import {
   clearPreCadastro,
@@ -170,6 +171,36 @@ async function handleIdentificar(req: Request) {
         { status: 429 }
       );
     }
+  }
+
+  // Modo de consulta SPC pode ser desligado pelo admin via /admin (kill-switch
+  // pra quando o servico SPC esta caindo).
+  const spcMode = await getSpcMode();
+
+  if (spcMode === "desligado") {
+    // Pula SPC. Exige nome digitado pelo votante.
+    const nome = parsed.data.nome?.trim();
+    if (!nome || nome.length < 2) {
+      return NextResponse.json(
+        {
+          error:
+            "Informe seu nome completo pra continuar (a verificação automática está em manutenção).",
+          requer_nome: true,
+        },
+        { status: 400 }
+      );
+    }
+    void userAgent;
+    await setPreCadastro({
+      edicao_id: edicao.id,
+      cpf,
+      cpf_hash: cpfHash,
+      nome,
+      nome_autodeclarado: nome,
+      spc_validado: false,
+      fingerprint,
+    });
+    return NextResponse.json({ ok: true, nome, source: "auto_declarado" });
   }
 
   // SPC obrigatorio pra todo novo cadastro: bloqueia CPFs gerados por

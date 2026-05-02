@@ -10,9 +10,14 @@ import { getDeviceFingerprint } from "@/lib/fingerprint";
 import { isPrivateMode } from "@/lib/private-mode";
 import { Turnstile } from "@/components/voto/Turnstile";
 
-export function CpfForm() {
+type CpfFormProps = {
+  spcDesligado?: boolean;
+};
+
+export function CpfForm({ spcDesligado = false }: CpfFormProps) {
   const router = useRouter();
   const [cpf, setCpf] = useState("");
+  const [nome, setNome] = useState("");
   const [aceitou, setAceitou] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [error, setError] = useState<string>();
@@ -38,6 +43,9 @@ export function CpfForm() {
       privateMode,
       turnstileToken,
     };
+    if (spcDesligado && nome.trim()) {
+      body.nome = nome.trim();
+    }
 
     const res = await fetch("/api/identificar", {
       method: "POST",
@@ -54,6 +62,11 @@ export function CpfForm() {
     const numeros = onlyDigits(cpf);
     if (!isValidCpf(numeros)) {
       setError("CPF inválido. Confira os números.");
+      return;
+    }
+
+    if (spcDesligado && nome.trim().length < 2) {
+      setError("Informe seu nome completo.");
       return;
     }
 
@@ -113,6 +126,24 @@ export function CpfForm() {
         autoFocus
         maxLength={14}
       />
+
+      {spcDesligado && (
+        <>
+          <Input
+            label="Seu nome completo"
+            name="nome"
+            placeholder="Como aparece no seu documento"
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            autoComplete="name"
+            maxLength={120}
+          />
+          <p className="text-[11px] text-amber-700 bg-amber-100 border border-amber-200 rounded px-2 py-1.5 leading-snug">
+            ⚠ A verificação automática de CPF está em manutenção. Informe seu
+            nome conforme aparece no documento.
+          </p>
+        </>
+      )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
