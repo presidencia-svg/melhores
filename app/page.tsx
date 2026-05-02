@@ -2,10 +2,12 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/Button";
 import { TrophyMark, LaurelHalf, SmallCaps, Divider } from "@/components/brand/Marks";
+import { SafariAviso } from "@/components/voto/SafariAviso";
 
 export default function Home() {
   return (
     <div className="flex flex-col flex-1">
+      <SafariAviso />
       {/* Header */}
       <header className="border-b border-[rgba(10,42,94,0.12)] bg-cream-100/70 backdrop-blur sticky top-0 z-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-3">

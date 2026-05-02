@@ -1,6 +1,7 @@
 import { Logo } from "@/components/brand/Logo";
 import { StepIndicator } from "@/components/voto/StepIndicator";
 import { SmallCaps } from "@/components/brand/Marks";
+import { SafariAviso } from "@/components/voto/SafariAviso";
 import Link from "next/link";
 
 type VotoLayoutProps = {
@@ -11,6 +12,7 @@ type VotoLayoutProps = {
 export function VotoLayout({ step, children }: VotoLayoutProps) {
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-cream-300">
+      <SafariAviso />
       <header className="border-b border-[rgba(10,42,94,0.12)] bg-cream-100/70 backdrop-blur sticky top-0 z-10">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-2.5">
           <Link href="/">

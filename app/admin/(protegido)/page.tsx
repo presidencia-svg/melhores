@@ -13,7 +13,9 @@ import {
   Inbox,
   Trophy,
   Zap,
+  FolderTree,
 } from "lucide-react";
+import { EncerramentoCard } from "./EncerramentoCard";
 
 export const revalidate = 30;
 
@@ -44,6 +46,8 @@ export default async function AdminDashboard() {
     { count: totalVotantes },
     { count: totalVotos },
     { count: totalCandidatos },
+    { count: totalCategorias },
+    { count: totalSubcategorias },
     { count: sugestoesPendentes },
     { count: whatsappsValidados },
     { count: selfies },
@@ -66,6 +70,8 @@ export default async function AdminDashboard() {
     supabase.from("votantes").select("*", { head: true, count: "exact" }),
     supabase.from("votos").select("*", { head: true, count: "exact" }),
     supabase.from("candidatos").select("*", { head: true, count: "exact" }).eq("status", "aprovado"),
+    supabase.from("categorias").select("*", { head: true, count: "exact" }).eq("ativa", true),
+    supabase.from("subcategorias").select("*", { head: true, count: "exact" }).eq("ativa", true),
     supabase.from("candidatos").select("*", { head: true, count: "exact" }).eq("status", "pendente"),
     supabase.from("votantes").select("*", { head: true, count: "exact" }).eq("whatsapp_validado", true),
     supabase.from("votantes").select("*", { head: true, count: "exact" }).not("selfie_url", "is", null),
@@ -193,6 +199,14 @@ export default async function AdminDashboard() {
         )}
       </header>
 
+      {/* Encerramento da votacao */}
+      {edicao && (
+        <EncerramentoCard
+          fimVotacao={edicao.fim_votacao}
+          edicaoNome={edicao.nome}
+        />
+      )}
+
       {/* KPIs principais */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Kpi
@@ -226,11 +240,19 @@ export default async function AdminDashboard() {
       </div>
 
       {/* KPIs secundários */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <SmallKpi
+          icon={<FolderTree />}
+          label="Categorias"
+          value={fmt(totalCategorias ?? 0)}
+          link="/admin/categorias"
+          hint={`${fmt(totalSubcategorias ?? 0)} subcategorias`}
+        />
         <SmallKpi icon={<Trophy />} label="Candidatos" value={fmt(totalCandidatos ?? 0)} link="/admin/candidatos" />
         <SmallKpi icon={<Inbox />} label="Sugestões pendentes" value={fmt(sugestoesPendentes ?? 0)} link="/admin/sugestoes" highlight={(sugestoesPendentes ?? 0) > 0} />
         <SmallKpi icon={<Camera />} label="Selfies registradas" value={fmt(selfies ?? 0)} link="/admin/votantes" />
         <SmallKpi icon={<MessageSquare />} label="Telefones coletados" value={fmt(whatsappsValidados ?? 0)} link="/admin/whatsapp" />
+        <SmallKpi icon={<Vote />} label="Votos no total" value={fmt(votosNum)} />
       </div>
 
       {/* Hoje (BRT) */}
@@ -578,33 +600,40 @@ function SmallKpi({
   value,
   link,
   highlight,
+  hint,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
-  link: string;
+  link?: string;
   highlight?: boolean;
+  hint?: string;
 }) {
-  return (
-    <Link
-      href={link}
-      className={`block rounded-2xl border p-4 transition-all hover:shadow-md ${
-        highlight
-          ? "bg-cdl-yellow/10 border-cdl-yellow/40"
-          : "bg-card border-border hover:border-cdl-blue/30"
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${highlight ? "bg-cdl-yellow/30 text-cdl-yellow-dark" : "bg-cdl-blue/10 text-cdl-blue"}`}>
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-muted truncate">{label}</p>
-          <p className="font-bold text-foreground tabular-nums">{value}</p>
-        </div>
+  const content = (
+    <div className="flex items-center gap-3">
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${highlight ? "bg-cdl-yellow/30 text-cdl-yellow-dark" : "bg-cdl-blue/10 text-cdl-blue"}`}>
+        {icon}
       </div>
-    </Link>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-muted truncate">{label}</p>
+        <p className="font-bold text-foreground tabular-nums">{value}</p>
+        {hint && <p className="text-[10px] text-muted truncate">{hint}</p>}
+      </div>
+    </div>
   );
+  const className = `block rounded-2xl border p-4 transition-all hover:shadow-md ${
+    highlight
+      ? "bg-cdl-yellow/10 border-cdl-yellow/40"
+      : "bg-card border-border hover:border-cdl-blue/30"
+  }`;
+  if (link) {
+    return (
+      <Link href={link} className={className}>
+        {content}
+      </Link>
+    );
+  }
+  return <div className={className}>{content}</div>;
 }
 
 function DonutChart({ segments, total }: { segments: { label: string; value: number; color: string }[]; total: number }) {
