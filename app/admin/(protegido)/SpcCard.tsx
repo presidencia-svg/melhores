@@ -77,8 +77,8 @@ export function SpcCard() {
                   <>
                     <strong className="text-red-700">DESLIGADO</strong> —
                     novos cadastros aceitam o nome digitado pelo votante
-                    sem validar no SPC. Use só durante manutenção/queda da
-                    Boa Vista.
+                    sem validar no SPC. Use só durante manutenção/queda do
+                    SPC Brasil.
                   </>
                 ) : (
                   <>
