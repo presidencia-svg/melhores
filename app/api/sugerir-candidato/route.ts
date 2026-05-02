@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { normalizarNome, nomeCandidatoValido } from "@/lib/utils";
+import { normalizarNome, nomeCandidatoValido, tituloPT } from "@/lib/utils";
 
 const Body = z.object({
   subcategoriaId: z.string().uuid(),
@@ -32,7 +32,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: validacao.motivo }, { status: 400 });
   }
 
-  const nomeNorm = normalizarNome(nomeOriginal);
+  // Padroniza pra Title Case ("Karina Moraes"), preservando preposicoes minusculas.
+  const nomeFormatado = tituloPT(nomeOriginal);
+  const nomeNorm = normalizarNome(nomeFormatado);
 
   // 1) Fuzzy match — se já existe candidato parecido na mesma subcategoria, reutiliza
   const { data: similares } = await supabase.rpc("match_candidato_por_nome", {
@@ -53,7 +55,7 @@ export async function POST(req: Request) {
     .from("candidatos")
     .insert({
       subcategoria_id: parsed.data.subcategoriaId,
-      nome: nomeOriginal,
+      nome: nomeFormatado,
       nome_normalizado: nomeNorm,
       origem: "sugerido",
       status: "aprovado",

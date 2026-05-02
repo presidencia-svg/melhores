@@ -21,6 +21,27 @@ export function normalizarNome(nome: string): string {
     .replace(/\s+/g, " ");
 }
 
+// Padroniza nome de candidato em Title Case com regras de PT
+// (preposicoes/conjuncoes minusculas no meio).
+// "INÊS MORAIS"             -> "Inês Morais"
+// "karina luduvice"         -> "Karina Luduvice"
+// "Frederico Costa de Morais" -> "Frederico Costa de Morais"
+const STOP_WORDS_PT = new Set(["de", "da", "do", "das", "dos", "e"]);
+
+export function tituloPT(nome: string): string {
+  const limpo = nome.trim().replace(/\s+/g, " ");
+  if (!limpo) return "";
+  return limpo
+    .split(" ")
+    .map((palavra, i) => {
+      const lower = palavra.toLowerCase();
+      // Primeira palavra sempre capitalizada, mesmo se for "de", "da" etc
+      if (i > 0 && STOP_WORDS_PT.has(lower)) return lower;
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+}
+
 // Bloqueia tentativas de gambiarra pra ficar 1o na ordem alfabetica.
 // Rejeita nomes com @ em qualquer posicao OU comecando com caractere
 // que nao seja letra/numero (ex: !, #, _, *, .).

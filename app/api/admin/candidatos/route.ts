@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { normalizarNome, nomeCandidatoValido } from "@/lib/utils";
+import { normalizarNome, nomeCandidatoValido, tituloPT } from "@/lib/utils";
 
 const Body = z.object({
   subcategoria_id: z.string().uuid(),
@@ -31,7 +31,8 @@ export async function POST(req: Request) {
   }
 
   const supabase = createSupabaseAdminClient();
-  const nomeNorm = normalizarNome(parsed.data.nome);
+  const nomeFormatado = tituloPT(parsed.data.nome);
+  const nomeNorm = normalizarNome(nomeFormatado);
 
   // Bloqueia nome duplicado na mesma subcategoria (entre aprovados)
   const { data: existente } = await supabase
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
     .from("candidatos")
     .insert({
       subcategoria_id: parsed.data.subcategoria_id,
-      nome: parsed.data.nome,
+      nome: nomeFormatado,
       nome_normalizado: nomeNorm,
       descricao: parsed.data.descricao || null,
       foto_url: parsed.data.foto_url || null,

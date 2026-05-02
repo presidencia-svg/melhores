@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { normalizarNome, nomeCandidatoValido } from "@/lib/utils";
+import { normalizarNome, nomeCandidatoValido, tituloPT } from "@/lib/utils";
 
 const PatchBody = z.object({
   nome: z.string().min(2).max(120).optional(),
@@ -29,7 +29,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const update: Record<string, unknown> = { ...parsed.data };
   if (parsed.data.nome) {
-    update.nome_normalizado = normalizarNome(parsed.data.nome);
+    const nomeFormatado = tituloPT(parsed.data.nome);
+    update.nome = nomeFormatado;
+    update.nome_normalizado = normalizarNome(nomeFormatado);
   }
 
   const supabase = createSupabaseAdminClient();
