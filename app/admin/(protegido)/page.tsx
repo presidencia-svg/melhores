@@ -62,7 +62,9 @@ export default async function AdminDashboard() {
   ] = await Promise.all([
     supabase
       .from("edicao")
-      .select("id, ano, nome, inicio_votacao, fim_votacao")
+      .select(
+        "id, ano, nome, inicio_votacao, fim_votacao, divulgacao_resultado"
+      )
       .eq("ativa", true)
       .order("ano", { ascending: false })
       .limit(1)
@@ -203,6 +205,7 @@ export default async function AdminDashboard() {
       {edicao && (
         <EncerramentoCard
           fimVotacao={edicao.fim_votacao}
+          divulgacaoResultado={edicao.divulgacao_resultado ?? null}
           edicaoNome={edicao.nome}
         />
       )}

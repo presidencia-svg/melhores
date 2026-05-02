@@ -7,6 +7,7 @@ import { Clock, Pencil, Check, X } from "lucide-react";
 
 type Props = {
   fimVotacao: string;  // ISO timestamp
+  divulgacaoResultado: string | null;
   edicaoNome: string;
 };
 
@@ -32,14 +33,8 @@ function localInputToIso(local: string): string {
   return `${local}:00-03:00`;
 }
 
-export function EncerramentoCard({ fimVotacao, edicaoNome }: Props) {
-  const router = useRouter();
-  const [editando, setEditando] = useState(false);
-  const [valor, setValor] = useState(() => isoToLocalInput(fimVotacao));
-  const [salvando, setSalvando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-
-  const fimFormatado = new Date(fimVotacao).toLocaleString("pt-BR", {
+function formatHumano(iso: string): string {
+  return new Date(iso).toLocaleString("pt-BR", {
     timeZone: "America/Maceio",
     day: "2-digit",
     month: "long",
@@ -47,17 +42,43 @@ export function EncerramentoCard({ fimVotacao, edicaoNome }: Props) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+export function EncerramentoCard({
+  fimVotacao,
+  divulgacaoResultado,
+  edicaoNome,
+}: Props) {
+  const router = useRouter();
+  const [editando, setEditando] = useState(false);
+  const [valorFim, setValorFim] = useState(() => isoToLocalInput(fimVotacao));
+  const [valorDivulg, setValorDivulg] = useState(() =>
+    divulgacaoResultado ? isoToLocalInput(divulgacaoResultado) : ""
+  );
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const fimFormatado = formatHumano(fimVotacao);
+  const divulgFormatado = divulgacaoResultado
+    ? formatHumano(divulgacaoResultado)
+    : null;
   const expirado = Date.now() > new Date(fimVotacao).getTime();
 
   async function salvar() {
     setSalvando(true);
     setErro(null);
     try {
-      const iso = localInputToIso(valor);
+      const isoFim = new Date(localInputToIso(valorFim)).toISOString();
+      const isoDivulg = valorDivulg
+        ? new Date(localInputToIso(valorDivulg)).toISOString()
+        : null;
       const res = await fetch("/api/admin/edicao", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fim_votacao: new Date(iso).toISOString() }),
+        body: JSON.stringify({
+          fim_votacao: isoFim,
+          divulgacao_resultado: isoDivulg,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -74,7 +95,10 @@ export function EncerramentoCard({ fimVotacao, edicaoNome }: Props) {
   }
 
   function cancelar() {
-    setValor(isoToLocalInput(fimVotacao));
+    setValorFim(isoToLocalInput(fimVotacao));
+    setValorDivulg(
+      divulgacaoResultado ? isoToLocalInput(divulgacaoResultado) : ""
+    );
     setEditando(false);
     setErro(null);
   }
@@ -123,25 +147,58 @@ export function EncerramentoCard({ fimVotacao, edicaoNome }: Props) {
         </div>
 
         {!editando ? (
-          <div className="mt-4 ml-13">
-            <p className="font-display text-2xl text-navy-800">
-              {fimFormatado}
-              <span className="text-sm text-muted ml-2 font-sans">
-                (horário Nordeste)
-              </span>
-            </p>
+          <div className="mt-4 grid sm:grid-cols-2 gap-3">
+            <div>
+              <p className="kicker text-muted" style={{ fontSize: 9 }}>
+                encerramento da votação
+              </p>
+              <p className="font-display text-xl text-navy-800 mt-0.5">
+                {fimFormatado}
+              </p>
+            </div>
+            <div>
+              <p className="kicker text-muted" style={{ fontSize: 9 }}>
+                divulgação do resultado
+              </p>
+              <p className="font-display text-xl text-navy-800 mt-0.5">
+                {divulgFormatado ?? (
+                  <span className="text-muted text-sm font-sans italic">
+                    não definida
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
         ) : (
-          <div className="mt-4 flex items-center gap-2 flex-wrap">
-            <input
-              type="datetime-local"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              disabled={salvando}
-              className="h-10 px-3 rounded-lg border border-[rgba(10,42,94,0.2)] bg-white text-sm text-navy-800 focus:border-cdl-blue focus:outline-none focus:ring-1 focus:ring-cdl-blue disabled:opacity-50"
-            />
-            <span className="text-xs text-muted">horário Nordeste</span>
-            <div className="flex gap-2 ml-auto">
+          <div className="mt-4 grid sm:grid-cols-2 gap-3">
+            <label className="text-sm">
+              <span className="kicker text-muted block mb-1" style={{ fontSize: 9 }}>
+                encerramento da votação
+              </span>
+              <input
+                type="datetime-local"
+                value={valorFim}
+                onChange={(e) => setValorFim(e.target.value)}
+                disabled={salvando}
+                className="w-full h-10 px-3 rounded-lg border border-[rgba(10,42,94,0.2)] bg-white text-sm text-navy-800 focus:border-cdl-blue focus:outline-none focus:ring-1 focus:ring-cdl-blue disabled:opacity-50"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="kicker text-muted block mb-1" style={{ fontSize: 9 }}>
+                divulgação do resultado
+              </span>
+              <input
+                type="datetime-local"
+                value={valorDivulg}
+                onChange={(e) => setValorDivulg(e.target.value)}
+                disabled={salvando}
+                className="w-full h-10 px-3 rounded-lg border border-[rgba(10,42,94,0.2)] bg-white text-sm text-navy-800 focus:border-cdl-blue focus:outline-none focus:ring-1 focus:ring-cdl-blue disabled:opacity-50"
+              />
+            </label>
+            <div className="flex gap-2 sm:col-span-2 justify-end">
+              <span className="text-xs text-muted self-center mr-auto">
+                ambos em horário Nordeste
+              </span>
               <button
                 onClick={cancelar}
                 disabled={salvando}

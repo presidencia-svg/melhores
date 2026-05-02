@@ -6,6 +6,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 const PatchBody = z.object({
   fim_votacao: z.string().datetime().optional(),
   inicio_votacao: z.string().datetime().optional(),
+  divulgacao_resultado: z.string().datetime().nullable().optional(),
 });
 
 export async function GET() {
@@ -15,7 +16,9 @@ export async function GET() {
   const supabase = createSupabaseAdminClient();
   const { data: edicao } = await supabase
     .from("edicao")
-    .select("id, ano, nome, inicio_votacao, fim_votacao, ativa")
+    .select(
+      "id, ano, nome, inicio_votacao, fim_votacao, divulgacao_resultado, ativa"
+    )
     .eq("ativa", true)
     .order("ano", { ascending: false })
     .limit(1)

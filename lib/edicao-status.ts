@@ -6,6 +6,7 @@ export type Edicao = {
   nome: string;
   inicio_votacao: string;
   fim_votacao: string;
+  divulgacao_resultado: string | null;
   ativa: boolean;
 };
 
@@ -22,7 +23,9 @@ export async function getEdicaoStatus(): Promise<EdicaoStatus> {
   const supabase = createSupabaseAdminClient();
   const { data: edicao } = await supabase
     .from("edicao")
-    .select("id, ano, nome, inicio_votacao, fim_votacao, ativa")
+    .select(
+      "id, ano, nome, inicio_votacao, fim_votacao, divulgacao_resultado, ativa"
+    )
     .eq("ativa", true)
     .order("ano", { ascending: false })
     .limit(1)

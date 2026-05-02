@@ -3,24 +3,47 @@ import Link from "next/link";
 import { VotoLayout } from "@/components/voto/VotoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Share2 } from "lucide-react";
+import { Share2, Calendar, Trophy } from "lucide-react";
 import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { TrophyMark, SmallCaps, Divider, LaurelHalf } from "@/components/brand/Marks";
+
+function formatDataHora(iso: string | null): string | null {
+  if (!iso) return null;
+  return new Date(iso).toLocaleString("pt-BR", {
+    timeZone: "America/Maceio",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default async function ObrigadoPage() {
   const sessao = await getVotanteSessao();
   if (!sessao) redirect("/votar");
 
   const supabase = createSupabaseAdminClient();
-  const { count } = await supabase
-    .from("votos")
-    .select("*", { head: true, count: "exact" })
-    .eq("votante_id", sessao.id);
+  const [{ count }, { data: edicao }] = await Promise.all([
+    supabase
+      .from("votos")
+      .select("*", { head: true, count: "exact" })
+      .eq("votante_id", sessao.id),
+    supabase
+      .from("edicao")
+      .select("nome, fim_votacao, divulgacao_resultado")
+      .eq("ativa", true)
+      .order("ano", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   const totalVotos = count ?? 0;
   const primeiroNome = sessao.nome.split(" ")[0] ?? "";
   const whatsappOk = sessao.whatsapp_validado;
+  const fimVotacao = formatDataHora(edicao?.fim_votacao ?? null);
+  const divulgacao = formatDataHora(edicao?.divulgacao_resultado ?? null);
 
   return (
     <VotoLayout step={4}>
@@ -80,6 +103,59 @@ export default async function ObrigadoPage() {
             )}
           </CardContent>
         </Card>
+
+        {(fimVotacao || divulgacao) && (
+          <Card className="mt-4">
+            <CardContent>
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-cdl-blue/10 flex items-center justify-center shrink-0">
+                  <Calendar className="w-5 h-5 text-cdl-blue" />
+                </div>
+                <div>
+                  <SmallCaps color="var(--gold-700)" size={10}>
+                    fique de olho
+                  </SmallCaps>
+                  <h2
+                    className="font-display-bold text-navy-800 mt-1"
+                    style={{ fontSize: 20, lineHeight: 1.1 }}
+                  >
+                    Datas importantes
+                  </h2>
+                </div>
+              </div>
+
+              <div className="space-y-3 mt-2">
+                {fimVotacao && (
+                  <div className="flex items-start gap-3 text-sm">
+                    <span
+                      className="kicker text-navy-800/60 mt-0.5 shrink-0"
+                      style={{ fontSize: 9, minWidth: 80 }}
+                    >
+                      encerramento
+                    </span>
+                    <span className="font-medium text-navy-800">
+                      {fimVotacao}
+                    </span>
+                  </div>
+                )}
+                {divulgacao && (
+                  <div className="flex items-start gap-3 text-sm">
+                    <span
+                      className="kicker text-navy-800/60 mt-0.5 shrink-0 inline-flex items-center gap-1"
+                      style={{ fontSize: 9, minWidth: 80 }}
+                    >
+                      <Trophy className="w-3 h-3" />
+                      resultado
+                    </span>
+                    <span className="font-medium text-navy-800">
+                      {divulgacao}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="mt-4">
           <CardContent>
