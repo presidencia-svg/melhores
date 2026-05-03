@@ -4,7 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Medal } from "lucide-react";
 import { PodiumLista, type Podium } from "./PodiumLista";
 
-const ORDENS = ["votos", "alfabetica"] as const;
+const ORDENS = ["votos", "alfabetica", "risco"] as const;
 
 export default async function PodiumPage({
   searchParams,
@@ -14,15 +14,17 @@ export default async function PodiumPage({
   const sp = await searchParams;
   const ordem = (ORDENS.includes(sp.ordem as (typeof ORDENS)[number])
     ? sp.ordem
-    : "votos") as "votos" | "alfabetica";
+    : "votos") as "votos" | "alfabetica" | "risco";
 
   const supabase = createSupabaseAdminClient();
 
-  let query = supabase.from("v_podium").select("*");
+  let query = supabase.from("v_podium_riscado").select("*");
   if (ordem === "votos") {
     query = query.order("total_subcat", { ascending: false });
-  } else {
+  } else if (ordem === "alfabetica") {
     query = query.order("subcategoria_nome", { ascending: true });
+  } else {
+    query = query.order("score_risco", { ascending: false });
   }
   const { data: podiums } = await query;
 
@@ -50,7 +52,7 @@ export default async function PodiumPage({
                 o === ordem ? "bg-cdl-blue text-white" : "text-cdl-blue hover:bg-cdl-blue/10"
               }`}
             >
-              {o === "votos" ? "+ votadas" : "A–Z"}
+              {o === "votos" ? "+ votadas" : o === "alfabetica" ? "A–Z" : "+ risco"}
             </Link>
           ))}
         </nav>
