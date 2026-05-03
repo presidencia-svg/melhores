@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { VotoLayout } from "@/components/voto/VotoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
-import { ShieldCheck, Lock } from "lucide-react";
+import { ShieldCheck, Lock, RotateCcw } from "lucide-react";
 import { CpfForm } from "./CpfForm";
 import { getVotanteSessao } from "@/lib/sessao";
 import { getSpcMode } from "@/lib/spc/mode";
@@ -31,6 +31,15 @@ export default async function VotarPage() {
           </h1>
           <p className="text-muted mt-3 text-sm">
             Informe seu CPF para entrar na votação oficial.
+          </p>
+        </div>
+
+        <div className="mb-4 rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-3 flex items-start gap-3">
+          <RotateCcw className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+          <p className="text-[13px] leading-snug text-amber-900">
+            <strong>Já votou antes?</strong> É só digitar seu CPF aqui embaixo
+            e continuar de onde parou. Seus votos anteriores ficam preservados
+            — você vota só nas categorias que ainda faltam.
           </p>
         </div>
 
