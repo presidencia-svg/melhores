@@ -10,6 +10,12 @@ type Resultado = {
   categoria_id: string;
   categoria_nome: string;
   total_votos: number;
+  pct_spc?: number | null;
+  pct_wa?: number | null;
+  pct_selfie?: number | null;
+  pct_fp_comp?: number | null;
+  pct_ip_comp?: number | null;
+  score_risco?: number | null;
 };
 
 export const revalidate = 30;
@@ -22,7 +28,7 @@ export default async function ResultadosPage() {
   const rows: Resultado[] = [];
   for (let offset = 0; ; offset += PAGE_SIZE) {
     const { data } = await supabase
-      .from("v_resultados")
+      .from("v_resultados_riscado")
       .select("*")
       .range(offset, offset + PAGE_SIZE - 1);
     if (!data || data.length === 0) break;

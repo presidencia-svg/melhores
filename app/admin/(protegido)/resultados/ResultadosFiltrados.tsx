@@ -20,7 +20,25 @@ type Resultado = {
   categoria_id: string;
   categoria_nome: string;
   total_votos: number;
+  pct_spc?: number | null;
+  pct_wa?: number | null;
+  pct_selfie?: number | null;
+  pct_fp_comp?: number | null;
+  pct_ip_comp?: number | null;
+  score_risco?: number | null;
 };
+
+// Calibrado por auditoria: a edicao teve score medio ~17, todos os casos
+// que mereceram drill-down tinham score >= 22.
+function tomRisco(score: number | null | undefined): {
+  label: string;
+  classes: string;
+} {
+  const s = Number(score ?? 0);
+  if (s >= 28) return { label: "alto", classes: "bg-rose-100 text-rose-700 ring-rose-300" };
+  if (s >= 22) return { label: "medio", classes: "bg-amber-100 text-amber-800 ring-amber-300" };
+  return { label: "baixo", classes: "bg-emerald-100 text-emerald-700 ring-emerald-300" };
+}
 
 type Grupo = {
   categoria: string;
@@ -311,37 +329,54 @@ export function ResultadosFiltrados({ grupos }: { grupos: Grupo[] }) {
                               className="mt-3 pt-3 border-t border-border flex flex-col gap-1.5 max-h-[280px] overflow-y-auto pr-1"
                               style={{ scrollbarGutter: "stable" }}
                             >
-                              {g.candidatos.map((c, idx) => (
-                                <li
-                                  key={c.candidato_id}
-                                  className={`flex items-center gap-2 px-2 py-1.5 rounded ${
-                                    idx === 0 && c.total_votos > 0
-                                      ? "bg-cdl-yellow/15"
-                                      : ""
-                                  }`}
-                                >
-                                  <span className="w-5 text-center text-xs font-bold text-muted">
-                                    {idx === 0 && c.total_votos > 0 ? (
-                                      <Trophy className="w-3.5 h-3.5 text-cdl-yellow-dark inline" />
-                                    ) : idx === 1 && c.total_votos > 0 ? (
-                                      <Medal className="w-3.5 h-3.5 text-zinc-400 inline" />
-                                    ) : (
-                                      idx + 1
-                                    )}
-                                  </span>
-                                  <span className="flex-1 text-xs font-medium truncate">
-                                    {c.candidato_nome}
-                                  </span>
-                                  {c.origem === "sugerido" && (
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-cdl-blue/10 text-cdl-blue">
-                                      sugerido
+                              {g.candidatos.map((c, idx) => {
+                                const risco = tomRisco(c.score_risco);
+                                const temRisco = c.total_votos > 0 && c.score_risco != null;
+                                const tooltipRisco = temRisco
+                                  ? `risco ${risco.label} · score ${Number(c.score_risco).toFixed(1)}\n` +
+                                    `spc ${c.pct_spc ?? 0}% · wa ${c.pct_wa ?? 0}% · selfie ${c.pct_selfie ?? 0}%\n` +
+                                    `fp compartilhado ${c.pct_fp_comp ?? 0}% · ip compartilhado ${c.pct_ip_comp ?? 0}%`
+                                  : undefined;
+                                return (
+                                  <li
+                                    key={c.candidato_id}
+                                    className={`flex items-center gap-2 px-2 py-1.5 rounded ${
+                                      idx === 0 && c.total_votos > 0
+                                        ? "bg-cdl-yellow/15"
+                                        : ""
+                                    }`}
+                                  >
+                                    <span className="w-5 text-center text-xs font-bold text-muted">
+                                      {idx === 0 && c.total_votos > 0 ? (
+                                        <Trophy className="w-3.5 h-3.5 text-cdl-yellow-dark inline" />
+                                      ) : idx === 1 && c.total_votos > 0 ? (
+                                        <Medal className="w-3.5 h-3.5 text-zinc-400 inline" />
+                                      ) : (
+                                        idx + 1
+                                      )}
                                     </span>
-                                  )}
-                                  <span className="text-xs font-bold text-cdl-blue tabular-nums">
-                                    {c.total_votos}
-                                  </span>
-                                </li>
-                              ))}
+                                    <span className="flex-1 text-xs font-medium truncate">
+                                      {c.candidato_nome}
+                                    </span>
+                                    {c.origem === "sugerido" && (
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-cdl-blue/10 text-cdl-blue">
+                                        sugerido
+                                      </span>
+                                    )}
+                                    {temRisco && (
+                                      <span
+                                        title={tooltipRisco}
+                                        className={`text-[10px] px-1.5 py-0.5 rounded ring-1 font-mono tabular-nums ${risco.classes}`}
+                                      >
+                                        {Number(c.score_risco).toFixed(0)}
+                                      </span>
+                                    )}
+                                    <span className="text-xs font-bold text-cdl-blue tabular-nums">
+                                      {c.total_votos}
+                                    </span>
+                                  </li>
+                                );
+                              })}
                             </ol>
                           )}
                         </CardContent>

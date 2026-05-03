@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import JSZip from "jszip";
-import { Crown, Download, Loader2, Package, X, ShieldAlert } from "lucide-react";
+import { Crown, Download, Loader2, Package, X } from "lucide-react";
 
 export type Podium = {
   subcategoria_id: string;
@@ -21,27 +21,7 @@ export type Podium = {
   top3_nome: string | null;
   top3_foto: string | null;
   top3_votos: number;
-  // Indicadores de risco do top1 (vindos de v_podium_riscado).
-  // Sao opcionais pra nao quebrar se a view nao existir ainda.
-  pct_spc?: number | null;
-  pct_wa?: number | null;
-  pct_selfie?: number | null;
-  pct_fp_comp?: number | null;
-  pct_ip_comp?: number | null;
-  score_risco?: number | null;
 };
-
-function tomRisco(score: number | null | undefined): {
-  label: string;
-  bg: string;
-  text: string;
-  ring: string;
-} {
-  const s = Number(score ?? 0);
-  if (s >= 25) return { label: "alto", bg: "bg-rose-100", text: "text-rose-700", ring: "ring-rose-300" };
-  if (s >= 18) return { label: "medio", bg: "bg-amber-100", text: "text-amber-800", ring: "ring-amber-300" };
-  return { label: "baixo", bg: "bg-emerald-100", text: "text-emerald-700", ring: "ring-emerald-300" };
-}
 
 function slug(s: string): string {
   return s
@@ -227,38 +207,11 @@ function PodiumCard({ podium }: { podium: Podium }) {
     }
   }
 
-  const risco = tomRisco(podium.score_risco);
-
   return (
     <div className="flex flex-col gap-3">
       {/* Card visivel formato Feed */}
       <div ref={feedRef}>
         <CardFeed podium={podium} />
-      </div>
-
-      {/* Badge de risco do top1 (so admin ve, nao entra na imagem baixada) */}
-      <div
-        className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg ring-1 ${risco.bg} ${risco.text} ${risco.ring}`}
-        title={
-          podium.score_risco != null
-            ? `Score 0-100 baseado em SPC, WhatsApp, selfie, fingerprint compartilhado e IP compartilhado dos votantes do 1o lugar. Score alto nao prova fraude — so indica onde olhar primeiro.`
-            : "Score nao disponivel"
-        }
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          <ShieldAlert className="w-4 h-4 shrink-0" />
-          <span className="text-xs font-semibold uppercase tracking-wider">
-            risco {risco.label}
-          </span>
-        </div>
-        <div className="flex items-center gap-3 text-[11px] font-mono tabular-nums">
-          {podium.pct_spc != null && <span>spc {podium.pct_spc}%</span>}
-          {podium.pct_wa != null && <span>wa {podium.pct_wa}%</span>}
-          {podium.pct_ip_comp != null && <span>ip {podium.pct_ip_comp}%</span>}
-          <span className="text-sm font-bold">
-            {Number(podium.score_risco ?? 0).toFixed(1)}
-          </span>
-        </div>
       </div>
 
       <div className="flex gap-2">
