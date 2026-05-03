@@ -225,8 +225,8 @@ function CardStory({
       style={{
         width: 1080,
         height: 1920,
-        paddingTop: 260,
-        paddingBottom: 260,
+        paddingTop: 220,
+        paddingBottom: 220,
         backgroundColor: "#0a2a5e",
         backgroundImage:
           "radial-gradient(circle at 50% 0%, rgba(255,215,0,0.18) 0%, transparent 55%), radial-gradient(circle at 50% 100%, rgba(0,168,89,0.12) 0%, transparent 50%)",
@@ -236,49 +236,49 @@ function CardStory({
       <div className="shrink-0">
         <div
           className="text-center uppercase tracking-[0.3em] font-bold opacity-90"
-          style={{ fontSize: 36 }}
+          style={{ fontSize: 32 }}
         >
           Melhores do Ano · CDL Aracaju
         </div>
         {acirrado && (
           <div
-            className="flex items-center justify-center gap-3 mt-4 text-amber-300 font-bold uppercase tracking-[0.2em]"
-            style={{ fontSize: 30 }}
+            className="flex items-center justify-center gap-3 mt-3 text-amber-300 font-bold uppercase tracking-[0.2em]"
+            style={{ fontSize: 28 }}
           >
-            <Flame className="w-9 h-9" />
+            <Flame className="w-8 h-8" />
             acirrado
           </div>
         )}
 
         <h2
-          className="font-display font-bold mt-8 leading-[1.0] text-center"
-          style={{ fontSize: 132 }}
+          className="font-display font-bold mt-6 leading-[1.0] text-center line-clamp-2"
+          style={{ fontSize: 110 }}
         >
           {duelo.subcategoria_nome}
         </h2>
 
         <p
-          className="font-light text-amber-300 mt-5 italic text-center"
-          style={{ fontSize: 44 }}
+          className="font-light text-amber-300 mt-4 italic text-center"
+          style={{ fontSize: 38 }}
         >
           Quem ainda vai virar o jogo?
         </p>
       </div>
 
       {/* Meio: duelo */}
-      <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-6">
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col items-center justify-center gap-4">
         <Lado
           nome={duelo.top1_nome}
           foto={duelo.top1_foto}
           pct={pct1}
           ganhando
           big
-          fotoSize={200}
+          fotoSize={170}
         />
 
         <div
           className="font-display italic text-amber-300 leading-none"
-          style={{ fontSize: 72 }}
+          style={{ fontSize: 60 }}
         >
           vs
         </div>
@@ -288,19 +288,19 @@ function CardStory({
           foto={duelo.top2_foto}
           pct={pct2}
           big
-          fotoSize={200}
+          fotoSize={170}
         />
       </div>
 
       {/* Bottom: barra + CTA */}
       <div className="shrink-0">
-        <div className="h-8 rounded-full bg-white/15 overflow-hidden flex">
+        <div className="h-7 rounded-full bg-white/15 overflow-hidden flex">
           <div className="bg-amber-300 h-full" style={{ width: `${pct1}%` }} />
           <div className="bg-white h-full" style={{ width: `${pct2}%` }} />
         </div>
         <div
-          className="flex justify-between font-mono mt-4 opacity-90"
-          style={{ fontSize: 32 }}
+          className="flex justify-between font-mono mt-3 opacity-90"
+          style={{ fontSize: 28 }}
         >
           <span>{pct1.toFixed(1)}%</span>
           <span className="opacity-70">diferença de {duelo.diff_pct}%</span>
@@ -309,13 +309,13 @@ function CardStory({
 
         <p
           className="text-center font-bold leading-tight"
-          style={{ fontSize: 64, marginTop: 56 }}
+          style={{ fontSize: 56, marginTop: 36 }}
         >
           Ainda dá tempo de virar!
         </p>
         <p
-          className="text-center text-amber-300 font-bold mt-3"
-          style={{ fontSize: 48 }}
+          className="text-center text-amber-300 font-bold mt-2"
+          style={{ fontSize: 42 }}
         >
           votar.cdlaju.com.br
         </p>
@@ -372,7 +372,7 @@ function Lado({
         className={`font-bold text-center line-clamp-2 leading-tight ${
           big ? "" : "text-sm mt-2"
         }`}
-        style={big ? { fontSize: 44, marginTop: 16 } : undefined}
+        style={big ? { fontSize: 38, marginTop: 14 } : undefined}
         title={nome}
       >
         {nome}
@@ -381,7 +381,7 @@ function Lado({
         className={`font-display ${pctColor} leading-none ${
           big ? "" : "text-2xl mt-1"
         }`}
-        style={big ? { fontSize: 84, marginTop: 8 } : undefined}
+        style={big ? { fontSize: 72, marginTop: 6 } : undefined}
       >
         {pct.toFixed(1)}%
       </p>
