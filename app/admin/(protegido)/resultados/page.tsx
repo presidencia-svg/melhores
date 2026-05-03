@@ -24,13 +24,28 @@ export default async function ResultadosPage() {
   const supabase = createSupabaseAdminClient();
 
   // Paginacao manual: PostgREST default trunca em 1000 linhas.
+  // Tenta a view com risco; se nao existir (migration 024 nao rodada),
+  // cai pra v_resultados pura — score_risco fica null e o badge nao aparece.
   const PAGE_SIZE = 1000;
   const rows: Resultado[] = [];
+  let viewName: "v_resultados_riscado" | "v_resultados" = "v_resultados_riscado";
+  let viewWarning: string | null = null;
+
   for (let offset = 0; ; offset += PAGE_SIZE) {
-    const { data } = await supabase
-      .from("v_resultados_riscado")
+    const { data, error } = await supabase
+      .from(viewName)
       .select("*")
       .range(offset, offset + PAGE_SIZE - 1);
+    if (error) {
+      console.error(`[resultados] erro ao consultar ${viewName}:`, error);
+      if (viewName === "v_resultados_riscado") {
+        viewWarning = `View v_resultados_riscado nao encontrada — rode a migration 024. Erro: ${error.message}`;
+        viewName = "v_resultados";
+        offset = -PAGE_SIZE; // proximo loop comeca em offset 0
+        continue;
+      }
+      break;
+    }
     if (!data || data.length === 0) break;
     rows.push(...(data as Resultado[]));
     if (data.length < PAGE_SIZE) break;
@@ -70,6 +85,11 @@ export default async function ResultadosPage() {
         <p className="text-muted mt-1">
           {gruposOrdenados.length} subcategorias · atualizado a cada 30 segundos
         </p>
+        {viewWarning && (
+          <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            <strong>Aviso:</strong> {viewWarning}
+          </div>
+        )}
       </header>
 
       <ResultadosFiltrados grupos={gruposOrdenados} />
