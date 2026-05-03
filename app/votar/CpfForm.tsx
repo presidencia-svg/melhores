@@ -98,6 +98,12 @@ export function CpfForm({ spcDesligado = false }: CpfFormProps) {
         return;
       }
 
+      // Validacao WA desligada + CPF ja existe → entra direto nas categorias
+      if (data.retorno_direto) {
+        router.push("/votar/categorias");
+        return;
+      }
+
       // CPF ja existe mas WhatsApp nao foi validado → completa o cadastro
       if (data.completarCadastro) {
         router.push("/votar/completar");

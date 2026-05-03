@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { ShieldCheck, MessageCircle } from "lucide-react";
 import { SmallCaps } from "@/components/brand/Marks";
 import { getVotanteSessao } from "@/lib/sessao";
+import { isWhatsAppValidacaoLigada } from "@/lib/whatsapp/mode";
 import { WhatsAppForm } from "../finalizar/WhatsAppForm";
 
 export default async function CompletarPage() {
@@ -12,6 +13,10 @@ export default async function CompletarPage() {
 
   // Se o votante ja validou o WhatsApp, segue direto pra continuar votando.
   if (sessao.whatsapp_validado) redirect("/votar/categorias");
+
+  // Validacao WhatsApp desligada — pula essa etapa e segue pra categorias.
+  const validacaoLigada = await isWhatsAppValidacaoLigada();
+  if (!validacaoLigada) redirect("/votar/categorias");
 
   const primeiroNome = (sessao.nome ?? "").split(" ")[0] || "amigo(a)";
 

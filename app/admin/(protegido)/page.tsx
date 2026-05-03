@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { EncerramentoCard } from "./EncerramentoCard";
 import { SpcCard } from "./SpcCard";
+import { WhatsAppValidacaoCard } from "./WhatsAppValidacaoCard";
 
 export const revalidate = 30;
 
@@ -213,6 +214,9 @@ export default async function AdminDashboard() {
 
       {/* Toggle de consulta SPC */}
       <SpcCard />
+
+      {/* Toggle de validacao WhatsApp (OTP) */}
+      <WhatsAppValidacaoCard />
 
       {/* KPIs principais */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

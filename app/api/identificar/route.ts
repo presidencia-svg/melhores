@@ -3,6 +3,7 @@ import { z } from "zod";
 import { hashCpf, isValidCpf, onlyDigits } from "@/lib/cpf";
 import { consultarCpfSpc } from "@/lib/spc/client";
 import { getSpcMode } from "@/lib/spc/mode";
+import { isWhatsAppValidacaoLigada } from "@/lib/whatsapp/mode";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import {
   clearPreCadastro,
@@ -136,11 +137,21 @@ async function handleIdentificar(req: Request) {
     // Cadastro incompleto (sem whatsapp validado). Em vez de bloquear, deixa
     // o votante completar agora: abre a sessao dele e o frontend manda pra
     // tela de confirmacao do WhatsApp.
-    if (!existente.whatsapp_validado || !existente.whatsapp) {
+    // Se validacao WhatsApp esta desligada, nao trata como incompleto —
+    // o votante segue direto pras categorias.
+    const waLigada = await isWhatsAppValidacaoLigada();
+    if (waLigada && (!existente.whatsapp_validado || !existente.whatsapp)) {
       await clearPreCadastro();
       await clearPreRetorno();
       await setVotanteSessao(existente.id);
       return NextResponse.json({ ok: true, completarCadastro: true });
+    }
+    // Validacao desligada — nao manda OTP de retorno tambem; abre sessao direto.
+    if (!waLigada) {
+      await clearPreCadastro();
+      await clearPreRetorno();
+      await setVotanteSessao(existente.id);
+      return NextResponse.json({ ok: true, retorno_direto: true });
     }
     // Abre fluxo de retorno: cookie pre-retorno (so id), limpa qualquer
     // sessao/pre-cadastro de fluxos antigos pra nao confundir.

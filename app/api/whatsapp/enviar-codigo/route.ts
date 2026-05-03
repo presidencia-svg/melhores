@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getVotanteSessao } from "@/lib/sessao";
+import { isWhatsAppValidacaoLigada } from "@/lib/whatsapp/mode";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import {
   enviarMensagemTexto,
@@ -24,6 +25,14 @@ export async function POST(req: Request) {
   const sessao = await getVotanteSessao();
   if (!sessao) {
     return NextResponse.json({ error: "Sessão expirada" }, { status: 401 });
+  }
+
+  // Defesa: se admin desligou validacao WhatsApp, nao manda OTP.
+  if (!(await isWhatsAppValidacaoLigada())) {
+    return NextResponse.json(
+      { error: "Validação WhatsApp temporariamente desligada." },
+      { status: 503 }
+    );
   }
 
   const json = await req.json().catch(() => ({}));

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { ArrowLeft, MessageCircle } from "lucide-react";
 import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { isWhatsAppValidacaoLigada } from "@/lib/whatsapp/mode";
 import { WhatsAppForm } from "./WhatsAppForm";
 import { SmallCaps, TrophyMark, Divider } from "@/components/brand/Marks";
 
@@ -13,6 +14,13 @@ export default async function FinalizarPage() {
   const sessao = await getVotanteSessao();
   if (!sessao) redirect("/votar");
   if (!sessao.selfie_url) redirect("/votar/selfie");
+
+  // Validacao WhatsApp desligada (kill-switch admin) — pula o opt-in
+  // direto pra pagina de obrigado pra nao gastar mensagens da Meta/Z-API.
+  const validacaoLigada = await isWhatsAppValidacaoLigada();
+  if (!validacaoLigada) {
+    redirect("/votar/obrigado");
+  }
 
   const supabase = createSupabaseAdminClient();
   const { count } = await supabase
