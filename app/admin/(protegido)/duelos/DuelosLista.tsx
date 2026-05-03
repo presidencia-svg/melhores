@@ -221,7 +221,7 @@ function CardStory({
   // Tipografia toda dimensionada pra leitura no celular (1080px de largura).
   return (
     <article
-      className="flex flex-col px-14 relative text-white"
+      className="flex flex-col px-14 relative text-white overflow-hidden"
       style={{
         width: 1080,
         height: 1920,
@@ -233,7 +233,7 @@ function CardStory({
       }}
     >
       {/* Top: marca + nome da sub */}
-      <div>
+      <div className="shrink-0">
         <div
           className="text-center uppercase tracking-[0.3em] font-bold opacity-90"
           style={{ fontSize: 36 }}
@@ -266,19 +266,19 @@ function CardStory({
       </div>
 
       {/* Meio: duelo */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-8">
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-6">
         <Lado
           nome={duelo.top1_nome}
           foto={duelo.top1_foto}
           pct={pct1}
           ganhando
           big
-          fotoSize={240}
+          fotoSize={200}
         />
 
         <div
           className="font-display italic text-amber-300 leading-none"
-          style={{ fontSize: 96 }}
+          style={{ fontSize: 72 }}
         >
           vs
         </div>
@@ -288,12 +288,12 @@ function CardStory({
           foto={duelo.top2_foto}
           pct={pct2}
           big
-          fotoSize={240}
+          fotoSize={200}
         />
       </div>
 
       {/* Bottom: barra + CTA */}
-      <div>
+      <div className="shrink-0">
         <div className="h-8 rounded-full bg-white/15 overflow-hidden flex">
           <div className="bg-amber-300 h-full" style={{ width: `${pct1}%` }} />
           <div className="bg-white h-full" style={{ width: `${pct2}%` }} />
@@ -372,7 +372,7 @@ function Lado({
         className={`font-bold text-center line-clamp-2 leading-tight ${
           big ? "" : "text-sm mt-2"
         }`}
-        style={big ? { fontSize: 56, marginTop: 24 } : undefined}
+        style={big ? { fontSize: 44, marginTop: 16 } : undefined}
         title={nome}
       >
         {nome}
@@ -381,7 +381,7 @@ function Lado({
         className={`font-display ${pctColor} leading-none ${
           big ? "" : "text-2xl mt-1"
         }`}
-        style={big ? { fontSize: 112, marginTop: 12 } : undefined}
+        style={big ? { fontSize: 84, marginTop: 8 } : undefined}
       >
         {pct.toFixed(1)}%
       </p>

@@ -18,6 +18,7 @@ import {
 import { EncerramentoCard } from "./EncerramentoCard";
 import { SpcCard } from "./SpcCard";
 import { WhatsAppValidacaoCard } from "./WhatsAppValidacaoCard";
+import { VotosPorDiaCard } from "./VotosPorDiaCard";
 
 export const revalidate = 30;
 
@@ -362,53 +363,8 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4 mb-6">
-        {/* Gráfico: votos por dia */}
-        <Card className="lg:col-span-2">
-          <CardContent>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-lg font-bold text-cdl-blue">Votos por dia</h2>
-              <div className="flex items-center gap-3 text-xs text-muted">
-                <span>últimos 14 dias</span>
-                <span>·</span>
-                <span>
-                  total <strong className="text-cdl-blue">{fmt(dias14.reduce((a, d) => a + d.count, 0))}</strong>
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-1 h-56">
-              {dias14.map((d, i) => {
-                const heightPct = (d.count / maxDia) * 100;
-                return (
-                  <div key={i} className="flex-1 h-full flex flex-col group">
-                    <div className="h-5 flex items-end justify-center">
-                      <span
-                        className={`text-[11px] font-bold tabular-nums leading-none whitespace-nowrap ${
-                          d.count > 0 ? "text-cdl-blue" : "text-transparent"
-                        }`}
-                      >
-                        {fmt(d.count)}
-                      </span>
-                    </div>
-                    <div className="flex-1 flex flex-col-reverse min-h-0">
-                      <div
-                        className="w-full bg-cdl-blue rounded-t transition-all group-hover:bg-cdl-blue-light"
-                        style={{ height: `${heightPct}%`, minHeight: d.count > 0 ? 4 : 0 }}
-                        title={`${d.label}: ${d.count} votos`}
-                      />
-                    </div>
-                    <span className="text-[10px] text-muted mt-1 text-center">
-                      {d.label.slice(0, 5)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-3 flex justify-between text-xs text-muted">
-              <span>0</span>
-              <span>pico {fmt(maxDia)}</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Gráfico: votos por dia (com drill-down por hora + SO) */}
+        <VotosPorDiaCard dias={dias14} maxDia={maxDia} />
 
         {/* Donut: dispositivos */}
         <Card>
@@ -725,7 +681,7 @@ function bucketDaysFromView(rows: VotosPorDiaRow[], days: number) {
   const byDate = new Map<string, number>();
   for (const r of rows) byDate.set(r.dia, (byDate.get(r.dia) ?? 0) + r.total);
 
-  const buckets: { label: string; count: number; date: Date }[] = [];
+  const buckets: { iso: string; label: string; count: number }[] = [];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   for (let i = days - 1; i >= 0; i--) {
@@ -733,9 +689,9 @@ function bucketDaysFromView(rows: VotosPorDiaRow[], days: number) {
     d.setDate(today.getDate() - i);
     const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     buckets.push({
+      iso,
       label: d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
       count: byDate.get(iso) ?? 0,
-      date: d,
     });
   }
   return buckets;
