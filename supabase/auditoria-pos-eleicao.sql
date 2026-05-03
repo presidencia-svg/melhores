@@ -173,13 +173,10 @@ order by score_risco desc, votos desc;
 
 -- ==========================================================================
 -- PARTE 5 — DRILL-DOWN NUM CANDIDATO
--- Troca o nome no WHERE e roda. Usa pra olhar caso a caso quem aparece
--- amarelo na PARTE 4.
+-- Edita as DUAS ocorrencias de 'TROCA_AQUI%' antes de rodar (precisa ser
+-- nas duas — a 5.1 e a 5.2 — porque o SQL Editor do Supabase nao tem psql
+-- variables). Use pattern com % no fim, ex: 'felipe aranha%' ou 'tratto%'.
 -- ==========================================================================
-
--- COLE AQUI O NOME (substitui o trecho entre aspas)
--- Exemplo: 'tratto%car%' ou 'felipe%aranha%'
-\set candidato_pattern '%TROCA AQUI%'
 
 -- 5.1) Lista de votantes do candidato com sinais
 select
@@ -194,17 +191,17 @@ select
 from votos v
 join candidatos c on c.id = v.candidato_id
 join votantes vt on vt.id = v.votante_id
-where c.nome ilike :'candidato_pattern'
+where c.nome ilike 'TROCA_AQUI%'
 order by v.criado_em desc;
 
--- 5.2) Resumo numerico (mesma logica do andrea original, parametrizado)
+-- 5.2) Resumo numerico — TROCAR O NOME TAMBEM AQUI EMBAIXO
 with votos_cand as (
   select vt.id as votante_id, vt.spc_validado, vt.whatsapp_validado,
          vt.selfie_url, vt.device_fingerprint, vt.ip
   from votos v
   join candidatos c on c.id = v.candidato_id
   join votantes vt on vt.id = v.votante_id
-  where c.nome ilike :'candidato_pattern'
+  where c.nome ilike 'TROCA_AQUI%'
 )
 select
   count(*)                                                                    as total_votos,
