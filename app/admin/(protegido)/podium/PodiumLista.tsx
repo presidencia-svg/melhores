@@ -36,6 +36,18 @@ function pctOf(votos: number, total: number): number {
   return total > 0 ? (votos / total) * 100 : 0;
 }
 
+// Empate de 1o lugar: top1 e top2 tem o mesmo numero de votos (>0).
+// Quando isso acontece, a v_podium ordena alfabeticamente — visualmente
+// fica enganoso mostrar como "1o e 2o", entao renderizamos um layout
+// dedicado com os dois como co-campeoes.
+function isEmpate(podium: Podium): boolean {
+  return (
+    podium.top1_votos > 0 &&
+    podium.top2_id !== null &&
+    podium.top1_votos === podium.top2_votos
+  );
+}
+
 export function PodiumLista({ podiums }: { podiums: Podium[] }) {
   const [progresso, setProgresso] = useState<{
     feito: number;
@@ -264,6 +276,8 @@ const ACENTOS = ["text-amber-300", "text-slate-200", "text-orange-300"];
 const BORDAS = ["border-amber-300", "border-slate-200", "border-orange-300"];
 
 function CardFeed({ podium }: { podium: Podium }) {
+  if (isEmpate(podium)) return <CardFeedEmpate podium={podium} />;
+
   const pct1 = pctOf(podium.top1_votos, podium.total_subcat);
   const pct2 = podium.top2_id ? pctOf(podium.top2_votos, podium.total_subcat) : 0;
   const pct3 = podium.top3_id ? pctOf(podium.top3_votos, podium.total_subcat) : 0;
@@ -339,6 +353,8 @@ function CardFeed({ podium }: { podium: Podium }) {
 }
 
 function CardStory({ podium }: { podium: Podium }) {
+  if (isEmpate(podium)) return <CardStoryEmpate podium={podium} />;
+
   const pct1 = pctOf(podium.top1_votos, podium.total_subcat);
   const pct2 = podium.top2_id ? pctOf(podium.top2_votos, podium.total_subcat) : 0;
   const pct3 = podium.top3_id ? pctOf(podium.top3_votos, podium.total_subcat) : 0;
@@ -439,6 +455,202 @@ function CardStory({ podium }: { podium: Podium }) {
         </p>
       </div>
     </article>
+  );
+}
+
+// ==========================================================================
+// Empate tecnico de 1o lugar — top1 e top2 com mesmo numero de votos.
+// Layout dedicado: ambos como co-campeoes, sem hierarquia, faixa
+// "EMPATE TECNICO" no topo. 3o lugar (se houver) aparece como coadjuvante.
+// ==========================================================================
+
+function CardFeedEmpate({ podium }: { podium: Podium }) {
+  const pct1 = pctOf(podium.top1_votos, podium.total_subcat);
+  const pct3 = podium.top3_id ? pctOf(podium.top3_votos, podium.total_subcat) : 0;
+
+  return (
+    <article
+      className="aspect-square rounded-2xl overflow-hidden flex flex-col p-5 relative shadow-lg text-white"
+      style={{
+        backgroundColor: "#0a2a5e",
+        backgroundImage:
+          "radial-gradient(circle at 50% 25%, rgba(255,215,0,0.18) 0%, transparent 55%)",
+      }}
+    >
+      <div className="text-center text-[10px] uppercase tracking-[0.2em] font-semibold opacity-80">
+        Resultado oficial · CDL Aracaju
+      </div>
+      <h2 className="font-display text-xl font-bold mt-1 leading-tight text-center line-clamp-2">
+        {podium.subcategoria_nome}
+      </h2>
+
+      {/* Faixa EMPATE TECNICO */}
+      <div className="mt-2 mx-auto px-3 py-1 rounded-full bg-amber-300 text-[#0a2a5e] text-[10px] uppercase tracking-[0.25em] font-bold">
+        empate técnico
+      </div>
+
+      {/* Dois campeoes lado a lado */}
+      <div className="flex-1 flex items-center justify-center gap-3 mt-2">
+        <CoCampeao foto={podium.top1_foto} nome={podium.top1_nome!} size={80} />
+        <span
+          className="font-display italic text-amber-300 leading-none"
+          style={{ fontSize: 28 }}
+        >
+          &
+        </span>
+        <CoCampeao foto={podium.top2_foto} nome={podium.top2_nome!} size={80} />
+      </div>
+
+      <p
+        className="font-display text-center text-amber-300 leading-none mt-1"
+        style={{ fontSize: 26 }}
+      >
+        {pct1.toFixed(1)}% cada
+      </p>
+
+      {podium.top3_id && (
+        <div className="mt-3 mb-1">
+          <Coadjuvante
+            pos={3}
+            nome={podium.top3_nome!}
+            foto={podium.top3_foto}
+            pct={pct3}
+            small
+          />
+        </div>
+      )}
+
+      <p className="text-center text-[10px] opacity-80 mt-1">
+        {podium.total_subcat.toLocaleString("pt-BR")} votos · escolhido por você
+      </p>
+      <p className="text-center text-[11px] mt-0.5 text-amber-300 font-bold">
+        cdlaju.com.br
+      </p>
+    </article>
+  );
+}
+
+function CardStoryEmpate({ podium }: { podium: Podium }) {
+  const pct1 = pctOf(podium.top1_votos, podium.total_subcat);
+  const pct3 = podium.top3_id ? pctOf(podium.top3_votos, podium.total_subcat) : 0;
+
+  return (
+    <article
+      className="flex flex-col px-14 relative text-white"
+      style={{
+        width: 1080,
+        height: 1920,
+        paddingTop: 220,
+        paddingBottom: 240,
+        backgroundColor: "#0a2a5e",
+        backgroundImage:
+          "radial-gradient(circle at 50% 32%, rgba(255,215,0,0.25) 0%, transparent 55%), radial-gradient(circle at 50% 100%, rgba(0,168,89,0.12) 0%, transparent 50%)",
+      }}
+    >
+      <div>
+        <div
+          className="text-center uppercase tracking-[0.3em] font-bold opacity-90"
+          style={{ fontSize: 32 }}
+        >
+          Resultado oficial · CDL Aracaju
+        </div>
+        <h2
+          className="font-display font-bold mt-6 leading-[1.0] text-center"
+          style={{ fontSize: 100 }}
+        >
+          {podium.subcategoria_nome}
+        </h2>
+        <div
+          className="mt-8 mx-auto px-8 py-3 rounded-full bg-amber-300 text-[#0a2a5e] uppercase tracking-[0.4em] font-bold w-fit"
+          style={{ fontSize: 32 }}
+        >
+          empate técnico
+        </div>
+      </div>
+
+      {/* Dois campeoes lado a lado */}
+      <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="flex items-center justify-center gap-8">
+          <CoCampeao foto={podium.top1_foto} nome={podium.top1_nome!} size={300} />
+          <span
+            className="font-display italic text-amber-300 leading-none"
+            style={{ fontSize: 96 }}
+          >
+            &
+          </span>
+          <CoCampeao foto={podium.top2_foto} nome={podium.top2_nome!} size={300} />
+        </div>
+
+        <div className="mt-10 grid grid-cols-2 gap-12 w-full px-8">
+          <p
+            className="font-display-bold text-center leading-tight"
+            style={{ fontSize: 56 }}
+            title={podium.top1_nome}
+          >
+            {podium.top1_nome}
+          </p>
+          <p
+            className="font-display-bold text-center leading-tight"
+            style={{ fontSize: 56 }}
+            title={podium.top2_nome ?? ""}
+          >
+            {podium.top2_nome}
+          </p>
+        </div>
+
+        <p
+          className="font-display text-amber-300 leading-none mt-8"
+          style={{ fontSize: 96 }}
+        >
+          {pct1.toFixed(1)}% cada
+        </p>
+      </div>
+
+      {podium.top3_id && (
+        <div className="grid grid-cols-1 gap-6">
+          <Coadjuvante
+            pos={3}
+            nome={podium.top3_nome!}
+            foto={podium.top3_foto}
+            pct={pct3}
+            small={false}
+          />
+        </div>
+      )}
+
+      <div className="mt-8">
+        <p
+          className="text-center font-semibold opacity-90"
+          style={{ fontSize: 32 }}
+        >
+          {podium.total_subcat.toLocaleString("pt-BR")} votos · escolhido por você
+        </p>
+        <p
+          className="text-center text-amber-300 font-bold mt-3"
+          style={{ fontSize: 44 }}
+        >
+          cdlaju.com.br
+        </p>
+      </div>
+    </article>
+  );
+}
+
+// Versao "co-campeao" da CampeaoFoto — mesmo glow dourado, mas usado em par
+// pra empates. Visualmente equivalente ao campeao solo, so muda a semantica.
+function CoCampeao({
+  foto,
+  nome,
+  size,
+}: {
+  foto: string | null;
+  nome: string;
+  size: number;
+}) {
+  return (
+    <div className="flex flex-col items-center shrink-0">
+      <CampeaoFoto foto={foto} nome={nome} size={size} />
+    </div>
   );
 }
 
