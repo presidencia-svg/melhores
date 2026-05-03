@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import { Crown, Download, Loader2 } from "lucide-react";
+import JSZip from "jszip";
+import { Crown, Download, Loader2, Package, X } from "lucide-react";
 
 export type Podium = {
   subcategoria_id: string;
@@ -36,11 +37,143 @@ function pctOf(votos: number, total: number): number {
 }
 
 export function PodiumLista({ podiums }: { podiums: Podium[] }) {
+  const [progresso, setProgresso] = useState<{
+    feito: number;
+    total: number;
+    erros: string[];
+  } | null>(null);
+  const cancelarRef = useRef(false);
+
+  async function baixarTodos() {
+    if (progresso) return;
+    cancelarRef.current = false;
+    const total = podiums.length;
+    setProgresso({ feito: 0, total, erros: [] });
+    const zip = new JSZip();
+    const erros: string[] = [];
+
+    for (let i = 0; i < podiums.length; i++) {
+      if (cancelarRef.current) {
+        setProgresso(null);
+        return;
+      }
+      const p = podiums[i]!;
+      const node = document.querySelector<HTMLElement>(
+        `[data-story-id="${p.subcategoria_id}"]`
+      );
+      if (!node) {
+        erros.push(p.subcategoria_nome);
+        setProgresso({ feito: i + 1, total, erros: [...erros] });
+        continue;
+      }
+      try {
+        const dataUrl = await toPng(node, {
+          cacheBust: true,
+          pixelRatio: 2,
+          backgroundColor: "#0a2a5e",
+        });
+        const base64 = dataUrl.split(",")[1] ?? "";
+        const nomeArquivo = `${String(i + 1).padStart(3, "0")}-${slug(p.subcategoria_nome)}.png`;
+        zip.file(nomeArquivo, base64, { base64: true });
+      } catch (e) {
+        console.error(`Falha em ${p.subcategoria_nome}:`, e);
+        erros.push(p.subcategoria_nome);
+      }
+      setProgresso({ feito: i + 1, total, erros: [...erros] });
+      // Da uma respirada pro browser nao travar a UI
+      await new Promise((r) => setTimeout(r, 50));
+    }
+
+    if (cancelarRef.current) {
+      setProgresso(null);
+      return;
+    }
+
+    const blob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.download = `melhores-do-ano-stories-${new Date().toISOString().slice(0, 10)}.zip`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+    setProgresso(null);
+
+    if (erros.length > 0) {
+      alert(
+        `Baixou ${total - erros.length} de ${total}. Falharam:\n${erros.join("\n")}\n\nProvavelmente foto bloqueada por CORS — gere essas individualmente.`
+      );
+    }
+  }
+
+  const baixando = progresso !== null;
+  const pctProgresso = progresso ? Math.round((progresso.feito / progresso.total) * 100) : 0;
+
   return (
-    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-      {podiums.map((p) => (
-        <PodiumCard key={p.subcategoria_id} podium={p} />
-      ))}
+    <div className="space-y-4">
+      <div className="rounded-xl border border-cdl-blue/20 bg-cream-100 p-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-cdl-green/15 text-cdl-green flex items-center justify-center shrink-0">
+              <Package className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-display text-base font-bold text-cdl-blue">
+                Baixar todos os Stories de uma vez
+              </p>
+              <p className="text-xs text-muted leading-snug">
+                {podiums.length} cards no formato 1080×1920 dentro de um único ZIP.
+                Use no Chrome desktop e não feche a aba durante o processo.
+              </p>
+            </div>
+          </div>
+
+          {baixando ? (
+            <button
+              type="button"
+              onClick={() => {
+                cancelarRef.current = true;
+              }}
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-rose-600 text-white text-sm font-medium hover:bg-rose-700 transition-colors"
+            >
+              <X className="w-4 h-4" />
+              Cancelar
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={baixarTodos}
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-cdl-green text-white text-sm font-medium hover:bg-cdl-green-dark transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Baixar todos ({podiums.length})
+            </button>
+          )}
+        </div>
+
+        {progresso && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-xs text-cdl-blue mb-1.5 font-mono tabular-nums">
+              <span>
+                {progresso.feito} de {progresso.total}
+                {progresso.erros.length > 0 && ` · ${progresso.erros.length} falha(s)`}
+              </span>
+              <span>{pctProgresso}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-cdl-blue/10 overflow-hidden">
+              <div
+                className="h-full bg-cdl-green transition-all"
+                style={{ width: `${pctProgresso}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+        {podiums.map((p) => (
+          <PodiumCard key={p.subcategoria_id} podium={p} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -118,7 +251,7 @@ function PodiumCard({ podium }: { podium: Podium }) {
         }}
         aria-hidden="true"
       >
-        <div ref={storyRef}>
+        <div ref={storyRef} data-story-id={podium.subcategoria_id}>
           <CardStory podium={podium} />
         </div>
       </div>
