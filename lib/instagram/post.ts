@@ -14,7 +14,16 @@ const IG_USER_ID = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID!;
 const PAGE_TOKEN = process.env.INSTAGRAM_PAGE_ACCESS_TOKEN!;
 const API_BASE = "https://graph.facebook.com/v19.0";
 
-type FbError = { error?: { message?: string; code?: number; type?: string } };
+type FbError = {
+  error?: {
+    message?: string;
+    error_user_msg?: string;
+    code?: number;
+    error_subcode?: number;
+    type?: string;
+    fbtrace_id?: string;
+  };
+};
 
 async function fbPost(
   path: string,
@@ -32,11 +41,18 @@ async function fbPost(
   });
   const json = (await res.json()) as Record<string, unknown> & FbError;
   if (!res.ok || json.error) {
-    throw new Error(
-      `IG ${path} failed: ${json.error?.message ?? res.statusText}`
-    );
+    const e = json.error ?? {};
+    const msg =
+      e.error_user_msg ?? e.message ?? res.statusText ?? "erro desconhecido";
+    const codes = [e.code, e.error_subcode].filter((x) => x != null).join("/");
+    const trace = e.fbtrace_id ? ` [trace ${e.fbtrace_id}]` : "";
+    throw new Error(`IG ${path} (${codes || "?"}): ${msg}${trace}`);
   }
   return json;
+}
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 async function fbGet(path: string): Promise<Record<string, unknown>> {
@@ -130,10 +146,14 @@ export async function postarCarrossel(
     );
   }
 
-  // 1. Cria 1 container por imagem (em paralelo — IG aguenta)
-  const childrenIds = await Promise.all(
-    imageUrls.map((url) => criarItemContainer(url))
-  );
+  // 1. Cria 1 container por imagem — SEQUENCIAL com delay de 500ms.
+  // Em paralelo a Meta as vezes responde "Fatal" (rate limit silencioso).
+  const childrenIds: string[] = [];
+  for (const url of imageUrls) {
+    const id = await criarItemContainer(url);
+    childrenIds.push(id);
+    await sleep(500);
+  }
 
   // 2. Cria carrossel
   const carouselId = await criarCarrossel(childrenIds, caption);
