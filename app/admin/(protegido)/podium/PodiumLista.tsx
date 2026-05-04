@@ -328,6 +328,44 @@ export function PodiumLista({ podiums }: { podiums: Podium[] }) {
         )}
       </div>
 
+      <div className="rounded-xl border border-fuchsia-300/60 bg-gradient-to-r from-fuchsia-50 to-amber-50 p-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-fuchsia-600 to-amber-500 text-white flex items-center justify-center shrink-0">
+              <Instagram className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="font-display text-base font-bold text-cdl-blue">
+                Teste: postar carrossel com as 5 subcategorias mais votadas
+              </p>
+              <p className="text-xs text-muted leading-snug">
+                Carrossel único de 5 slides. Ideal pra validar layout, caption e
+                permissões antes de postar as categorias inteiras.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const top5 = [...podiums]
+                .sort((a, b) => b.total_subcat - a.total_subcat)
+                .slice(0, 5);
+              postarCategoria("Top 5 mais votadas", top5);
+            }}
+            disabled={
+              baixando ||
+              (estadoIG !== null &&
+                estadoIG.erro === null &&
+                estadoIG.feito < estadoIG.total)
+            }
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            <Instagram className="w-4 h-4" />
+            Postar Top 5
+          </button>
+        </div>
+      </div>
+
       {estadoIG && (
         <div
           className={`rounded-xl border p-4 ${
