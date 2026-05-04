@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { isAdmin } from "@/lib/admin/auth";
-import { LayoutDashboard, FolderTree, Users, Trophy, MessageSquare, Inbox, LogOut, UserCheck, ShieldCheck, BarChart3, Swords, Medal } from "lucide-react";
+import { LayoutDashboard, FolderTree, Users, Trophy, MessageSquare, Inbox, LogOut, UserCheck, ShieldCheck, BarChart3, Swords, Medal, Newspaper } from "lucide-react";
 
 export default async function AdminProtectedLayout({
   children,
@@ -45,6 +45,9 @@ export default async function AdminProtectedLayout({
           </NavLink>
           <NavLink href="/admin/podium" icon={<Medal className="w-4 h-4" />}>
             Pódio
+          </NavLink>
+          <NavLink href="/admin/imprensa" icon={<Newspaper className="w-4 h-4" />}>
+            Imprensa
           </NavLink>
           <NavLink href="/admin/whatsapp" icon={<MessageSquare className="w-4 h-4" />}>
             WhatsApp
