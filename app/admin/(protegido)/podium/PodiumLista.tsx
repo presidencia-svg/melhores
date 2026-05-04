@@ -84,7 +84,14 @@ export function PodiumLista({ podiums }: { podiums: Podium[] }) {
 
   // Posta carrossel(s) de uma categoria no Instagram.
   // Quando >10 subs, divide em partes de 10 (post 1, post 2, ...).
-  async function postarCategoria(categoria: string, lista: Podium[]) {
+  // Aceita partirDaParte (1-indexed) pra retomar de onde parou em caso de
+  // falha em alguma parte intermediaria — assim nao precisa repostar as
+  // anteriores que ja foram pro IG.
+  async function postarCategoria(
+    categoria: string,
+    lista: Podium[],
+    partirDaParte = 1
+  ) {
     if (estadoIG && estadoIG.erro === null) return; // já tem um rodando
     const partes: Podium[][] = [];
     for (let i = 0; i < lista.length; i += 10) {
@@ -93,7 +100,8 @@ export function PodiumLista({ podiums }: { podiums: Podium[] }) {
     const total = lista.length;
     const posts: { permalink: string | null; postId: string }[] = [];
 
-    for (let p = 0; p < partes.length; p++) {
+    const inicio = Math.max(0, Math.min(partes.length - 1, partirDaParte - 1));
+    for (let p = inicio; p < partes.length; p++) {
       const parte = partes[p]!;
       setEstadoIG({
         categoria,
@@ -441,7 +449,26 @@ export function PodiumLista({ podiums }: { podiums: Podium[] }) {
               </h2>
               <button
                 type="button"
-                onClick={() => postarCategoria(categoria, lista)}
+                onClick={() => {
+                  let partirDe = 1;
+                  if (partes > 1) {
+                    const resp = window.prompt(
+                      `Esta categoria vai virar ${partes} posts.\n\n` +
+                        `Começar a partir de qual parte? (1 a ${partes})\n\n` +
+                        `Use isso pra retomar se uma parte falhou no meio — assim ` +
+                        `não republica as que já foram pro Instagram.`,
+                      "1"
+                    );
+                    if (resp === null) return; // cancelou
+                    const n = parseInt(resp, 10);
+                    if (!Number.isFinite(n) || n < 1 || n > partes) {
+                      alert(`Valor inválido. Use 1 a ${partes}.`);
+                      return;
+                    }
+                    partirDe = n;
+                  }
+                  postarCategoria(categoria, lista, partirDe);
+                }}
                 disabled={postandoEssa || baixando}
                 className="inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
               >
