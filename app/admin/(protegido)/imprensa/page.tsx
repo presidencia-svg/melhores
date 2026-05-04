@@ -1,7 +1,7 @@
 import { Newspaper } from "lucide-react";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/Card";
-import { ImprensaLista, type LinhaTop6 } from "./ImprensaLista";
+import { ImprensaLista, type LinhaTop6, type NumerosCampanha } from "./ImprensaLista";
 import { AtualizarBtn } from "../AtualizarBtn";
 
 // 1h: pos-eleicao a lista e' imutavel. Botao "Atualizar" no header invalida
@@ -23,6 +23,13 @@ export default async function ImprensaPage() {
     linhas.push(...(data as LinhaTop6[]));
     if (data.length < PAGE_SIZE) break;
   }
+
+  // Numeros da campanha (1 linha) — pra secao de transparencia
+  const { data: numerosRow } = await supabase
+    .from("v_numeros_campanha")
+    .select("*")
+    .maybeSingle();
+  const numeros = (numerosRow ?? null) as NumerosCampanha | null;
 
   return (
     <div className="p-8 space-y-6">
@@ -51,7 +58,7 @@ export default async function ImprensaPage() {
           </CardContent>
         </Card>
       ) : (
-        <ImprensaLista linhas={linhas} />
+        <ImprensaLista linhas={linhas} numeros={numeros} />
       )}
     </div>
   );
