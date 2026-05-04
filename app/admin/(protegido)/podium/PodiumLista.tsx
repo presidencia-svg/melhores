@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { toPng } from "html-to-image";
+import { toPng, toJpeg } from "html-to-image";
 import JSZip from "jszip";
 import { Crown, Download, Loader2, Package, X, Instagram } from "lucide-react";
 
@@ -105,7 +105,10 @@ export function PodiumLista({ podiums }: { podiums: Podium[] }) {
         erro: null,
       });
 
-      // Captura cada slide em base64
+      // Captura cada slide em JPEG (comprimido) pra caber no body do request.
+      // PNG 2160x3840 da ~3MB cada — 5 imagens estouram o limite do Vercel
+      // (~4.5MB). JPEG q=0.82 + pixelRatio 1.5 da ~300-500KB por slide,
+      // mantendo qualidade ok pro Instagram.
       const imagens: string[] = [];
       for (const podium of parte) {
         const node = document.querySelector<HTMLElement>(
@@ -124,9 +127,10 @@ export function PodiumLista({ podiums }: { podiums: Podium[] }) {
           return;
         }
         try {
-          const dataUrl = await toPng(node, {
+          const dataUrl = await toJpeg(node, {
             cacheBust: true,
-            pixelRatio: 2,
+            pixelRatio: 1.5,
+            quality: 0.82,
             backgroundColor: "#0a2a5e",
           });
           imagens.push(dataUrl);
@@ -155,7 +159,17 @@ export function PodiumLista({ podiums }: { podiums: Podium[] }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ imagens, caption }),
         });
-        const json = await res.json();
+        // Resposta pode nao ser JSON em casos de erro (413 do edge, gateway etc)
+        const text = await res.text();
+        let json: { error?: string; detail?: string; permalink?: string | null; postId?: string };
+        try {
+          json = JSON.parse(text);
+        } catch {
+          json = {
+            error: res.status === 413 ? "Payload muito grande" : `HTTP ${res.status}`,
+            detail: text.slice(0, 200),
+          };
+        }
         if (!res.ok) {
           setEstadoIG({
             categoria,
@@ -168,7 +182,7 @@ export function PodiumLista({ podiums }: { podiums: Podium[] }) {
           });
           return;
         }
-        posts.push({ permalink: json.permalink, postId: json.postId });
+        posts.push({ permalink: json.permalink ?? null, postId: json.postId ?? "" });
         setEstadoIG({
           categoria,
           feito: p * 10 + parte.length,
