@@ -43,13 +43,14 @@ select
      join votantes v on v.id = vt.votante_id
      where v.edicao_id = (select id from e)
        and (vt.criado_em at time zone 'America/Sao_Paulo')::date = (
-         select (criado_em at time zone 'America/Sao_Paulo')::date
+         select (vt2.criado_em at time zone 'America/Sao_Paulo')::date
          from votos vt2 join votantes v2 on v2.id = vt2.votante_id
          where v2.edicao_id = (select id from e)
-         group by 1 order by count(*) desc limit 1
+         group by (vt2.criado_em at time zone 'America/Sao_Paulo')::date
+         order by count(*) desc limit 1
        ))::int                                                                                            as votos_dia_pico,
-  (select to_char((criado_em at time zone 'America/Sao_Paulo')::date, 'DD/MM/YYYY')
+  (select to_char((vt.criado_em at time zone 'America/Sao_Paulo')::date, 'DD/MM/YYYY')
      from votos vt join votantes v on v.id = vt.votante_id
      where v.edicao_id = (select id from e)
-     group by (criado_em at time zone 'America/Sao_Paulo')::date
+     group by (vt.criado_em at time zone 'America/Sao_Paulo')::date
      order by count(*) desc limit 1)                                                                      as data_dia_pico;
