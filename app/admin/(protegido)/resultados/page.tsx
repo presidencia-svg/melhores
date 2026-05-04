@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { ResultadosFiltrados } from "./ResultadosFiltrados";
+import { AtualizarBtn } from "../AtualizarBtn";
 
 type Resultado = {
   candidato_id: string;
@@ -18,7 +19,9 @@ type Resultado = {
   score_risco?: number | null;
 };
 
-export const revalidate = 30;
+// 1h: pos-eleicao os resultados sao imutaveis. Botao "Atualizar" no header
+// invalida o cache na hora caso precise (ex: depois de mesclagem de candidatos).
+export const revalidate = 3600;
 
 export default async function ResultadosPage() {
   const supabase = createSupabaseAdminClient();
@@ -78,18 +81,21 @@ export default async function ResultadosPage() {
 
   return (
     <div className="p-8">
-      <header className="mb-6">
-        <h1 className="font-display text-3xl font-bold text-cdl-blue">
-          Resultados
-        </h1>
-        <p className="text-muted mt-1">
-          {gruposOrdenados.length} subcategorias · atualizado a cada 30 segundos
-        </p>
-        {viewWarning && (
-          <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            <strong>Aviso:</strong> {viewWarning}
-          </div>
-        )}
+      <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="font-display text-3xl font-bold text-cdl-blue">
+            Resultados
+          </h1>
+          <p className="text-muted mt-1">
+            {gruposOrdenados.length} subcategorias · cache de 1h (use "Atualizar" pra forçar)
+          </p>
+          {viewWarning && (
+            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              <strong>Aviso:</strong> {viewWarning}
+            </div>
+          )}
+        </div>
+        <AtualizarBtn path="/admin/resultados" />
       </header>
 
       <ResultadosFiltrados grupos={gruposOrdenados} />

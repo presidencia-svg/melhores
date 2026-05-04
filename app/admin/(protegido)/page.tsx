@@ -19,8 +19,11 @@ import { EncerramentoCard } from "./EncerramentoCard";
 import { SpcCard } from "./SpcCard";
 import { WhatsAppValidacaoCard } from "./WhatsAppValidacaoCard";
 import { VotosPorDiaCard } from "./VotosPorDiaCard";
+import { AtualizarBtn } from "./AtualizarBtn";
 
-export const revalidate = 30;
+// 1h: dados pos-eleicao sao imutaveis. Botao "Atualizar" no header
+// invalida o cache na hora caso precise (ex: depois de mesclagem manual).
+export const revalidate = 3600;
 
 type Resultado = {
   candidato_id: string;
@@ -191,17 +194,20 @@ export default async function AdminDashboard() {
             <p className="text-red-600 mt-1 font-medium">⚠ Nenhuma edição ativa configurada</p>
           )}
         </div>
-        {edicao && (
-          <div className="rounded-2xl bg-gradient-to-br from-cdl-blue to-cdl-blue-dark text-white px-5 py-3 flex items-center gap-3 shadow-md">
-            <Clock className="w-5 h-5" />
-            <div>
-              <div className="text-xs uppercase tracking-wider opacity-80">Tempo restante</div>
-              <div className="font-display font-bold text-lg">
-                {diasRestantes > 0 ? `${diasRestantes}d ${horasFinais}h` : `${horasRestantes}h`}
+        <div className="flex items-center gap-3 flex-wrap">
+          <AtualizarBtn path="/admin" />
+          {edicao && (
+            <div className="rounded-2xl bg-gradient-to-br from-cdl-blue to-cdl-blue-dark text-white px-5 py-3 flex items-center gap-3 shadow-md">
+              <Clock className="w-5 h-5" />
+              <div>
+                <div className="text-xs uppercase tracking-wider opacity-80">Tempo restante</div>
+                <div className="font-display font-bold text-lg">
+                  {diasRestantes > 0 ? `${diasRestantes}d ${horasFinais}h` : `${horasRestantes}h`}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </header>
 
       {/* Encerramento da votacao */}

@@ -3,7 +3,9 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Swords } from "lucide-react";
 import { DuelosLista, type Duelo } from "./DuelosLista";
-import { AtualizarBtn } from "./AtualizarBtn";
+import { AtualizarBtn } from "../AtualizarBtn";
+
+export const revalidate = 3600;
 
 const TOPS = [10, 25, 50, "all"] as const;
 
@@ -67,7 +69,7 @@ export default async function DuelosPage({
               );
             })}
           </nav>
-          <AtualizarBtn />
+          <AtualizarBtn path="/admin/duelos" />
         </div>
       </header>
 

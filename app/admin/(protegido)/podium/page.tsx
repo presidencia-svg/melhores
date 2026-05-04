@@ -3,6 +3,11 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Medal } from "lucide-react";
 import { PodiumLista, type Podium } from "./PodiumLista";
+import { AtualizarBtn } from "../AtualizarBtn";
+
+// 1h: pos-eleicao o podio e' imutavel. Botao "Atualizar" no header invalida
+// o cache na hora caso precise (ex: mesclagem de candidatos).
+export const revalidate = 3600;
 
 const ORDENS = ["votos", "alfabetica"] as const;
 
@@ -41,19 +46,22 @@ export default async function PodiumPage({
             Baixa em formato Feed (1:1) ou Story (9:16) pra postar.
           </p>
         </div>
-        <nav className="flex gap-1 bg-cream-100 border border-[rgba(10,42,94,0.15)] rounded-lg p-1">
-          {ORDENS.map((o) => (
-            <Link
-              key={o}
-              href={`/admin/podium?ordem=${o}`}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                o === ordem ? "bg-cdl-blue text-white" : "text-cdl-blue hover:bg-cdl-blue/10"
-              }`}
-            >
-              {o === "votos" ? "+ votadas" : "A–Z"}
-            </Link>
-          ))}
-        </nav>
+        <div className="flex items-center gap-3 flex-wrap">
+          <nav className="flex gap-1 bg-cream-100 border border-[rgba(10,42,94,0.15)] rounded-lg p-1">
+            {ORDENS.map((o) => (
+              <Link
+                key={o}
+                href={`/admin/podium?ordem=${o}`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  o === ordem ? "bg-cdl-blue text-white" : "text-cdl-blue hover:bg-cdl-blue/10"
+                }`}
+              >
+                {o === "votos" ? "+ votadas" : "A–Z"}
+              </Link>
+            ))}
+          </nav>
+          <AtualizarBtn path="/admin/podium" />
+        </div>
       </header>
 
       {lista.length === 0 ? (
