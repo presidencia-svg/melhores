@@ -29,9 +29,27 @@ export default async function PodiumPage({
   } else {
     query = query.order("subcategoria_nome", { ascending: true });
   }
-  const { data: podiums } = await query;
+  const [{ data: podiums }, { data: subcatMapping }] = await Promise.all([
+    query,
+    supabase
+      .from("subcategorias")
+      .select("id, categoria:categorias(id, nome)"),
+  ]);
 
-  const lista = (podiums ?? []) as Podium[];
+  // Enriquece cada Podium com categoria_nome via lookup local
+  type SubcatRow = {
+    id: string;
+    categoria: { id: string; nome: string } | { id: string; nome: string }[] | null;
+  };
+  const catBySubId = new Map<string, string>();
+  for (const row of (subcatMapping ?? []) as SubcatRow[]) {
+    const cat = Array.isArray(row.categoria) ? row.categoria[0] : row.categoria;
+    if (cat?.nome) catBySubId.set(row.id, cat.nome);
+  }
+  const lista = ((podiums ?? []) as Podium[]).map((p) => ({
+    ...p,
+    categoria_nome: catBySubId.get(p.subcategoria_id) ?? "Outras",
+  }));
 
   return (
     <div className="p-8 space-y-6">

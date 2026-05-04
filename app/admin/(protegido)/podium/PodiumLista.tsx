@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import JSZip from "jszip";
-import { Crown, Download, Loader2, Package, X } from "lucide-react";
+import { Crown, Download, Loader2, Package, X, Instagram } from "lucide-react";
 
 export type Podium = {
   subcategoria_id: string;
@@ -21,6 +21,8 @@ export type Podium = {
   top3_nome: string | null;
   top3_foto: string | null;
   top3_votos: number;
+  // Adicionado server-side via lookup categoria_nome em page.tsx
+  categoria_nome?: string;
 };
 
 function slug(s: string): string {
@@ -48,6 +50,16 @@ function isEmpate(podium: Podium): boolean {
   );
 }
 
+type EstadoIG = {
+  categoria: string;
+  feito: number;
+  total: number;
+  parteAtual: number;
+  partes: number;
+  posts: { permalink: string | null; postId: string }[];
+  erro: string | null;
+} | null;
+
 export function PodiumLista({ podiums }: { podiums: Podium[] }) {
   const [progresso, setProgresso] = useState<{
     feito: number;
@@ -55,6 +67,141 @@ export function PodiumLista({ podiums }: { podiums: Podium[] }) {
     erros: string[];
   } | null>(null);
   const cancelarRef = useRef(false);
+  const [estadoIG, setEstadoIG] = useState<EstadoIG>(null);
+
+  // Agrupa por categoria pra desenhar uma seção por categoria com botão IG.
+  const porCategoria = (() => {
+    const map = new Map<string, Podium[]>();
+    for (const p of podiums) {
+      const cat = p.categoria_nome ?? "Outras";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(p);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) =>
+      a.localeCompare(b, "pt-BR")
+    );
+  })();
+
+  // Posta carrossel(s) de uma categoria no Instagram.
+  // Quando >10 subs, divide em partes de 10 (post 1, post 2, ...).
+  async function postarCategoria(categoria: string, lista: Podium[]) {
+    if (estadoIG && estadoIG.erro === null) return; // já tem um rodando
+    const partes: Podium[][] = [];
+    for (let i = 0; i < lista.length; i += 10) {
+      partes.push(lista.slice(i, i + 10));
+    }
+    const total = lista.length;
+    const posts: { permalink: string | null; postId: string }[] = [];
+
+    for (let p = 0; p < partes.length; p++) {
+      const parte = partes[p]!;
+      setEstadoIG({
+        categoria,
+        feito: p * 10,
+        total,
+        parteAtual: p + 1,
+        partes: partes.length,
+        posts,
+        erro: null,
+      });
+
+      // Captura cada slide em base64
+      const imagens: string[] = [];
+      for (const podium of parte) {
+        const node = document.querySelector<HTMLElement>(
+          `[data-story-id="${podium.subcategoria_id}"]`
+        );
+        if (!node) {
+          setEstadoIG({
+            categoria,
+            feito: p * 10,
+            total,
+            parteAtual: p + 1,
+            partes: partes.length,
+            posts,
+            erro: `Card não encontrado: ${podium.subcategoria_nome}`,
+          });
+          return;
+        }
+        try {
+          const dataUrl = await toPng(node, {
+            cacheBust: true,
+            pixelRatio: 2,
+            backgroundColor: "#0a2a5e",
+          });
+          imagens.push(dataUrl);
+        } catch (e) {
+          setEstadoIG({
+            categoria,
+            feito: p * 10,
+            total,
+            parteAtual: p + 1,
+            partes: partes.length,
+            posts,
+            erro: `Erro ao gerar imagem de ${podium.subcategoria_nome}: ${e instanceof Error ? e.message : "?"}`,
+          });
+          return;
+        }
+      }
+
+      // Carrossel precisa de pelo menos 2 imagens. Se a parte só tem 1, dobra.
+      if (imagens.length === 1) imagens.push(imagens[0]!);
+
+      const caption = montarCaption(categoria, parte, p + 1, partes.length);
+
+      try {
+        const res = await fetch("/api/admin/instagram/postar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imagens, caption }),
+        });
+        const json = await res.json();
+        if (!res.ok) {
+          setEstadoIG({
+            categoria,
+            feito: p * 10 + parte.length,
+            total,
+            parteAtual: p + 1,
+            partes: partes.length,
+            posts,
+            erro: `${json.error}${json.detail ? ` — ${json.detail}` : ""}`,
+          });
+          return;
+        }
+        posts.push({ permalink: json.permalink, postId: json.postId });
+        setEstadoIG({
+          categoria,
+          feito: p * 10 + parte.length,
+          total,
+          parteAtual: p + 1,
+          partes: partes.length,
+          posts: [...posts],
+          erro: null,
+        });
+      } catch (e) {
+        setEstadoIG({
+          categoria,
+          feito: p * 10,
+          total,
+          parteAtual: p + 1,
+          partes: partes.length,
+          posts,
+          erro: e instanceof Error ? e.message : "Falha de rede",
+        });
+        return;
+      }
+    }
+
+    setEstadoIG({
+      categoria,
+      feito: total,
+      total,
+      parteAtual: partes.length,
+      partes: partes.length,
+      posts,
+      erro: null,
+    });
+  }
 
   async function baixarTodos() {
     if (progresso) return;
@@ -181,13 +328,111 @@ export function PodiumLista({ podiums }: { podiums: Podium[] }) {
         )}
       </div>
 
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-        {podiums.map((p) => (
-          <PodiumCard key={p.subcategoria_id} podium={p} />
-        ))}
-      </div>
+      {estadoIG && (
+        <div
+          className={`rounded-xl border p-4 ${
+            estadoIG.erro
+              ? "border-rose-300 bg-rose-50"
+              : estadoIG.feito === estadoIG.total
+                ? "border-emerald-300 bg-emerald-50"
+                : "border-cdl-blue/30 bg-white"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <Instagram className={`w-5 h-5 ${estadoIG.erro ? "text-rose-700" : "text-cdl-blue"}`} />
+            <p className="text-sm font-semibold flex-1">
+              Instagram · {estadoIG.categoria} · parte {estadoIG.parteAtual} de {estadoIG.partes}
+              {" · "}
+              {estadoIG.feito}/{estadoIG.total} slides
+            </p>
+            <button
+              type="button"
+              onClick={() => setEstadoIG(null)}
+              className="text-xs text-muted hover:text-foreground"
+            >
+              fechar
+            </button>
+          </div>
+          {estadoIG.erro && (
+            <p className="text-xs text-rose-700 mt-2">{estadoIG.erro}</p>
+          )}
+          {estadoIG.posts.length > 0 && (
+            <div className="mt-3 flex flex-col gap-1 text-xs">
+              {estadoIG.posts.map((post, i) => (
+                <a
+                  key={post.postId}
+                  href={post.permalink ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cdl-blue hover:underline"
+                >
+                  ✓ Post {i + 1} publicado{post.permalink ? " — abrir" : ""}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {porCategoria.map(([categoria, lista]) => {
+        const partes = Math.ceil(lista.length / 10);
+        const postandoEssa = estadoIG?.categoria === categoria && estadoIG.erro === null && estadoIG.feito < estadoIG.total;
+        return (
+          <section key={categoria}>
+            <header className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+              <h2 className="font-display-bold text-cdl-green text-sm uppercase tracking-wider flex items-center gap-2">
+                {categoria}
+                <span className="text-xs text-muted font-normal normal-case tracking-normal">
+                  ({lista.length} {lista.length === 1 ? "subcategoria" : "subcategorias"}
+                  {partes > 1 ? ` · ${partes} posts` : ""})
+                </span>
+              </h2>
+              <button
+                type="button"
+                onClick={() => postarCategoria(categoria, lista)}
+                disabled={postandoEssa || baixando}
+                className="inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {postandoEssa ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Instagram className="w-3.5 h-3.5" />
+                )}
+                {postandoEssa ? "postando…" : `postar no @cdlaju${partes > 1 ? ` (${partes}x)` : ""}`}
+              </button>
+            </header>
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+              {lista.map((p) => (
+                <PodiumCard key={p.subcategoria_id} podium={p} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
+}
+
+// Caption padrao do post. Lista os vencedores da parte.
+function montarCaption(
+  categoria: string,
+  parte: Podium[],
+  numParte: number,
+  totalPartes: number
+): string {
+  const sufixo = totalPartes > 1 ? ` (parte ${numParte}/${totalPartes})` : "";
+  const linhas = parte.map(
+    (p, i) => `${i + 1}. ${p.subcategoria_nome} — ${p.top1_nome}`
+  );
+  return [
+    `🏆 Os melhores de ${categoria}${sufixo}`,
+    "Resultado oficial · Melhores do Ano CDL Aracaju 2026",
+    "",
+    ...linhas,
+    "",
+    "Obrigado a quem votou! 💙",
+    "#MelhoresDoAnoCDL #CDLAracaju #Aracaju #Sergipe",
+  ].join("\n");
 }
 
 function PodiumCard({ podium }: { podium: Podium }) {
