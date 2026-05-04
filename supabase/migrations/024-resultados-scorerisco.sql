@@ -1,18 +1,27 @@
 -- ==========================================================================
--- 024-resultados-scorerisco.sql
+-- 024-resultados-scorerisco.sql (v2 — MATERIALIZED)
 --
--- View v_resultados_riscado: tudo do v_resultados (todos candidatos, nao
--- so top1) + score_risco do CANDIDATO. Permite comparar 1o vs 2o vs 3o
--- na mesma sub — se o vencedor tem risco BEM MAIOR que os perseguidores,
--- e' sinal pra investigar.
+-- A versao 1 era VIEW comum, mas o calculo do score (subqueries por
+-- candidato + joins com fps/ips compartilhados) explodia com 9k+ candidatos
+-- e estourava statement_timeout do Supabase.
 --
--- Mesma logica da v_podium_riscado (migration 023), so muda o granular:
--- la era top1 por sub, aqui e' por candidato individual.
+-- Solucao: MATERIALIZED VIEW. Calcula 1 vez (no CREATE), guarda no disco,
+-- SELECT depois e' instantaneo. Refresh manual via funcao refresh_resultados_riscado()
+-- quando precisar (ex: depois de mesclar candidatos).
 --
--- Roda no SQL Editor do Supabase. Idempotente.
+-- Roda no SQL Editor do Supabase. O CREATE pode levar 2-5 min — por isso o
+-- SET LOCAL statement_timeout pra evitar timeout.
 -- ==========================================================================
 
-create or replace view v_resultados_riscado as
+begin;
+
+set local statement_timeout = '10min';
+
+-- Garante que comece limpo (caso a v1 tenha sido criada como view)
+drop view if exists v_resultados_riscado;
+drop materialized view if exists v_resultados_riscado;
+
+create materialized view v_resultados_riscado as
 with fps_compartilhados as (
   select device_fingerprint
   from votantes
@@ -56,3 +65,30 @@ select
   coalesce(rc.score_risco, 0)::numeric as score_risco
 from v_resultados r
 left join risco_por_cand rc on rc.candidato_id = r.candidato_id;
+
+-- Indice unico em candidato_id permite REFRESH CONCURRENTLY (sem trancar leitura)
+create unique index if not exists v_resultados_riscado_pk
+  on v_resultados_riscado (candidato_id);
+
+-- Indices auxiliares pra ordenacao por risco e por sub
+create index if not exists v_resultados_riscado_score_idx
+  on v_resultados_riscado (score_risco desc);
+create index if not exists v_resultados_riscado_sub_idx
+  on v_resultados_riscado (subcategoria_id);
+
+commit;
+
+
+-- ==========================================================================
+-- Funcao pra atualizar a view manualmente (apos mesclagens, por ex).
+-- Chamar com: select refresh_resultados_riscado();
+-- ==========================================================================
+create or replace function refresh_resultados_riscado()
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  refresh materialized view concurrently v_resultados_riscado;
+end;
+$$;
