@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
 
 // Aceita ligado e/ou cap_dia — um, outro ou os dois.
 const Body = z
@@ -19,6 +20,7 @@ export async function GET() {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
+  const tenant = await getCurrentTenant();
   const supabase = createSupabaseAdminClient();
 
   const umaHoraAtras = new Date(Date.now() - 60 * 60_000).toISOString();
@@ -33,6 +35,7 @@ export async function GET() {
     supabase
       .from("app_config")
       .select("chave, valor")
+      .eq("tenant_id", tenant.id)
       .in("chave", ["auto_parcial", "auto_parcial_cap_dia"]),
     supabase
       .from("votantes")
@@ -74,12 +77,19 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   }
+  const tenant = await getCurrentTenant();
   const supabase = createSupabaseAdminClient();
   const agora = new Date().toISOString();
 
-  const upserts: { chave: string; valor: string; atualizado_em: string }[] = [];
+  const upserts: {
+    tenant_id: string;
+    chave: string;
+    valor: string;
+    atualizado_em: string;
+  }[] = [];
   if (parsed.data.ligado !== undefined) {
     upserts.push({
+      tenant_id: tenant.id,
       chave: "auto_parcial",
       valor: parsed.data.ligado ? "on" : "off",
       atualizado_em: agora,
@@ -87,6 +97,7 @@ export async function POST(req: Request) {
   }
   if (parsed.data.cap_dia !== undefined) {
     upserts.push({
+      tenant_id: tenant.id,
       chave: "auto_parcial_cap_dia",
       valor: String(parsed.data.cap_dia),
       atualizado_em: agora,
@@ -94,7 +105,9 @@ export async function POST(req: Request) {
   }
 
   if (upserts.length > 0) {
-    await supabase.from("app_config").upsert(upserts);
+    await supabase
+      .from("app_config")
+      .upsert(upserts, { onConflict: "tenant_id,chave" });
   }
 
   return NextResponse.json({ ok: true });

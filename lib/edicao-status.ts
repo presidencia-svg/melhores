@@ -1,7 +1,9 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
 
 export type Edicao = {
   id: string;
+  tenant_id: string;
   ano: number;
   nome: string;
   inicio_votacao: string;
@@ -16,16 +18,20 @@ export type EdicaoStatus =
   | { status: "encerrada"; edicao: Edicao }
   | { status: "sem_edicao" };
 
-// Status da edicao atual (votacao aberta? encerrada? nao iniciada?).
+// Status da edicao atual do tenant (votacao aberta? encerrada? nao iniciada?).
 // Usado pelo layout de /votar e pelas APIs de gravacao pra bloquear voto
 // fora da janela.
-export async function getEdicaoStatus(): Promise<EdicaoStatus> {
+//
+// Em request context, resolve tenant via host. Em background, passe tenantId.
+export async function getEdicaoStatus(tenantId?: string): Promise<EdicaoStatus> {
+  const id = tenantId ?? (await getCurrentTenant()).id;
   const supabase = createSupabaseAdminClient();
   const { data: edicao } = await supabase
     .from("edicao")
     .select(
-      "id, ano, nome, inicio_votacao, fim_votacao, divulgacao_resultado, ativa"
+      "id, tenant_id, ano, nome, inicio_votacao, fim_votacao, divulgacao_resultado, ativa"
     )
+    .eq("tenant_id", id)
     .eq("ativa", true)
     .order("ano", { ascending: false })
     .limit(1)
