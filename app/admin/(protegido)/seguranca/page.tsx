@@ -1,72 +1,115 @@
 import { Card, CardContent } from "@/components/ui/Card";
-import { isTotpEnabled, generateNewSecret } from "@/lib/admin/totp";
+import {
+  generateNewSecret,
+  tenantTemTotp,
+} from "@/lib/admin/totp";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
 import QRCode from "qrcode";
-import { ShieldCheck, Smartphone } from "lucide-react";
+import { ShieldCheck, Smartphone, KeyRound } from "lucide-react";
+import {
+  AtivarTotpForm,
+  DesativarTotpButton,
+  TrocarSenhaForm,
+} from "./SegurancaForms";
 
 export const dynamic = "force-dynamic";
 
 export default async function SegurancaPage() {
-  const habilitado = isTotpEnabled();
+  const tenant = await getCurrentTenant();
+  const habilitado = tenantTemTotp(tenant);
 
-  // Gera novo secret + QR sob demanda (não persiste — admin precisa adicionar ao .env)
-  const novo = !habilitado ? generateNewSecret() : null;
+  // Gera secret efemero pra usuario escanear. So persiste em
+  // tenants.admin_totp_secret se ele confirmar com codigo valido.
+  const novo = !habilitado ? generateNewSecret(tenant) : null;
   const qrDataUrl = novo ? await QRCode.toDataURL(novo.otpauthUrl) : null;
+
+  // Detecta se o tenant ja migrou pro hash no banco. Se nao, sinaliza pra
+  // ele trocar (ai gravamos o hash) e o env vira fallback so de emergencia.
+  const senhaHashPresente = Boolean(tenant.admin_password_hash);
 
   return (
     <div className="p-8">
       <header className="mb-6">
-        <h1 className="font-display text-3xl font-bold text-cdl-blue">Segurança</h1>
-        <p className="text-muted mt-1">Configurações de autenticação do painel administrativo.</p>
+        <h1 className="font-display text-3xl font-bold text-cdl-blue">
+          Segurança
+        </h1>
+        <p className="text-muted mt-1">
+          Configurações de autenticação do painel administrativo de{" "}
+          <strong>{tenant.nome}</strong>.
+        </p>
       </header>
 
       <div className="grid lg:grid-cols-2 gap-4">
+        {/* 2FA status + ativacao */}
         <Card>
           <CardContent>
             <div className="flex items-center gap-3 mb-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${habilitado ? "bg-cdl-green/15 text-cdl-green-dark" : "bg-orange-100 text-orange-600"}`}>
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  habilitado
+                    ? "bg-cdl-green/15 text-cdl-green-dark"
+                    : "bg-orange-100 text-orange-600"
+                }`}
+              >
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="font-display text-xl font-bold text-cdl-blue">Autenticação em 2 fatores (2FA)</h2>
-                <p className={`text-sm font-medium ${habilitado ? "text-cdl-green-dark" : "text-orange-600"}`}>
+                <h2 className="font-display text-xl font-bold text-cdl-blue">
+                  Autenticação em 2 fatores (2FA)
+                </h2>
+                <p
+                  className={`text-sm font-medium ${
+                    habilitado ? "text-cdl-green-dark" : "text-orange-600"
+                  }`}
+                >
                   {habilitado ? "✓ Ativada" : "⚠ Desativada"}
                 </p>
               </div>
             </div>
 
             {habilitado ? (
-              <p className="text-sm text-muted">
-                O login do painel exige senha + código de 6 dígitos do Google Authenticator.
-              </p>
+              <>
+                <p className="text-sm text-muted">
+                  O login do painel exige senha + código de 6 dígitos do app
+                  autenticador.
+                </p>
+                <DesativarTotpButton />
+              </>
             ) : (
               <p className="text-sm text-muted">
-                Sem 2FA, qualquer pessoa que descobrir a senha consegue acessar o painel. Recomendado ativar.
+                Sem 2FA, qualquer pessoa que descobrir a senha consegue acessar
+                o painel. Recomendado ativar.
               </p>
             )}
           </CardContent>
         </Card>
 
+        {/* Setup do 2FA */}
         {!habilitado && novo && qrDataUrl && (
           <Card>
             <CardContent>
-              <h3 className="font-display text-lg font-bold text-cdl-blue mb-3">Como ativar</h3>
+              <h3 className="font-display text-lg font-bold text-cdl-blue mb-3">
+                Como ativar
+              </h3>
               <ol className="list-decimal pl-5 space-y-2 text-sm text-foreground">
                 <li>
-                  Instale o <strong>Google Authenticator</strong> ou <strong>Authy</strong> no seu celular.
+                  Instale o <strong>Google Authenticator</strong> ou{" "}
+                  <strong>Authy</strong> no seu celular.
                 </li>
                 <li>Escaneie o QR Code abaixo:</li>
                 <li>
-                  Adicione esta variável ao <code>.env.local</code> (e na Vercel) e faça redeploy:
-                  <pre className="mt-2 bg-zinc-50 border border-border rounded p-3 text-xs overflow-x-auto select-all">
-{`ADMIN_TOTP_SECRET=${novo.secret}`}
-                  </pre>
+                  Digite o código de 6 dígitos que apareceu no app pra
+                  confirmar.
                 </li>
-                <li>Faça logout e login novamente — vai pedir o código de 6 dígitos.</li>
               </ol>
 
               <div className="mt-4 flex flex-col items-center gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrDataUrl} alt="QR Code 2FA" className="w-48 h-48 border border-border rounded-lg" />
+                <img
+                  src={qrDataUrl}
+                  alt="QR Code 2FA"
+                  className="w-48 h-48 border border-border rounded-lg"
+                />
                 <p className="text-xs text-muted">Escaneie no app autenticador</p>
               </div>
 
@@ -75,22 +118,50 @@ export default async function SegurancaPage() {
                   Não consegue escanear? Inserir código manualmente
                 </summary>
                 <pre className="mt-2 bg-zinc-50 border border-border rounded p-2 text-xs select-all">
-{novo.secret}
+                  {novo.secret}
                 </pre>
               </details>
+
+              <AtivarTotpForm secret={novo.secret} />
             </CardContent>
           </Card>
         )}
 
-        <Card>
+        {/* Trocar senha */}
+        <Card className="lg:col-span-2">
+          <CardContent>
+            <div className="flex items-center gap-3 mb-3">
+              <KeyRound className="w-5 h-5 text-cdl-blue" />
+              <h3 className="font-display text-lg font-bold text-cdl-blue">
+                Senha do painel
+              </h3>
+            </div>
+            {!senhaHashPresente ? (
+              <p className="text-xs text-orange-600 mb-3">
+                ⚠ Senha ainda no formato antigo (env). Trocar agora migra pra
+                hash criptografada no banco — recomendado.
+              </p>
+            ) : (
+              <p className="text-sm text-muted mb-3">
+                Use uma senha forte e única (8+ caracteres). Não compartilhe.
+              </p>
+            )}
+            <TrocarSenhaForm />
+          </CardContent>
+        </Card>
+
+        {/* Dispositivos */}
+        <Card className="lg:col-span-2">
           <CardContent>
             <div className="flex items-center gap-3 mb-3">
               <Smartphone className="w-5 h-5 text-cdl-blue" />
-              <h3 className="font-display text-lg font-bold text-cdl-blue">Dispositivos admin</h3>
+              <h3 className="font-display text-lg font-bold text-cdl-blue">
+                Dispositivos admin
+              </h3>
             </div>
             <p className="text-sm text-muted">
-              Use o painel apenas em dispositivos próprios da CDL. Se desconfiar de acesso indevido, troque a
-              <code className="bg-zinc-100 px-1 rounded mx-1">ADMIN_PASSWORD</code> no <code className="bg-zinc-100 px-1 rounded">.env.local</code> e refaça o deploy.
+              Use o painel apenas em dispositivos próprios da {tenant.nome}. Se
+              desconfiar de acesso indevido, troque a senha agora e ative 2FA.
             </p>
           </CardContent>
         </Card>

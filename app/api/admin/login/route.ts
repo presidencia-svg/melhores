@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { senhaCorreta, setAdminSession } from "@/lib/admin/auth";
-import { isTotpEnabled, verifyTotpCode } from "@/lib/admin/totp";
+import {
+  senhaCorretaParaTenant,
+  setAdminSession,
+} from "@/lib/admin/auth";
+import { tenantTemTotp, verifyTotpParaTenant } from "@/lib/admin/totp";
 import { getClientIp } from "@/lib/utils";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
 
 const Body = z.object({
   senha: z.string().min(1),
@@ -19,8 +23,10 @@ export async function POST(req: Request) {
 
   const ip = getClientIp(req.headers);
   const supabase = createSupabaseAdminClient();
+  const tenant = await getCurrentTenant();
 
-  // Rate limit: 5 tentativas por IP em 15min
+  // Rate limit: 5 tentativas por IP em 15min (cap global, nao por tenant —
+  // protege o IP atacante independente de qual host tentou).
   const quinzeMin = new Date(Date.now() - 15 * 60_000).toISOString();
   const { count } = await supabase
     .from("rate_limit_ip")
@@ -36,19 +42,26 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!senhaCorreta(parsed.data.senha)) {
+  const senhaOk = await senhaCorretaParaTenant(parsed.data.senha, tenant);
+  if (!senhaOk) {
     await supabase.from("rate_limit_ip").insert({ ip, acao: "admin_login" });
     return NextResponse.json({ error: "Senha incorreta" }, { status: 401 });
   }
 
-  // 2FA — código TOTP obrigatório se ADMIN_TOTP_SECRET configurado
-  if (isTotpEnabled()) {
-    if (!parsed.data.codigo || !verifyTotpCode(parsed.data.codigo)) {
+  // 2FA — codigo TOTP obrigatorio se o tenant tem secret configurado.
+  if (tenantTemTotp(tenant)) {
+    if (
+      !parsed.data.codigo ||
+      !verifyTotpParaTenant(parsed.data.codigo, tenant)
+    ) {
       await supabase.from("rate_limit_ip").insert({ ip, acao: "admin_login" });
-      return NextResponse.json({ error: "Código inválido ou expirado" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Código inválido ou expirado" },
+        { status: 401 }
+      );
     }
   }
 
-  await setAdminSession();
+  await setAdminSession(tenant.id);
   return NextResponse.json({ ok: true });
 }
