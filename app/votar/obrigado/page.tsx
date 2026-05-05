@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Share2, Calendar, Trophy } from "lucide-react";
 import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { TrophyMark, SmallCaps, Divider, LaurelHalf } from "@/components/brand/Marks";
 
 function formatDataHora(iso: string | null): string | null {
@@ -24,6 +25,7 @@ export default async function ObrigadoPage() {
   const sessao = await getVotanteSessao();
   if (!sessao) redirect("/votar");
 
+  const tenant = await getCurrentTenant();
   const supabase = createSupabaseAdminClient();
   const [{ count }, { data: edicao }] = await Promise.all([
     supabase
@@ -33,6 +35,7 @@ export default async function ObrigadoPage() {
     supabase
       .from("edicao")
       .select("nome, fim_votacao, divulgacao_resultado")
+      .eq("tenant_id", tenant.id)
       .eq("ativa", true)
       .order("ano", { ascending: false })
       .limit(1)
@@ -44,6 +47,9 @@ export default async function ObrigadoPage() {
   const whatsappOk = sessao.whatsapp_validado;
   const fimVotacao = formatDataHora(edicao?.fim_votacao ?? null);
   const divulgacao = formatDataHora(edicao?.divulgacao_resultado ?? null);
+  const nomeCampanha = edicao?.nome ?? `Melhores do Ano ${tenant.nome}`;
+  const cidade = tenant.nome.replace(/^CDL\s+/i, "");
+  const dominio = tenant.dominio ?? "";
 
   return (
     <VotoLayout step={4}>
@@ -81,7 +87,7 @@ export default async function ObrigadoPage() {
             <p className="text-muted text-sm mt-5 leading-relaxed">
               Seu voto faz parte do prêmio
               <br />
-              <strong className="text-navy-800 font-display italic">Melhores do Ano CDL Aracaju 2025</strong>.
+              <strong className="text-navy-800 font-display italic">{nomeCampanha}</strong>.
             </p>
 
             <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold-500/15 border border-gold-500/30">
@@ -171,12 +177,12 @@ export default async function ObrigadoPage() {
                   className="font-display-bold text-navy-800 mt-1"
                   style={{ fontSize: 20, lineHeight: 1.1 }}
                 >
-                  Convide quem mora em Aracaju.
+                  Convide quem mora em {cidade}.
                 </h2>
                 <p className="text-xs text-muted mt-1">
                   Quanto mais gente votando, mais legítimo o resultado.
                 </p>
-                <ShareButton />
+                <ShareButton dominio={dominio} nomeCampanha={nomeCampanha} />
               </div>
             </div>
           </CardContent>
@@ -192,9 +198,17 @@ export default async function ObrigadoPage() {
   );
 }
 
-function ShareButton() {
-  const url = "https://votar.cdlaju.com.br";
-  const text = `Vote nos Melhores do Ano CDL Aracaju 2025! 🏆\n${url}`;
+function ShareButton({
+  dominio,
+  nomeCampanha,
+}: {
+  dominio: string;
+  nomeCampanha: string;
+}) {
+  const url = dominio ? `https://${dominio}` : "";
+  const text = url
+    ? `Vote nos ${nomeCampanha}! 🏆\n${url}`
+    : `Vote nos ${nomeCampanha}! 🏆`;
   const wa = `https://wa.me/?text=${encodeURIComponent(text)}`;
   return (
     <a

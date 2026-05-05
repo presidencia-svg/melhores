@@ -3,8 +3,18 @@ import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/Button";
 import { TrophyMark, LaurelHalf, SmallCaps, Divider } from "@/components/brand/Marks";
 import { SafariAviso } from "@/components/voto/SafariAviso";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
-export default function Home() {
+export default async function Home() {
+  const tenant = await getCurrentTenant();
+  const status = await getEdicaoStatus(tenant.id);
+  const edicao = status.status !== "sem_edicao" ? status.edicao : null;
+  const cidade = tenant.nome.replace(/^CDL\s+/i, "");
+  const ano = edicao?.ano ?? new Date().getFullYear();
+  const dominio = tenant.dominio ?? "";
+  const kicker = `${tenant.nome.toLowerCase()} · edição ${ano}`;
+
   return (
     <div className="flex flex-col flex-1">
       <SafariAviso />
@@ -41,7 +51,7 @@ export default function Home() {
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 py-16 sm:py-24 md:py-32">
           <div className="flex flex-col items-center text-center gap-5 sm:gap-6 animate-fade-in">
             <SmallCaps color="#d4a537" size={11}>
-              cdl aracaju · edição 2025
+              {kicker}
             </SmallCaps>
 
             <h1 className="font-display text-cream-100 max-w-4xl text-balance">
@@ -63,7 +73,7 @@ export default function Home() {
                   fontWeight: 800,
                 }}
               >
-                de Aracaju
+                de {cidade}
               </span>
             </h1>
 
@@ -152,7 +162,7 @@ export default function Home() {
           </div>
 
           <SmallCaps color="var(--gold-700)" size={11}>
-            edição 2025 · aberta para votação
+            edição {ano} · aberta para votação
           </SmallCaps>
 
           <h2
@@ -163,7 +173,7 @@ export default function Home() {
             <br />
             <span className="font-display-bold">faz a diferença</span>
             <br />
-            em Aracaju.
+            em {cidade}.
           </h2>
 
           <div className="mt-6 sm:mt-8 flex justify-center">
@@ -174,7 +184,9 @@ export default function Home() {
             </Link>
           </div>
 
-          <p className="text-xs text-muted mt-6 font-mono">votar.cdlaju.com.br</p>
+          {dominio ? (
+            <p className="text-xs text-muted mt-6 font-mono">{dominio}</p>
+          ) : null}
         </div>
       </section>
 
@@ -190,7 +202,7 @@ export default function Home() {
             <Link href="/privacidade" className="hover:text-cream-100">Privacidade</Link>
           </div>
           <p className="text-xs text-cream-100/50 font-mono md:text-right">
-            © 2026 CDL Aracaju
+            © {new Date().getFullYear()} {tenant.nome}
           </p>
         </div>
       </footer>

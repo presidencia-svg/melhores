@@ -12,6 +12,8 @@ import {
 } from "@/lib/meta-whatsapp/client";
 import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 import { getClientIp } from "@/lib/utils";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 const META_TEMPLATE_OTP =
   process.env.META_TEMPLATE_OTP ?? "codigo_verificacao_2025";
@@ -99,8 +101,14 @@ export async function POST(req: Request) {
   if (!envioOk) {
     const status = await verificarStatus();
     if (status.conectado) {
+      const tenant = await getCurrentTenant();
+      const edicaoStatus = await getEdicaoStatus(tenant.id);
+      const nomeCampanha =
+        edicaoStatus.status !== "sem_edicao"
+          ? edicaoStatus.edicao.nome
+          : `Melhores do Ano ${tenant.nome}`;
       const mensagem =
-        `*Melhores do Ano CDL Aracaju 2025*\n\n` +
+        `*${nomeCampanha}*\n\n` +
         `Olá! Seu código de validação para continuar votando é:\n\n` +
         `*${codigo}*\n\n` +
         `O código expira em 10 minutos.`;
@@ -113,7 +121,8 @@ export async function POST(req: Request) {
   }
 
   if (!envioOk && zenviaConfigurada()) {
-    const sms = `Codigo CDL Aracaju 2025: ${codigo}. Valido por 10 minutos. Nao compartilhe.`;
+    const tenant = await getCurrentTenant();
+    const sms = `Codigo ${tenant.nome}: ${codigo}. Valido por 10 minutos. Nao compartilhe.`;
     const r = await enviarSmsZenvia(whatsapp, sms);
     if (r.ok) {
       envioOk = true;

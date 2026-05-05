@@ -1,7 +1,9 @@
 import { ImageResponse } from "next/og";
 import { getLogoWhiteDataUrl, loadEditorialFonts } from "@/lib/marketing/og-helpers";
+import { tryGetCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
-export const alt = "Melhores do Ano CDL Aracaju 2025";
+export const alt = "Melhores do Ano";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 // Renderiza sob demanda (não falha o build se Google Fonts der hiccup)
@@ -10,6 +12,21 @@ export const dynamic = "force-dynamic";
 export default async function OgImage() {
   const logoSrc = await getLogoWhiteDataUrl();
   const fonts = await loadEditorialFonts();
+
+  const tenant = await tryGetCurrentTenant();
+  let cidade = "";
+  let kicker = "edição";
+  let dominio = "";
+  if (tenant) {
+    cidade = tenant.nome.replace(/^CDL\s+/i, "");
+    dominio = tenant.dominio ?? "";
+    const status = await getEdicaoStatus(tenant.id);
+    const ano =
+      status.status !== "sem_edicao"
+        ? status.edicao.ano
+        : new Date().getFullYear();
+    kicker = `${tenant.nome.toLowerCase()} · edição ${ano}`;
+  }
 
   return new ImageResponse(
     (
@@ -45,7 +62,7 @@ export default async function OgImage() {
               fontSize: 20,
             }}
           >
-            cdl aracaju · edição 2025
+            {kicker}
           </div>
           <div style={{ width: 28, height: 1, background: "#d4a537" }} />
         </div>
@@ -84,7 +101,7 @@ export default async function OgImage() {
               color: "#e6bf5f",
             }}
           >
-            de Aracaju
+            {cidade ? `de ${cidade}` : "do ano"}
           </div>
           <div
             style={{
@@ -126,13 +143,12 @@ export default async function OgImage() {
               letterSpacing: 1,
             }}
           >
-            votar.cdlaju.com.br
+            {dominio}
           </div>
           <div style={{ display: "flex" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={logoSrc}
-              alt="CDL Aracaju"
+              alt={tenant?.nome ?? "Logo"}
               width={180}
               height={54}
               style={{ objectFit: "contain" }}

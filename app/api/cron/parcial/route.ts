@@ -67,8 +67,17 @@ function primeiroNomeDe(nome: string): string {
   return primeiro || "amigo(a)";
 }
 
+type TenantCtx = {
+  nomeCampanha: string;
+  dominio: string;
+};
+
 // Mensagem completa pra Z-API (texto livre).
-function montarMensagemCompleta(votanteNome: string, linhas: LinhaRpc[]): string | null {
+function montarMensagemCompleta(
+  votanteNome: string,
+  linhas: LinhaRpc[],
+  ctx: TenantCtx
+): string | null {
   if (linhas.length === 0) return null;
   const porSub = new Map<string, LinhaRpc[]>();
   const ordemSubs: string[] = [];
@@ -89,19 +98,23 @@ function montarMensagemCompleta(votanteNome: string, linhas: LinhaRpc[]): string
   }
   if (blocos.length === 0) return null;
   return [
-    `🏆 Parcial dos Melhores do Ano CDL Aracaju 2025`,
+    `🏆 Parcial dos ${ctx.nomeCampanha}`,
     "",
     `Olá, ${primeiroNomeDe(votanteNome)}! Veja como estão as ${blocos.length === 1 ? "categoria" : "categorias"} mais acirradas em que você votou:`,
     "",
     blocos.join("\n\n"),
     "",
     `Compartilhe e ajude quem você votou:`,
-    `🌐 votar.cdlaju.com.br`,
+    `🌐 ${ctx.dominio}`,
   ].join("\n");
 }
 
 // SMS curtinho — primeira sub com top 1 vs top 2.
-function montarSms(votanteNome: string, linhas: LinhaRpc[]): string | null {
+function montarSms(
+  votanteNome: string,
+  linhas: LinhaRpc[],
+  ctx: TenantCtx
+): string | null {
   if (linhas.length === 0) return null;
   const primeiraSub = linhas[0]!;
   const top = linhas
@@ -110,7 +123,7 @@ function montarSms(votanteNome: string, linhas: LinhaRpc[]): string | null {
     .slice(0, 2);
   if (top.length === 0) return null;
   const trecho = top.map((c) => `${c.pos}o ${c.candidato_nome} ${c.pct}%`).join(" x ");
-  return `Ola ${primeiroNomeDe(votanteNome)}! ${primeiraSub.subcategoria_nome}: ${trecho}. Compartilhe: votar.cdlaju.com.br`;
+  return `Ola ${primeiroNomeDe(votanteNome)}! ${primeiraSub.subcategoria_nome}: ${trecho}. Compartilhe: ${ctx.dominio}`;
 }
 
 export async function GET(req: Request) { return handle(req); }
@@ -175,11 +188,21 @@ async function handle(req: Request) {
     });
   }
 
-  // 4. Fila com filtros inteligentes
-  const { data: elegiveisRaw, error: erroRpc } = await supabase.rpc(
-    "parcial_elegives_auto",
-    { p_min_minutos_apos_voto: MIN_MINUTOS_APOS_VOTO, p_max_diff_pct: MAX_DIFF_PCT }
-  );
+  // 4. Fila com filtros inteligentes + edicao do tenant pra ctx das mensagens
+  const [{ data: elegiveisRaw, error: erroRpc }, { data: edicao }] = await Promise.all([
+    supabase.rpc("parcial_elegives_auto", {
+      p_min_minutos_apos_voto: MIN_MINUTOS_APOS_VOTO,
+      p_max_diff_pct: MAX_DIFF_PCT,
+    }),
+    supabase
+      .from("edicao")
+      .select("nome")
+      .eq("tenant_id", tenant.id)
+      .eq("ativa", true)
+      .order("ano", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
   if (erroRpc) {
     return NextResponse.json(
       { error: `RPC falhou: ${erroRpc.message}` },
@@ -190,6 +213,10 @@ async function handle(req: Request) {
   if (fila.length === 0) {
     return NextResponse.json({ ok: true, alvos: 0, motivo: "fila_vazia" });
   }
+  const tenantCtx: TenantCtx = {
+    nomeCampanha: edicao?.nome ?? `Melhores do Ano ${tenant.nome}`,
+    dominio: tenant.dominio ?? "votar.cdlaju.com.br",
+  };
 
   // 5. Decide canal: Meta > Z-API > SMS
   const usarMeta = metaConfigurada();
@@ -252,14 +279,14 @@ async function handle(req: Request) {
         ]
       );
     } else if (canal === "zapi") {
-      const msg = montarMensagemCompleta(e.votante_nome, linhasTip);
+      const msg = montarMensagemCompleta(e.votante_nome, linhasTip, tenantCtx);
       if (!msg) {
         falhas.push({ votante_id: e.votante_id, motivo: "sem mensagem" });
         continue;
       }
       r = await enviarMensagemTexto(e.whatsapp, msg);
     } else {
-      const msg = montarSms(e.votante_nome, linhasTip);
+      const msg = montarSms(e.votante_nome, linhasTip, tenantCtx);
       if (!msg) {
         falhas.push({ votante_id: e.votante_id, motivo: "sem mensagem" });
         continue;

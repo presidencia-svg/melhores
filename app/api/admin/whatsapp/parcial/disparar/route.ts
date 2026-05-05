@@ -5,10 +5,16 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { enviarMensagemTexto, verificarStatus } from "@/lib/zapi/client";
 import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 import { enviarTemplate, metaConfigurada } from "@/lib/meta-whatsapp/client";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
 
 const META_TEMPLATE_PARCIAL =
   process.env.META_TEMPLATE_PARCIAL ?? "parcial_voto_2025";
 const META_TEMPLATE_LANG = process.env.META_TEMPLATE_LANG ?? "pt_BR";
+
+type TenantCtx = {
+  nomeCampanha: string;
+  dominio: string;
+};
 
 // Pacing 2-5s significa ~50 envios em ~5min.
 export const maxDuration = 300;
@@ -30,7 +36,11 @@ type LinhaRpc = {
   diff_top12: number;
 };
 
-function montarMensagem(votanteNome: string, linhas: LinhaRpc[]): string | null {
+function montarMensagem(
+  votanteNome: string,
+  linhas: LinhaRpc[],
+  ctx: TenantCtx
+): string | null {
   if (linhas.length === 0) return null;
 
   // agrupa por subcategoria
@@ -63,19 +73,23 @@ function montarMensagem(votanteNome: string, linhas: LinhaRpc[]): string | null 
   if (blocos.length === 0) return null;
 
   return [
-    `🏆 Parcial dos Melhores do Ano CDL Aracaju 2025`,
+    `🏆 Parcial dos ${ctx.nomeCampanha}`,
     "",
     `Olá, ${primeiroNome}! Veja como estão as ${blocos.length === 1 ? "categoria" : "categorias"} mais acirradas em que você votou:`,
     "",
     blocos.join("\n\n"),
     "",
     `Compartilhe e ajude quem você votou:`,
-    `🌐 votar.cdlaju.com.br`,
+    `🌐 ${ctx.dominio}`,
   ].join("\n");
 }
 
 // Versão SMS curta (~155 chars): pega só a subcategoria mais acirrada com top 1 e top 2.
-function montarSms(votanteNome: string, linhas: LinhaRpc[]): string | null {
+function montarSms(
+  votanteNome: string,
+  linhas: LinhaRpc[],
+  ctx: TenantCtx
+): string | null {
   if (linhas.length === 0) return null;
   const primeiroNome = (votanteNome.split(" ")[0] ?? "").trim() || "amigo";
   const primeiraSub = linhas[0]!;
@@ -85,7 +99,7 @@ function montarSms(votanteNome: string, linhas: LinhaRpc[]): string | null {
     .slice(0, 2);
   if (top.length === 0) return null;
   const trecho = top.map((c) => `${c.pos}o ${c.candidato_nome} ${c.pct}%`).join(" x ");
-  return `Ola ${primeiroNome}! ${primeiraSub.subcategoria_nome}: ${trecho}. Compartilhe: votar.cdlaju.com.br`;
+  return `Ola ${primeiroNome}! ${primeiraSub.subcategoria_nome}: ${trecho}. Compartilhe: ${ctx.dominio}`;
 }
 
 export async function POST(req: Request) {
@@ -99,13 +113,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   }
 
+  const tenant = await getCurrentTenant();
   const supabase = createSupabaseAdminClient();
 
-  // Busca dados dos votantes alvo (e revalida elegibilidade)
-  const { data: votantes, error: vErr } = await supabase
-    .from("votantes")
-    .select("id, nome, whatsapp, whatsapp_validado, parcial_enviada_em")
-    .in("id", parsed.data.votante_ids);
+  // Busca dados dos votantes alvo + edicao do tenant (pra ctx das mensagens)
+  const [{ data: votantes, error: vErr }, { data: edicao }] = await Promise.all([
+    supabase
+      .from("votantes")
+      .select("id, nome, whatsapp, whatsapp_validado, parcial_enviada_em")
+      .in("id", parsed.data.votante_ids),
+    supabase
+      .from("edicao")
+      .select("nome")
+      .eq("tenant_id", tenant.id)
+      .eq("ativa", true)
+      .order("ano", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   if (vErr) {
     return NextResponse.json({ error: `Falha: ${vErr.message}` }, { status: 500 });
@@ -114,6 +139,11 @@ export async function POST(req: Request) {
   const elegiveis = (votantes ?? []).filter(
     (v) => v.whatsapp_validado && v.whatsapp && !v.parcial_enviada_em
   );
+
+  const tenantCtx: TenantCtx = {
+    nomeCampanha: edicao?.nome ?? `Melhores do Ano ${tenant.nome}`,
+    dominio: tenant.dominio ?? "votar.cdlaju.com.br",
+  };
 
   // Decide canal: Meta WhatsApp Cloud API > Z-API > SMS Zenvia.
   const usarMeta = metaConfigurada();
@@ -182,14 +212,14 @@ export async function POST(req: Request) {
         String(top[1]!.pct),
       ]);
     } else if (canal === "zapi") {
-      const mensagem = montarMensagem(v.nome, linhasTip);
+      const mensagem = montarMensagem(v.nome, linhasTip, tenantCtx);
       if (!mensagem) {
         falhas.push({ votante_id: v.id, nome: v.nome, motivo: "sem mensagem" });
         continue;
       }
       r = await enviarMensagemTexto(v.whatsapp!, mensagem);
     } else {
-      const mensagem = montarSms(v.nome, linhasTip);
+      const mensagem = montarSms(v.nome, linhasTip, tenantCtx);
       if (!mensagem) {
         falhas.push({ votante_id: v.id, nome: v.nome, motivo: "sem mensagem" });
         continue;
