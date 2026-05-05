@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Sora, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Sora, JetBrains_Mono, Pinyon_Script } from "next/font/google";
 import "./globals.css";
 import { MetaPixel } from "@/components/MetaPixel";
 import { tryGetCurrentTenant } from "@/lib/tenant/resolver";
@@ -24,6 +24,14 @@ const jetbrains = JetBrains_Mono({
   variable: "--font-jetbrains",
   subsets: ["latin"],
   weight: ["400", "500"],
+  display: "swap",
+});
+
+// Caligrafica usada apenas na assinatura dos certificados de premiacao.
+const pinyon = Pinyon_Script({
+  variable: "--font-pinyon",
+  subsets: ["latin"],
+  weight: ["400"],
   display: "swap",
 });
 
@@ -82,7 +90,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${fraunces.variable} ${sora.variable} ${jetbrains.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${sora.variable} ${jetbrains.variable} ${pinyon.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <MetaPixel />
