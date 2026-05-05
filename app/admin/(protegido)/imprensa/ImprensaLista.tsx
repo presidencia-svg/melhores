@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { toJpeg } from "html-to-image";
 import { Card, CardContent } from "@/components/ui/Card";
 import {
   Copy,
@@ -14,7 +15,10 @@ import {
   Smartphone,
   TrendingUp,
   AlertOctagon,
+  Instagram,
+  Loader2,
 } from "lucide-react";
+import { TransparenciaCards, TRANSPARENCIA_IDS } from "./TransparenciaCards";
 
 export type LinhaTop6 = {
   subcategoria_id: string;
@@ -175,6 +179,122 @@ export function ImprensaLista({
     [linhas, modo, numeros]
   );
 
+  const [igEstado, setIgEstado] = useState<{
+    feito: number;
+    total: number;
+    permalink: string | null;
+    erro: string | null;
+  } | null>(null);
+
+  async function postarTransparencia() {
+    if (!numeros) {
+      alert("Sem números pra postar — rode a migration 030 antes.");
+      return;
+    }
+    if (igEstado && igEstado.erro === null && igEstado.feito < igEstado.total) return;
+
+    setIgEstado({ feito: 0, total: TRANSPARENCIA_IDS.length, permalink: null, erro: null });
+
+    const imagens: string[] = [];
+    for (const id of TRANSPARENCIA_IDS) {
+      const node = document.querySelector<HTMLElement>(
+        `[data-transparencia-id="${id}"]`
+      );
+      if (!node) {
+        setIgEstado({
+          feito: imagens.length,
+          total: TRANSPARENCIA_IDS.length,
+          permalink: null,
+          erro: `Card ${id} não encontrado no DOM`,
+        });
+        return;
+      }
+      try {
+        const dataUrl = await toJpeg(node, {
+          cacheBust: true,
+          pixelRatio: 1.5,
+          quality: 0.85,
+          backgroundColor: "#0a2a5e",
+        });
+        imagens.push(dataUrl);
+        setIgEstado({
+          feito: imagens.length,
+          total: TRANSPARENCIA_IDS.length,
+          permalink: null,
+          erro: null,
+        });
+      } catch (e) {
+        setIgEstado({
+          feito: imagens.length,
+          total: TRANSPARENCIA_IDS.length,
+          permalink: null,
+          erro: `Erro ao gerar ${id}: ${e instanceof Error ? e.message : "?"}`,
+        });
+        return;
+      }
+    }
+
+    const caption = [
+      "🏆 MELHORES DO ANO · CDL ARACAJU 2026",
+      "Os números da campanha · Transparência total",
+      "",
+      "Cada CPF validado pelo SPC Brasil. Cada votante com selfie obrigatória. Cada voto auditável.",
+      "",
+      `📊 ${numeros.votantes_unicos.toLocaleString("pt-BR")} votantes únicos`,
+      `🗳️ ${numeros.votos_validos.toLocaleString("pt-BR")} votos válidos em ${numeros.subcategorias_ativas} subcategorias`,
+      `🛡️ ${pct(numeros.com_spc_validado, numeros.votantes_unicos)}% verificados pelo SPC`,
+      "",
+      "Obrigado a cada votante que fez parte dessa edição. 💙",
+      "",
+      "#MelhoresDoAnoCDL #CDLAracaju #Aracaju #Sergipe #Transparência",
+    ].join("\n");
+
+    try {
+      const res = await fetch("/api/admin/instagram/postar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imagens, caption }),
+      });
+      const text = await res.text();
+      let json: { error?: string; detail?: string; permalink?: string | null };
+      try {
+        json = JSON.parse(text);
+      } catch {
+        json = {
+          error: res.status === 413 ? "Payload muito grande" : `HTTP ${res.status}`,
+          detail: text.slice(0, 200),
+        };
+      }
+      if (!res.ok) {
+        setIgEstado({
+          feito: TRANSPARENCIA_IDS.length,
+          total: TRANSPARENCIA_IDS.length,
+          permalink: null,
+          erro: `${json.error}${json.detail ? ` — ${json.detail}` : ""}`,
+        });
+        return;
+      }
+      setIgEstado({
+        feito: TRANSPARENCIA_IDS.length,
+        total: TRANSPARENCIA_IDS.length,
+        permalink: json.permalink ?? null,
+        erro: null,
+      });
+    } catch (e) {
+      setIgEstado({
+        feito: TRANSPARENCIA_IDS.length,
+        total: TRANSPARENCIA_IDS.length,
+        permalink: null,
+        erro: e instanceof Error ? e.message : "Falha de rede",
+      });
+    }
+  }
+
+  const igPostando =
+    igEstado !== null && igEstado.erro === null && igEstado.feito < igEstado.total;
+  const igOk =
+    igEstado !== null && igEstado.erro === null && igEstado.feito === igEstado.total;
+
   async function copiar() {
     try {
       await navigator.clipboard.writeText(texto);
@@ -202,6 +322,69 @@ export function ImprensaLista({
   return (
     <>
       {numeros && <NumerosCampanhaCards n={numeros} />}
+      {numeros && <TransparenciaCards n={numeros} />}
+
+      {numeros && (
+        <div className="rounded-xl border border-fuchsia-300/60 bg-gradient-to-r from-fuchsia-50 to-amber-50 p-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-fuchsia-600 to-amber-500 text-white flex items-center justify-center shrink-0">
+                <Instagram className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-display text-base font-bold text-cdl-blue">
+                  Postar números da campanha no @cdlaju
+                </p>
+                <p className="text-xs text-muted leading-snug">
+                  Carrossel Story de 5 slides (1080×1920): capa, volumes,
+                  anti-fraude, distribuição técnica, pico + agradecimento.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={postarTransparencia}
+              disabled={igPostando}
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-lg bg-gradient-to-r from-fuchsia-600 to-amber-500 text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {igPostando ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Instagram className="w-4 h-4" />
+              )}
+              {igPostando ? "postando…" : "postar transparência"}
+            </button>
+          </div>
+
+          {igEstado && (
+            <div className="mt-3 text-xs">
+              {igEstado.erro ? (
+                <p className="text-rose-700">
+                  ✗ {igEstado.erro}
+                </p>
+              ) : igOk ? (
+                <p className="text-emerald-700">
+                  ✓ Publicado!{" "}
+                  {igEstado.permalink && (
+                    <a
+                      href={igEstado.permalink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline font-semibold"
+                    >
+                      Abrir no Instagram
+                    </a>
+                  )}
+                </p>
+              ) : (
+                <p className="text-cdl-blue">
+                  Capturando slides… {igEstado.feito}/{igEstado.total}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <nav className="flex gap-1 bg-cream-100 border border-[rgba(10,42,94,0.15)] rounded-lg p-1">
