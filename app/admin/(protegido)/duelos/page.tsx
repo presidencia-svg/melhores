@@ -4,6 +4,9 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Swords } from "lucide-react";
 import { DuelosLista, type Duelo } from "./DuelosLista";
 import { AtualizarBtn } from "../AtualizarBtn";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
+import { montarBranding } from "@/lib/tenant/branding";
 
 export const revalidate = 3600;
 
@@ -25,6 +28,11 @@ export default async function DuelosPage({
 }) {
   const sp = await searchParams;
   const limit = clampTop(sp.top);
+  const tenant = await getCurrentTenant();
+  const edicaoStatus = await getEdicaoStatus(tenant.id);
+  const edicao =
+    edicaoStatus.status !== "sem_edicao" ? edicaoStatus.edicao : null;
+  const branding = montarBranding(tenant, edicao);
   const supabase = createSupabaseAdminClient();
 
   const { data: duelos } = await supabase
@@ -82,7 +90,7 @@ export default async function DuelosPage({
           </CardContent>
         </Card>
       ) : (
-        <DuelosLista duelos={visiveis} />
+        <DuelosLista duelos={visiveis} branding={branding} />
       )}
     </div>
   );

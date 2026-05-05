@@ -19,6 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { TransparenciaCards, TRANSPARENCIA_IDS } from "./TransparenciaCards";
+import type { TenantBranding } from "@/lib/tenant/branding";
 
 export type LinhaTop6 = {
   subcategoria_id: string;
@@ -100,10 +101,11 @@ function gerarBlocoNumeros(n: NumerosCampanha | null): string {
 function gerarTexto(
   linhas: LinhaTop6[],
   modo: Modo,
-  numeros: NumerosCampanha | null
+  numeros: NumerosCampanha | null,
+  branding: TenantBranding
 ): string {
   const cabecalho = [
-    "MELHORES DO ANO · CDL ARACAJU 2026",
+    branding.nomeCampanha.toUpperCase(),
     modo === "categoria"
       ? "Top 6 colocados por subcategoria"
       : "Top 6 colocados por subcategoria (ordem alfabética)",
@@ -167,16 +169,18 @@ function gerarTexto(
 export function ImprensaLista({
   linhas,
   numeros,
+  branding,
 }: {
   linhas: LinhaTop6[];
   numeros: NumerosCampanha | null;
+  branding: TenantBranding;
 }) {
   const [modo, setModo] = useState<Modo>("categoria");
   const [copiado, setCopiado] = useState(false);
 
   const texto = useMemo(
-    () => gerarTexto(linhas, modo, numeros),
-    [linhas, modo, numeros]
+    () => gerarTexto(linhas, modo, numeros, branding),
+    [linhas, modo, numeros, branding]
   );
 
   const [igEstado, setIgEstado] = useState<{
@@ -235,7 +239,7 @@ export function ImprensaLista({
     }
 
     const caption = [
-      "🏆 MELHORES DO ANO · CDL ARACAJU 2026",
+      `🏆 ${branding.nomeCampanha.toUpperCase()}`,
       "Os números da campanha · Transparência total",
       "",
       "Cada CPF validado pelo SPC Brasil. Cada votante com selfie obrigatória. Cada voto auditável.",
@@ -246,7 +250,7 @@ export function ImprensaLista({
       "",
       "Obrigado a cada votante que fez parte dessa edição. 💙",
       "",
-      "#MelhoresDoAnoCDL #CDLAracaju #Aracaju #Sergipe #Transparência",
+      `${branding.hashtags} #Transparência`,
     ].join("\n");
 
     try {
@@ -310,7 +314,7 @@ export function ImprensaLista({
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     const sufixo = modo === "categoria" ? "por-categoria" : "alfabetica";
-    link.download = `melhores-do-ano-2026-top6-${sufixo}.txt`;
+    link.download = `melhores-do-ano-${branding.ano}-top6-${sufixo}.txt`;
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
@@ -322,7 +326,7 @@ export function ImprensaLista({
   return (
     <>
       {numeros && <NumerosCampanhaCards n={numeros} />}
-      {numeros && <TransparenciaCards n={numeros} />}
+      {numeros && <TransparenciaCards n={numeros} branding={branding} />}
 
       {numeros && (
         <div className="rounded-xl border border-fuchsia-300/60 bg-gradient-to-r from-fuchsia-50 to-amber-50 p-4">
@@ -333,7 +337,7 @@ export function ImprensaLista({
               </div>
               <div className="min-w-0">
                 <p className="font-display text-base font-bold text-cdl-blue">
-                  Postar números da campanha no @cdlaju
+                  Postar números da campanha{branding.instagramUsername ? ` no @${branding.instagramUsername}` : ""}
                 </p>
                 <p className="text-xs text-muted leading-snug">
                   Carrossel Story de 5 slides (1080×1920): capa, volumes,

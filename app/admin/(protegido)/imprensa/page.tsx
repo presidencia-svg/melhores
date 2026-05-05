@@ -3,12 +3,20 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/Card";
 import { ImprensaLista, type LinhaTop6, type NumerosCampanha } from "./ImprensaLista";
 import { AtualizarBtn } from "../AtualizarBtn";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
+import { montarBranding } from "@/lib/tenant/branding";
 
 // 1h: pos-eleicao a lista e' imutavel. Botao "Atualizar" no header invalida
 // o cache na hora caso precise (ex: depois de mesclar candidatos via SQL).
 export const revalidate = 3600;
 
 export default async function ImprensaPage() {
+  const tenant = await getCurrentTenant();
+  const edicaoStatus = await getEdicaoStatus(tenant.id);
+  const edicao =
+    edicaoStatus.status !== "sem_edicao" ? edicaoStatus.edicao : null;
+  const branding = montarBranding(tenant, edicao);
   const supabase = createSupabaseAdminClient();
 
   // Pagina sem truncamento — pega tudo (sao ~600 linhas: 102 subs * 6).
@@ -58,7 +66,7 @@ export default async function ImprensaPage() {
           </CardContent>
         </Card>
       ) : (
-        <ImprensaLista linhas={linhas} numeros={numeros} />
+        <ImprensaLista linhas={linhas} numeros={numeros} branding={branding} />
       )}
     </div>
   );

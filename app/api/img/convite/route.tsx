@@ -1,9 +1,22 @@
 import { ImageResponse } from "next/og";
-import { getLogoWhiteDataUrl, loadEditorialFonts } from "@/lib/marketing/og-helpers";
+import {
+  getLogoTenantDataUrl,
+  loadEditorialFonts,
+} from "@/lib/marketing/og-helpers";
+import { tryGetCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 export async function GET() {
-  const logoSrc = await getLogoWhiteDataUrl();
+  const tenant = await tryGetCurrentTenant();
+  const logoSrc = await getLogoTenantDataUrl(tenant?.logo_url ?? null, "white");
   const fonts = await loadEditorialFonts();
+
+  const nomeTenant = tenant?.nome ?? "CDL";
+  let ano: number = new Date().getFullYear();
+  if (tenant) {
+    const status = await getEdicaoStatus(tenant.id);
+    if (status.status !== "sem_edicao") ano = status.edicao.ano;
+  }
 
   const img = new ImageResponse(
     (
@@ -59,7 +72,7 @@ export async function GET() {
               marginBottom: 10,
             }}
           >
-            A CDL Aracaju convida
+            A {nomeTenant} convida
           </div>
           <div
             style={{
@@ -107,7 +120,7 @@ export async function GET() {
               marginTop: 8,
             }}
           >
-            edição 2025
+            edição {ano}
           </div>
 
           <div
@@ -152,7 +165,7 @@ export async function GET() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={logoSrc}
-            alt="CDL Aracaju"
+            alt={nomeTenant}
             width={240}
             height={72}
             style={{ objectFit: "contain" }}

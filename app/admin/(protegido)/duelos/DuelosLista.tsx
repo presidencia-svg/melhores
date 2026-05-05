@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { Download, Flame, Loader2 } from "lucide-react";
+import type { TenantBranding } from "@/lib/tenant/branding";
 
 export type Duelo = {
   subcategoria_id: string;
@@ -29,17 +30,29 @@ function slug(s: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function DuelosLista({ duelos }: { duelos: Duelo[] }) {
+export function DuelosLista({
+  duelos,
+  branding,
+}: {
+  duelos: Duelo[];
+  branding: TenantBranding;
+}) {
   return (
     <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
       {duelos.map((d) => (
-        <DueloCard key={d.subcategoria_id} duelo={d} />
+        <DueloCard key={d.subcategoria_id} duelo={d} branding={branding} />
       ))}
     </div>
   );
 }
 
-function DueloCard({ duelo }: { duelo: Duelo }) {
+function DueloCard({
+  duelo,
+  branding,
+}: {
+  duelo: Duelo;
+  branding: TenantBranding;
+}) {
   const feedRef = useRef<HTMLDivElement>(null);
   const storyRef = useRef<HTMLDivElement>(null);
   const [baixando, setBaixando] = useState<"feed" | "story" | null>(null);
@@ -82,6 +95,7 @@ function DueloCard({ duelo }: { duelo: Duelo }) {
           pct1={pct1}
           pct2={pct2}
           acirrado={acirrado}
+          branding={branding}
         />
       </div>
 
@@ -129,6 +143,7 @@ function DueloCard({ duelo }: { duelo: Duelo }) {
             pct1={pct1}
             pct2={pct2}
             acirrado={acirrado}
+            branding={branding}
           />
         </div>
       </div>
@@ -141,11 +156,13 @@ function CardFeed({
   pct1,
   pct2,
   acirrado,
+  branding,
 }: {
   duelo: Duelo;
   pct1: number;
   pct2: number;
   acirrado: boolean;
+  branding: TenantBranding;
 }) {
   return (
     <article
@@ -153,7 +170,7 @@ function CardFeed({
       style={{ backgroundColor: "#0a2a5e" }}
     >
       <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.15em] font-semibold opacity-80">
-        <span>Melhores do Ano CDL</span>
+        <span>Melhores do Ano · {branding.nome}</span>
         {acirrado && (
           <span className="flex items-center gap-1 text-amber-300">
             <Flame className="w-3 h-3" />
@@ -197,8 +214,12 @@ function CardFeed({
 
       <p className="text-center text-xs mt-4 opacity-90 font-semibold">
         Ainda dá tempo de virar!
-        <br />
-        <span className="text-amber-300">votar.cdlaju.com.br</span>
+        {branding.dominio ? (
+          <>
+            <br />
+            <span className="text-amber-300">{branding.dominio}</span>
+          </>
+        ) : null}
       </p>
     </article>
   );
@@ -209,11 +230,13 @@ function CardStory({
   pct1,
   pct2,
   acirrado,
+  branding,
 }: {
   duelo: Duelo;
   pct1: number;
   pct2: number;
   acirrado: boolean;
+  branding: TenantBranding;
 }) {
   // Dimensoes Instagram Stories: 1080x1920.
   // pt/pb generosos pra respeitar a "safe zone" do IG: ~260px topo (username + X)
@@ -238,7 +261,7 @@ function CardStory({
           className="text-center uppercase tracking-[0.3em] font-bold opacity-90"
           style={{ fontSize: 32 }}
         >
-          Melhores do Ano · CDL Aracaju
+          Melhores do Ano · {branding.nome}
         </div>
         {acirrado && (
           <div
@@ -313,12 +336,14 @@ function CardStory({
         >
           Ainda dá tempo de virar!
         </p>
-        <p
-          className="text-center text-amber-300 font-bold mt-2"
-          style={{ fontSize: 42 }}
-        >
-          votar.cdlaju.com.br
-        </p>
+        {branding.dominio ? (
+          <p
+            className="text-center text-amber-300 font-bold mt-2"
+            style={{ fontSize: 42 }}
+          >
+            {branding.dominio}
+          </p>
+        ) : null}
       </div>
     </article>
   );

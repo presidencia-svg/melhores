@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { toPng, toJpeg } from "html-to-image";
 import JSZip from "jszip";
 import { Crown, Download, Loader2, Package, X, Instagram } from "lucide-react";
+import type { TenantBranding } from "@/lib/tenant/branding";
 
 export type Podium = {
   subcategoria_id: string;
@@ -60,7 +61,13 @@ type EstadoIG = {
   erro: string | null;
 } | null;
 
-export function PodiumLista({ podiums }: { podiums: Podium[] }) {
+export function PodiumLista({
+  podiums,
+  branding,
+}: {
+  podiums: Podium[];
+  branding: TenantBranding;
+}) {
   const [progresso, setProgresso] = useState<{
     feito: number;
     total: number;
@@ -159,7 +166,7 @@ export function PodiumLista({ podiums }: { podiums: Podium[] }) {
       // Carrossel precisa de pelo menos 2 imagens. Se a parte só tem 1, dobra.
       if (imagens.length === 1) imagens.push(imagens[0]!);
 
-      const caption = montarCaption(categoria, parte, p + 1, partes.length);
+      const caption = montarCaption(categoria, parte, p + 1, partes.length, branding);
 
       try {
         const res = await fetch("/api/admin/instagram/postar", {
@@ -477,12 +484,22 @@ export function PodiumLista({ podiums }: { podiums: Podium[] }) {
                 ) : (
                   <Instagram className="w-3.5 h-3.5" />
                 )}
-                {postandoEssa ? "postando…" : `postar no @cdlaju${partes > 1 ? ` (${partes}x)` : ""}`}
+                {postandoEssa
+                  ? "postando…"
+                  : `postar no ${
+                      branding.instagramUsername
+                        ? `@${branding.instagramUsername}`
+                        : "instagram"
+                    }${partes > 1 ? ` (${partes}x)` : ""}`}
               </button>
             </header>
             <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
               {lista.map((p) => (
-                <PodiumCard key={p.subcategoria_id} podium={p} />
+                <PodiumCard
+                  key={p.subcategoria_id}
+                  podium={p}
+                  branding={branding}
+                />
               ))}
             </div>
           </section>
@@ -497,7 +514,8 @@ function montarCaption(
   categoria: string,
   parte: Podium[],
   numParte: number,
-  totalPartes: number
+  totalPartes: number,
+  branding: TenantBranding
 ): string {
   const sufixo = totalPartes > 1 ? ` (parte ${numParte}/${totalPartes})` : "";
   const linhas = parte.map(
@@ -505,16 +523,22 @@ function montarCaption(
   );
   return [
     `🏆 Os melhores de ${categoria}${sufixo}`,
-    "Resultado oficial · Melhores do Ano CDL Aracaju 2026",
+    `Resultado oficial · ${branding.nomeCampanha}`,
     "",
     ...linhas,
     "",
     "Obrigado a quem votou! 💙",
-    "#MelhoresDoAnoCDL #CDLAracaju #Aracaju #Sergipe",
+    branding.hashtags,
   ].join("\n");
 }
 
-function PodiumCard({ podium }: { podium: Podium }) {
+function PodiumCard({
+  podium,
+  branding,
+}: {
+  podium: Podium;
+  branding: TenantBranding;
+}) {
   const feedRef = useRef<HTMLDivElement>(null);
   const storyRef = useRef<HTMLDivElement>(null);
   const [baixando, setBaixando] = useState<"feed" | "story" | null>(null);
@@ -547,7 +571,7 @@ function PodiumCard({ podium }: { podium: Podium }) {
     <div className="flex flex-col gap-3">
       {/* Card visivel formato Feed */}
       <div ref={feedRef}>
-        <CardFeed podium={podium} />
+        <CardFeed podium={podium} branding={branding} />
       </div>
 
       <div className="flex gap-2">
@@ -588,7 +612,7 @@ function PodiumCard({ podium }: { podium: Podium }) {
         aria-hidden="true"
       >
         <div ref={storyRef} data-story-id={podium.subcategoria_id}>
-          <CardStory podium={podium} />
+          <CardStory podium={podium} branding={branding} />
         </div>
       </div>
     </div>
@@ -599,8 +623,15 @@ const MEDALHAS = ["🥇", "🥈", "🥉"];
 const ACENTOS = ["text-amber-300", "text-slate-200", "text-orange-300"];
 const BORDAS = ["border-amber-300", "border-slate-200", "border-orange-300"];
 
-function CardFeed({ podium }: { podium: Podium }) {
-  if (isEmpate(podium)) return <CardFeedEmpate podium={podium} />;
+function CardFeed({
+  podium,
+  branding,
+}: {
+  podium: Podium;
+  branding: TenantBranding;
+}) {
+  if (isEmpate(podium))
+    return <CardFeedEmpate podium={podium} branding={branding} />;
 
   const pct1 = pctOf(podium.top1_votos, podium.total_subcat);
   const pct2 = podium.top2_id ? pctOf(podium.top2_votos, podium.total_subcat) : 0;
@@ -616,7 +647,7 @@ function CardFeed({ podium }: { podium: Podium }) {
       }}
     >
       <div className="text-center text-[10px] uppercase tracking-[0.2em] font-semibold opacity-80">
-        Resultado oficial · CDL Aracaju
+        Resultado oficial · {branding.nome}
       </div>
       <h2 className="font-display text-xl font-bold mt-1 leading-tight text-center line-clamp-2">
         {podium.subcategoria_nome}
@@ -669,15 +700,24 @@ function CardFeed({ podium }: { podium: Podium }) {
       <p className="text-center text-[10px] opacity-80 mt-1">
         {podium.total_subcat.toLocaleString("pt-BR")} votos · escolhido por você
       </p>
-      <p className="text-center text-[11px] mt-0.5 text-amber-300 font-bold">
-        cdlaju.com.br
-      </p>
+      {branding.dominio ? (
+        <p className="text-center text-[11px] mt-0.5 text-amber-300 font-bold">
+          {branding.dominio}
+        </p>
+      ) : null}
     </article>
   );
 }
 
-function CardStory({ podium }: { podium: Podium }) {
-  if (isEmpate(podium)) return <CardStoryEmpate podium={podium} />;
+function CardStory({
+  podium,
+  branding,
+}: {
+  podium: Podium;
+  branding: TenantBranding;
+}) {
+  if (isEmpate(podium))
+    return <CardStoryEmpate podium={podium} branding={branding} />;
 
   const pct1 = pctOf(podium.top1_votos, podium.total_subcat);
   const pct2 = podium.top2_id ? pctOf(podium.top2_votos, podium.total_subcat) : 0;
@@ -701,7 +741,7 @@ function CardStory({ podium }: { podium: Podium }) {
           className="text-center uppercase tracking-[0.3em] font-bold opacity-90"
           style={{ fontSize: 32 }}
         >
-          Resultado oficial · CDL Aracaju
+          Resultado oficial · {branding.nome}
         </div>
         <h2
           className="font-display font-bold mt-6 leading-[1.0] text-center"
@@ -771,12 +811,14 @@ function CardStory({ podium }: { podium: Podium }) {
         >
           {podium.total_subcat.toLocaleString("pt-BR")} votos · escolhido por você
         </p>
-        <p
-          className="text-center text-amber-300 font-bold mt-3"
-          style={{ fontSize: 44 }}
-        >
-          cdlaju.com.br
-        </p>
+        {branding.dominio ? (
+          <p
+            className="text-center text-amber-300 font-bold mt-3"
+            style={{ fontSize: 44 }}
+          >
+            {branding.dominio}
+          </p>
+        ) : null}
       </div>
     </article>
   );
@@ -788,7 +830,13 @@ function CardStory({ podium }: { podium: Podium }) {
 // "EMPATE TECNICO" no topo. 3o lugar (se houver) aparece como coadjuvante.
 // ==========================================================================
 
-function CardFeedEmpate({ podium }: { podium: Podium }) {
+function CardFeedEmpate({
+  podium,
+  branding,
+}: {
+  podium: Podium;
+  branding: TenantBranding;
+}) {
   const pct1 = pctOf(podium.top1_votos, podium.total_subcat);
   const pct3 = podium.top3_id ? pctOf(podium.top3_votos, podium.total_subcat) : 0;
 
@@ -802,7 +850,7 @@ function CardFeedEmpate({ podium }: { podium: Podium }) {
       }}
     >
       <div className="text-center text-[10px] uppercase tracking-[0.2em] font-semibold opacity-80">
-        Resultado oficial · CDL Aracaju
+        Resultado oficial · {branding.nome}
       </div>
       <h2 className="font-display text-xl font-bold mt-1 leading-tight text-center line-clamp-2">
         {podium.subcategoria_nome}
@@ -847,14 +895,22 @@ function CardFeedEmpate({ podium }: { podium: Podium }) {
       <p className="text-center text-[10px] opacity-80 mt-1">
         {podium.total_subcat.toLocaleString("pt-BR")} votos · escolhido por você
       </p>
-      <p className="text-center text-[11px] mt-0.5 text-amber-300 font-bold">
-        cdlaju.com.br
-      </p>
+      {branding.dominio ? (
+        <p className="text-center text-[11px] mt-0.5 text-amber-300 font-bold">
+          {branding.dominio}
+        </p>
+      ) : null}
     </article>
   );
 }
 
-function CardStoryEmpate({ podium }: { podium: Podium }) {
+function CardStoryEmpate({
+  podium,
+  branding,
+}: {
+  podium: Podium;
+  branding: TenantBranding;
+}) {
   const pct1 = pctOf(podium.top1_votos, podium.total_subcat);
   const pct3 = podium.top3_id ? pctOf(podium.top3_votos, podium.total_subcat) : 0;
 
@@ -876,7 +932,7 @@ function CardStoryEmpate({ podium }: { podium: Podium }) {
           className="text-center uppercase tracking-[0.3em] font-bold opacity-90"
           style={{ fontSize: 32 }}
         >
-          Resultado oficial · CDL Aracaju
+          Resultado oficial · {branding.nome}
         </div>
         <h2
           className="font-display font-bold mt-6 leading-[1.0] text-center"
@@ -949,12 +1005,14 @@ function CardStoryEmpate({ podium }: { podium: Podium }) {
         >
           {podium.total_subcat.toLocaleString("pt-BR")} votos · escolhido por você
         </p>
-        <p
-          className="text-center text-amber-300 font-bold mt-3"
-          style={{ fontSize: 44 }}
-        >
-          cdlaju.com.br
-        </p>
+        {branding.dominio ? (
+          <p
+            className="text-center text-amber-300 font-bold mt-3"
+            style={{ fontSize: 44 }}
+          >
+            {branding.dominio}
+          </p>
+        ) : null}
       </div>
     </article>
   );

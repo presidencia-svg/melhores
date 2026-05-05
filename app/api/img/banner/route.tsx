@@ -1,10 +1,32 @@
 import { ImageResponse } from "next/og";
-import { getLogoWhiteDataUrl, loadEditorialFonts } from "@/lib/marketing/og-helpers";
+import {
+  getLogoTenantDataUrl,
+  loadEditorialFonts,
+} from "@/lib/marketing/og-helpers";
+import { tryGetCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 // Banner horizontal 1920x600 — pra topo de site, email signature, capa LinkedIn
 export async function GET() {
-  const logoSrc = await getLogoWhiteDataUrl();
+  const tenant = await tryGetCurrentTenant();
+  const logoSrc = await getLogoTenantDataUrl(tenant?.logo_url ?? null, "white");
   const fonts = await loadEditorialFonts();
+
+  let cidade = "do ano";
+  let kicker = "edição";
+  let dominio = "";
+  let nomeTenant = "Logo";
+  if (tenant) {
+    nomeTenant = tenant.nome;
+    cidade = tenant.nome.replace(/^CDL\s+/i, "");
+    dominio = tenant.dominio ?? "";
+    const status = await getEdicaoStatus(tenant.id);
+    const ano =
+      status.status !== "sem_edicao"
+        ? status.edicao.ano
+        : new Date().getFullYear();
+    kicker = `${tenant.nome.toLowerCase()} · edição ${ano}`;
+  }
 
   const img = new ImageResponse(
     (
@@ -43,7 +65,7 @@ export async function GET() {
             }}
           >
             <div style={{ width: 28, height: 1, background: "#d4a537" }} />
-            cdl aracaju · edição 2025
+            {kicker}
           </div>
 
           <div
@@ -70,21 +92,23 @@ export async function GET() {
               color: "#e6bf5f",
             }}
           >
-            de Aracaju
+            {cidade ? `de ${cidade}` : "do ano"}
           </div>
 
-          <div
-            style={{
-              color: "rgba(251,248,241,0.7)",
-              fontFamily: "Sora",
-              fontWeight: 500,
-              fontSize: 22,
-              letterSpacing: 1,
-              marginTop: 18,
-            }}
-          >
-            Vote agora · votar.cdlaju.com.br
-          </div>
+          {dominio ? (
+            <div
+              style={{
+                color: "rgba(251,248,241,0.7)",
+                fontFamily: "Sora",
+                fontWeight: 500,
+                fontSize: 22,
+                letterSpacing: 1,
+                marginTop: 18,
+              }}
+            >
+              Vote agora · {dominio}
+            </div>
+          ) : null}
         </div>
 
         <div
@@ -98,7 +122,7 @@ export async function GET() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={logoSrc}
-            alt="CDL Aracaju"
+            alt={nomeTenant}
             width={280}
             height={84}
             style={{ objectFit: "contain" }}

@@ -2,6 +2,7 @@
 
 import { Crown, ShieldCheck, Camera, MessageSquare, Users, Vote, Smartphone, TrendingUp } from "lucide-react";
 import type { NumerosCampanha } from "./ImprensaLista";
+import type { TenantBranding } from "@/lib/tenant/branding";
 
 // 5 cards Story 1080x1920 pra postar como carrossel de transparencia no @cdlaju.
 // Renderizados off-screen e capturados via html-to-image (mesmo padrao do podium).
@@ -28,44 +29,52 @@ const CONTAINER_STYLE = {
     "radial-gradient(circle at 50% 0%, rgba(255,215,0,0.18) 0%, transparent 55%), radial-gradient(circle at 50% 100%, rgba(0,168,89,0.12) 0%, transparent 50%)",
 } as const;
 
-function HeaderMarca() {
+function HeaderMarca({ branding }: { branding: TenantBranding }) {
   return (
     <div
       className="text-center uppercase tracking-[0.3em] font-bold opacity-90 shrink-0"
       style={{ fontSize: 32 }}
     >
-      Melhores do Ano · CDL Aracaju
+      Melhores do Ano · {branding.nome}
     </div>
   );
 }
 
-function FooterMarca() {
+function FooterMarca({ branding }: { branding: TenantBranding }) {
+  const rodape = [
+    branding.instagramUsername ? `@${branding.instagramUsername}` : "",
+    branding.dominio,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <div className="shrink-0">
       <p
         className="text-center font-semibold opacity-90"
         style={{ fontSize: 28 }}
       >
-        Resultado oficial · 2026
+        Resultado oficial · {branding.ano}
       </p>
-      <p
-        className="text-center text-amber-300 font-bold mt-2"
-        style={{ fontSize: 40 }}
-      >
-        @cdlaju · cdlaju.com.br
-      </p>
+      {rodape ? (
+        <p
+          className="text-center text-amber-300 font-bold mt-2"
+          style={{ fontSize: 40 }}
+        >
+          {rodape}
+        </p>
+      ) : null}
     </div>
   );
 }
 
 // ------------------------------------ Capa ------------------------------------
-function CardCapa() {
+function CardCapa({ branding }: { branding: TenantBranding }) {
   return (
     <article
       className="flex flex-col px-14 relative text-white overflow-hidden"
       style={CONTAINER_STYLE}
     >
-      <HeaderMarca />
+      <HeaderMarca branding={branding} />
 
       <div className="flex-1 flex flex-col items-center justify-center">
         <Crown className="w-32 h-32 fill-amber-300 text-amber-300" />
@@ -91,13 +100,19 @@ function CardCapa() {
         </p>
       </div>
 
-      <FooterMarca />
+      <FooterMarca branding={branding} />
     </article>
   );
 }
 
 // ----------------------------------- Volumes ----------------------------------
-function CardVolumes({ n }: { n: NumerosCampanha }) {
+function CardVolumes({
+  n,
+  branding,
+}: {
+  n: NumerosCampanha;
+  branding: TenantBranding;
+}) {
   const itens = [
     { icon: <Users className="w-12 h-12" />, label: "votantes únicos", value: fmt(n.votantes_unicos) },
     { icon: <Vote className="w-12 h-12" />, label: "votos válidos", value: fmt(n.votos_validos) },
@@ -110,7 +125,7 @@ function CardVolumes({ n }: { n: NumerosCampanha }) {
       className="flex flex-col px-14 relative text-white overflow-hidden"
       style={CONTAINER_STYLE}
     >
-      <HeaderMarca />
+      <HeaderMarca branding={branding} />
 
       <div className="flex-1 flex flex-col items-center justify-center gap-8 mt-8">
         <h2
@@ -148,13 +163,19 @@ function CardVolumes({ n }: { n: NumerosCampanha }) {
         </div>
       </div>
 
-      <FooterMarca />
+      <FooterMarca branding={branding} />
     </article>
   );
 }
 
 // --------------------------------- Anti-fraude --------------------------------
-function CardAntifraude({ n }: { n: NumerosCampanha }) {
+function CardAntifraude({
+  n,
+  branding,
+}: {
+  n: NumerosCampanha;
+  branding: TenantBranding;
+}) {
   const selos = [
     {
       icon: <ShieldCheck className="w-16 h-16" />,
@@ -181,7 +202,7 @@ function CardAntifraude({ n }: { n: NumerosCampanha }) {
       className="flex flex-col px-14 relative text-white overflow-hidden"
       style={CONTAINER_STYLE}
     >
-      <HeaderMarca />
+      <HeaderMarca branding={branding} />
 
       <div className="flex-1 flex flex-col items-center justify-center gap-8 mt-4">
         <div
@@ -223,19 +244,25 @@ function CardAntifraude({ n }: { n: NumerosCampanha }) {
         </div>
       </div>
 
-      <FooterMarca />
+      <FooterMarca branding={branding} />
     </article>
   );
 }
 
 // --------------------------------- Distribuição --------------------------------
-function CardDistribuicao({ n }: { n: NumerosCampanha }) {
+function CardDistribuicao({
+  n,
+  branding,
+}: {
+  n: NumerosCampanha;
+  branding: TenantBranding;
+}) {
   return (
     <article
       className="flex flex-col px-14 relative text-white overflow-hidden"
       style={CONTAINER_STYLE}
     >
-      <HeaderMarca />
+      <HeaderMarca branding={branding} />
 
       <div className="flex-1 flex flex-col items-center justify-center gap-10 mt-4">
         <h2
@@ -279,19 +306,25 @@ function CardDistribuicao({ n }: { n: NumerosCampanha }) {
         </div>
       </div>
 
-      <FooterMarca />
+      <FooterMarca branding={branding} />
     </article>
   );
 }
 
 // ------------------------------------ Pico ------------------------------------
-function CardPicoAgradecimento({ n }: { n: NumerosCampanha }) {
+function CardPicoAgradecimento({
+  n,
+  branding,
+}: {
+  n: NumerosCampanha;
+  branding: TenantBranding;
+}) {
   return (
     <article
       className="flex flex-col px-14 relative text-white overflow-hidden"
       style={CONTAINER_STYLE}
     >
-      <HeaderMarca />
+      <HeaderMarca branding={branding} />
 
       <div className="flex-1 flex flex-col items-center justify-center gap-12 mt-4">
         <div className="flex flex-col items-center">
@@ -338,7 +371,7 @@ function CardPicoAgradecimento({ n }: { n: NumerosCampanha }) {
         </div>
       </div>
 
-      <FooterMarca />
+      <FooterMarca branding={branding} />
     </article>
   );
 }
@@ -346,13 +379,19 @@ function CardPicoAgradecimento({ n }: { n: NumerosCampanha }) {
 // ------------------------------------------------------------------------------
 // Container off-screen com os 5 cards. Cada um com data-transparencia-id pra
 // captura programatica via querySelector.
-export function TransparenciaCards({ n }: { n: NumerosCampanha }) {
+export function TransparenciaCards({
+  n,
+  branding,
+}: {
+  n: NumerosCampanha;
+  branding: TenantBranding;
+}) {
   const cards = [
-    { id: "capa", el: <CardCapa /> },
-    { id: "volumes", el: <CardVolumes n={n} /> },
-    { id: "antifraude", el: <CardAntifraude n={n} /> },
-    { id: "distribuicao", el: <CardDistribuicao n={n} /> },
-    { id: "pico", el: <CardPicoAgradecimento n={n} /> },
+    { id: "capa", el: <CardCapa branding={branding} /> },
+    { id: "volumes", el: <CardVolumes n={n} branding={branding} /> },
+    { id: "antifraude", el: <CardAntifraude n={n} branding={branding} /> },
+    { id: "distribuicao", el: <CardDistribuicao n={n} branding={branding} /> },
+    { id: "pico", el: <CardPicoAgradecimento n={n} branding={branding} /> },
   ];
 
   return (

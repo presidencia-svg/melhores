@@ -1,9 +1,27 @@
 import { ImageResponse } from "next/og";
-import { getLogoWhiteDataUrl, loadEditorialFonts } from "@/lib/marketing/og-helpers";
+import {
+  getLogoTenantDataUrl,
+  loadEditorialFonts,
+} from "@/lib/marketing/og-helpers";
+import { tryGetCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 export async function GET() {
-  const logoSrc = await getLogoWhiteDataUrl();
+  const tenant = await tryGetCurrentTenant();
+  const logoSrc = await getLogoTenantDataUrl(tenant?.logo_url ?? null, "white");
   const fonts = await loadEditorialFonts();
+
+  let cidade = "do ano";
+  let dominio = "";
+  let nomeTenant = "Logo";
+  let ano: number = new Date().getFullYear();
+  if (tenant) {
+    nomeTenant = tenant.nome;
+    cidade = tenant.nome.replace(/^CDL\s+/i, "");
+    dominio = tenant.dominio ?? "";
+    const status = await getEdicaoStatus(tenant.id);
+    if (status.status !== "sem_edicao") ano = status.edicao.ano;
+  }
 
   const img = new ImageResponse(
     (
@@ -45,7 +63,7 @@ export async function GET() {
             }}
           >
             <div style={{ width: 36, height: 1, background: "#d4a537" }} />
-            edição 2025
+            edição {ano}
             <div style={{ width: 36, height: 1, background: "#d4a537" }} />
           </div>
         </div>
@@ -82,7 +100,7 @@ export async function GET() {
               color: "#e6bf5f",
             }}
           >
-            de Aracaju
+            {cidade ? `de ${cidade}` : "do ano"}
           </div>
           <div
             style={{
@@ -129,26 +147,28 @@ export async function GET() {
           >
             acesse agora
           </div>
-          <div
-            style={{
-              display: "flex",
-              background: "#0f8a3f",
-              color: "#fbf8f1",
-              padding: "30px 50px",
-              borderRadius: 4,
-              fontFamily: "Sora",
-              fontWeight: 700,
-              fontSize: 44,
-              letterSpacing: 1,
-            }}
-          >
-            votar.cdlaju.com.br
-          </div>
+          {dominio ? (
+            <div
+              style={{
+                display: "flex",
+                background: "#0f8a3f",
+                color: "#fbf8f1",
+                padding: "30px 50px",
+                borderRadius: 4,
+                fontFamily: "Sora",
+                fontWeight: 700,
+                fontSize: 44,
+                letterSpacing: 1,
+              }}
+            >
+              {dominio}
+            </div>
+          ) : null}
           <div style={{ display: "flex", marginTop: 20 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={logoSrc}
-              alt="CDL Aracaju"
+              alt={nomeTenant}
               width={300}
               height={90}
               style={{ objectFit: "contain" }}

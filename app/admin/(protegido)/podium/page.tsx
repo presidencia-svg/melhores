@@ -4,6 +4,9 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Medal } from "lucide-react";
 import { PodiumLista, type Podium } from "./PodiumLista";
 import { AtualizarBtn } from "../AtualizarBtn";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
+import { montarBranding } from "@/lib/tenant/branding";
 
 // 1h: pos-eleicao o podio e' imutavel. Botao "Atualizar" no header invalida
 // o cache na hora caso precise (ex: mesclagem de candidatos).
@@ -20,6 +23,12 @@ export default async function PodiumPage({
   const ordem = (ORDENS.includes(sp.ordem as (typeof ORDENS)[number])
     ? sp.ordem
     : "votos") as "votos" | "alfabetica";
+
+  const tenant = await getCurrentTenant();
+  const edicaoStatus = await getEdicaoStatus(tenant.id);
+  const edicao =
+    edicaoStatus.status !== "sem_edicao" ? edicaoStatus.edicao : null;
+  const branding = montarBranding(tenant, edicao);
 
   const supabase = createSupabaseAdminClient();
 
@@ -91,7 +100,7 @@ export default async function PodiumPage({
           </CardContent>
         </Card>
       ) : (
-        <PodiumLista podiums={lista} />
+        <PodiumLista podiums={lista} branding={branding} />
       )}
     </div>
   );

@@ -1,9 +1,31 @@
 import { ImageResponse } from "next/og";
-import { getLogoWhiteDataUrl, loadEditorialFonts } from "@/lib/marketing/og-helpers";
+import {
+  getLogoTenantDataUrl,
+  loadEditorialFonts,
+} from "@/lib/marketing/og-helpers";
+import { tryGetCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 export async function GET() {
-  const logoSrc = await getLogoWhiteDataUrl();
+  const tenant = await tryGetCurrentTenant();
+  const logoSrc = await getLogoTenantDataUrl(tenant?.logo_url ?? null, "white");
   const fonts = await loadEditorialFonts();
+
+  let cidade = "do ano";
+  let dominio = "";
+  let nomeTenant = "Logo";
+  let kicker = "edição";
+  if (tenant) {
+    nomeTenant = tenant.nome;
+    cidade = tenant.nome.replace(/^CDL\s+/i, "");
+    dominio = tenant.dominio ?? "";
+    const status = await getEdicaoStatus(tenant.id);
+    const ano =
+      status.status !== "sem_edicao"
+        ? status.edicao.ano
+        : new Date().getFullYear();
+    kicker = `${tenant.nome.toLowerCase()} · ${ano}`;
+  }
 
   const img = new ImageResponse(
     (
@@ -40,7 +62,7 @@ export async function GET() {
               textTransform: "uppercase",
             }}
           >
-            cdl aracaju · 2025
+            {kicker}
           </div>
           <div style={{ width: 36, height: 1, background: "#d4a537" }} />
         </div>
@@ -80,7 +102,7 @@ export async function GET() {
               color: "#e6bf5f",
             }}
           >
-            de Aracaju
+            {cidade ? `de ${cidade}` : "do ano"}
           </div>
           <div
             style={{
@@ -123,13 +145,13 @@ export async function GET() {
               letterSpacing: 1,
             }}
           >
-            votar.cdlaju.com.br
+            {dominio}
           </div>
           <div style={{ display: "flex" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={logoSrc}
-              alt="CDL Aracaju"
+              alt={nomeTenant}
               width={220}
               height={66}
               style={{ objectFit: "contain" }}

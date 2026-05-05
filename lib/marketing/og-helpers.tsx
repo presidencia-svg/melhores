@@ -3,6 +3,7 @@ import path from "node:path";
 
 let logoCached: string | null = null;
 let logoWhiteCached: string | null = null;
+const tenantLogoCache = new Map<string, string>();
 const fontCache = new Map<string, ArrayBuffer>();
 
 export async function getLogoDataUrl(): Promise<string> {
@@ -19,6 +20,39 @@ export async function getLogoWhiteDataUrl(): Promise<string> {
   const buf = await readFile(logoPath);
   logoWhiteCached = `data:image/png;base64,${buf.toString("base64")}`;
   return logoWhiteCached;
+}
+
+// Logo do tenant pra cards/og. Se `logo_url` esta cravado no tenant, baixa
+// e converte em data URL. Senao, cai no logo branco do CDL Aracaju (default).
+//
+// `variante` controla qual fallback usar quando o tenant nao tem logo:
+//   "white" — logo claro pra fundos escuros (banners, OG)
+//   "color" — logo colorido pra fundos claros (cards Story brancos)
+export async function getLogoTenantDataUrl(
+  logoUrl: string | null | undefined,
+  variante: "white" | "color" = "white"
+): Promise<string> {
+  if (!logoUrl) {
+    return variante === "white"
+      ? getLogoWhiteDataUrl()
+      : getLogoDataUrl();
+  }
+  const cached = tenantLogoCache.get(logoUrl);
+  if (cached) return cached;
+
+  try {
+    const res = await fetch(logoUrl);
+    if (!res.ok) throw new Error(`logo fetch ${res.status}`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    const tipo = res.headers.get("content-type") ?? "image/png";
+    const dataUrl = `data:${tipo};base64,${buf.toString("base64")}`;
+    tenantLogoCache.set(logoUrl, dataUrl);
+    return dataUrl;
+  } catch {
+    return variante === "white"
+      ? getLogoWhiteDataUrl()
+      : getLogoDataUrl();
+  }
 }
 
 export async function loadGoogleFont(
