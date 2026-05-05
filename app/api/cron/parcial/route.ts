@@ -3,8 +3,14 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { enviarMensagemTexto, verificarStatus } from "@/lib/zapi/client";
 import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 import { enviarTemplate, metaConfigurada } from "@/lib/meta-whatsapp/client";
+import { getTenantPorSlug } from "@/lib/tenant/resolver";
 
 export const maxDuration = 300;
+
+// TODO multi-tenant: hoje processa apenas tenant CDL Aracaju. Quando entrar
+// 2o tenant, envolver `handle()` em loop de getAllActiveTenants() + scoping
+// de votantes/edicao/RPC por tenant.
+const TENANT_DEFAULT_SLUG = "aracaju";
 
 const META_TEMPLATE_PARCIAL =
   process.env.META_TEMPLATE_PARCIAL ?? "parcial_voto_2025";
@@ -116,11 +122,19 @@ async function handle(req: Request) {
   }
 
   const supabase = createSupabaseAdminClient();
+  const tenant = await getTenantPorSlug(TENANT_DEFAULT_SLUG);
+  if (!tenant) {
+    return NextResponse.json(
+      { error: `tenant '${TENANT_DEFAULT_SLUG}' nao encontrado` },
+      { status: 500 }
+    );
+  }
 
-  // 1. Toggle on/off + cap diario configuravel pelo admin
+  // 1. Toggle on/off + cap diario configuravel pelo admin (escopo: tenant)
   const { data: cfgs } = await supabase
     .from("app_config")
     .select("chave, valor")
+    .eq("tenant_id", tenant.id)
     .in("chave", ["auto_parcial", "auto_parcial_cap_dia"]);
   const cfgMap = new Map((cfgs ?? []).map((c) => [c.chave, c.valor]));
   const ligado = (cfgMap.get("auto_parcial") ?? "off") === "on";

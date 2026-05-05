@@ -13,6 +13,14 @@ export type Elegivel = {
   diferenca: number;
 };
 
+// Contexto do tenant injetado nas mensagens.
+// `nomeCampanha` vem de `edicao.nome` (ex: "Melhores do Ano CDL Aracaju 2025").
+// `dominio` vem de `tenant.dominio` (ex: "votar.cdlaju.com.br").
+export type TenantCtx = {
+  nomeCampanha: string;
+  dominio: string;
+};
+
 export function formatVotosMil(total: number): string {
   if (total <= 0) return "0";
   if (total < 1000) return total.toLocaleString("pt-BR");
@@ -32,7 +40,8 @@ export function formatDias(dias: number): string {
 export function montarMensagem(
   e: Elegivel,
   votosFmt: string,
-  diasFmt: string
+  diasFmt: string,
+  ctx: TenantCtx
 ): string {
   const primeiroNome = (e.votante_nome.split(" ")[0] ?? "").trim() || "amigo(a)";
   const empate = e.diferenca === 0;
@@ -41,14 +50,14 @@ export function montarMensagem(
     return [
       `🚨 EMPATE TÉCNICO, ${primeiroNome}!`,
       "",
-      `A votação dos Melhores do Ano CDL Aracaju 2025 está NA RETA FINAL e já passou de ${votosFmt} votos em ${diasFmt}.`,
+      `A votação dos ${ctx.nomeCampanha} está NA RETA FINAL e já passou de ${votosFmt} votos em ${diasFmt}.`,
       "",
       `⚖️ Seu voto em *${e.candidato_perdendo_nome}* para Melhor ${e.subcategoria_nome} está EMPATADO com *${e.candidato_lider_nome}*.`,
       "",
       `Cada voto agora pode definir o vencedor.`,
       "",
       `Compartilhe esta votação com 3 amigos AGORA pra desempatar:`,
-      `🌐 https://votar.cdlaju.com.br`,
+      `🌐 https://${ctx.dominio}`,
       "",
       `A disputa está nas suas mãos. 🏆`,
     ].join("\n");
@@ -58,24 +67,29 @@ export function montarMensagem(
   return [
     `🏆 Oi, ${primeiroNome}!`,
     "",
-    `Os Melhores do Ano CDL Aracaju 2025 já passaram de ${votosFmt} votos em ${diasFmt} — obrigado pela sua participação!`,
+    `Os ${ctx.nomeCampanha} já passaram de ${votosFmt} votos em ${diasFmt} — obrigado pela sua participação!`,
     "",
     `Você votou em ${e.candidato_perdendo_nome} para Melhor ${e.subcategoria_nome}. ${e.candidato_lider_nome} está na frente por só ${diff}.`,
     "",
     `Compartilhe o link com seus contatos e ajude quem você votou:`,
-    `🌐 https://votar.cdlaju.com.br`,
+    `🌐 https://${ctx.dominio}`,
     "",
     `Cada voto faz diferença!`,
   ].join("\n");
 }
 
-export function montarSms(e: Elegivel, votosFmt: string, diasFmt: string): string {
+export function montarSms(
+  e: Elegivel,
+  votosFmt: string,
+  diasFmt: string,
+  ctx: TenantCtx
+): string {
   const primeiroNome = (e.votante_nome.split(" ")[0] ?? "").trim() || "amigo";
   if (e.diferenca === 0) {
-    return `EMPATE! ${primeiroNome}, seu voto em ${e.candidato_perdendo_nome} (${e.subcategoria_nome}) esta EMPATADO. Compartilhe pra desempatar: votar.cdlaju.com.br`;
+    return `EMPATE! ${primeiroNome}, seu voto em ${e.candidato_perdendo_nome} (${e.subcategoria_nome}) esta EMPATADO. Compartilhe pra desempatar: ${ctx.dominio}`;
   }
   const trecho = `disputa apertada por ${e.diferenca} ${e.diferenca === 1 ? "voto" : "votos"}`;
-  return `Ola ${primeiroNome}! ${votosFmt} votos em ${diasFmt}. Voce votou em ${e.candidato_perdendo_nome} (${e.subcategoria_nome}). ${trecho}. Compartilhe: votar.cdlaju.com.br`;
+  return `Ola ${primeiroNome}! ${votosFmt} votos em ${diasFmt}. Voce votou em ${e.candidato_perdendo_nome} (${e.subcategoria_nome}). ${trecho}. Compartilhe: ${ctx.dominio}`;
 }
 
 export function diferencaParaTemplate(diferenca: number): string {

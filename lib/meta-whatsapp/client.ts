@@ -6,7 +6,12 @@ export type MetaSendResult = {
   raw?: unknown;
 };
 
-function getPhoneNumberIds(): string[] {
+// Retorna os phone_number_ids a usar.
+//   - Se `override` (lista do tenant) for passado e nao vazio, usa essa lista.
+//   - Senao, le do env META_WHATSAPP_PHONE_IDS (CSV) — comportamento default
+//     do CDL Aracaju (tenant #1).
+function getPhoneNumberIds(override?: readonly string[]): string[] {
+  if (override && override.length > 0) return [...override];
   const raw = process.env.META_WHATSAPP_PHONE_IDS ?? "";
   return raw
     .split(",")
@@ -22,8 +27,8 @@ function getApiVersion(): string {
   return process.env.META_API_VERSION ?? "v21.0";
 }
 
-export function metaConfigurada(): boolean {
-  return getToken() !== "" && getPhoneNumberIds().length > 0;
+export function metaConfigurada(phoneIds?: readonly string[]): boolean {
+  return getToken() !== "" && getPhoneNumberIds(phoneIds).length > 0;
 }
 
 // Round-robin global em memória — alterna o phone_id a cada envio.
@@ -39,14 +44,18 @@ function normalizePhone(value: string): string {
 // Envia uma mensagem usando template aprovado da Meta.
 // Tenta cada Phone Number ID em round-robin. Se um falhar (ex.: rate limit),
 // passa pro próximo até esgotar.
+//
+// Multi-tenant: passe `phoneIds` com `[tenant.meta_phone_number_id]` pra
+// usar o numero do tenant. Sem o param, cai no env default (CDL Aracaju).
 export async function enviarTemplate(
   numero: string,
   templateName: string,
   language: string,
-  bodyParams: string[]
+  bodyParams: string[],
+  phoneIds?: readonly string[]
 ): Promise<MetaSendResult> {
   const token = getToken();
-  const ids = getPhoneNumberIds();
+  const ids = getPhoneNumberIds(phoneIds);
   if (!token) return { ok: false, detalhe: "META_WHATSAPP_TOKEN não configurado" };
   if (ids.length === 0)
     return { ok: false, detalhe: "META_WHATSAPP_PHONE_IDS vazio" };
@@ -108,14 +117,17 @@ export async function enviarTemplate(
 
 // Envia template de autenticação (categoria AUTHENTICATION) com botão "Copiar código".
 // O parâmetro `codigo` aparece tanto no corpo `{{1}}` quanto no botão de copy.
+//
+// Multi-tenant: passe `phoneIds` do tenant. Sem param, usa env default.
 export async function enviarTemplateAutenticacao(
   numero: string,
   templateName: string,
   language: string,
-  codigo: string
+  codigo: string,
+  phoneIds?: readonly string[]
 ): Promise<MetaSendResult> {
   const token = getToken();
-  const ids = getPhoneNumberIds();
+  const ids = getPhoneNumberIds(phoneIds);
   if (!token) return { ok: false, detalhe: "META_WHATSAPP_TOKEN não configurado" };
   if (ids.length === 0)
     return { ok: false, detalhe: "META_WHATSAPP_PHONE_IDS vazio" };

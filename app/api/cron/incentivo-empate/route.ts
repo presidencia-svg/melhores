@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { enviarMensagemTexto, verificarStatus } from "@/lib/zapi/client";
 import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 import { enviarTemplate, metaConfigurada } from "@/lib/meta-whatsapp/client";
+import { getTenantPorSlug } from "@/lib/tenant/resolver";
 import {
   Elegivel,
   calcularDias,
@@ -14,6 +15,12 @@ import {
 } from "@/lib/incentivo/messages";
 
 export const maxDuration = 300;
+
+// TODO multi-tenant: hoje esse cron processa apenas o tenant CDL Aracaju.
+// Quando entrar 2o tenant, envolver `handle()` em loop de getAllActiveTenants()
+// e fazer scoping de votantes/incentivo_envios_log/RPC por tenant_id (RPC
+// `incentivo_elegives_empate` tambem precisa de parametro p_tenant_id).
+const TENANT_DEFAULT_SLUG = "aracaju";
 
 const META_TEMPLATE_INCENTIVO_EMPATE =
   process.env.META_TEMPLATE_INCENTIVO_EMPATE ?? "incentivo_empate_2025";
@@ -59,11 +66,19 @@ async function handle(req: Request) {
   }
 
   const supabase = createSupabaseAdminClient();
+  const tenant = await getTenantPorSlug(TENANT_DEFAULT_SLUG);
+  if (!tenant) {
+    return NextResponse.json(
+      { error: `tenant '${TENANT_DEFAULT_SLUG}' nao encontrado` },
+      { status: 500 }
+    );
+  }
 
-  // 1. Toggle on/off
+  // 1. Toggle on/off (escopo: tenant CDL Aracaju)
   const { data: cfg } = await supabase
     .from("app_config")
     .select("valor")
+    .eq("tenant_id", tenant.id)
     .eq("chave", "auto_incentivo_empate")
     .maybeSingle();
   const ligado = (cfg?.valor ?? "on") === "on";
@@ -115,7 +130,8 @@ async function handle(req: Request) {
     supabase.from("votos").select("*", { head: true, count: "exact" }),
     supabase
       .from("edicao")
-      .select("inicio_votacao")
+      .select("inicio_votacao, nome")
+      .eq("tenant_id", tenant.id)
       .eq("ativa", true)
       .order("ano", { ascending: false })
       .limit(1)
@@ -160,6 +176,10 @@ async function handle(req: Request) {
 
   const votosFmt = formatVotosMil(totalVotos ?? 0);
   const diasFmt = formatDias(calcularDias(edicao?.inicio_votacao));
+  const tenantCtx = {
+    nomeCampanha: edicao?.nome ?? `Melhores do Ano ${tenant.nome}`,
+    dominio: tenant.dominio ?? "votar.cdlaju.com.br",
+  };
 
   let enviados = 0;
   const falhas: { votante_id: string; motivo: string }[] = [];
@@ -182,9 +202,9 @@ async function handle(req: Request) {
         ]
       );
     } else if (canal === "zapi") {
-      r = await enviarMensagemTexto(e.whatsapp, montarMensagem(e, votosFmt, diasFmt));
+      r = await enviarMensagemTexto(e.whatsapp, montarMensagem(e, votosFmt, diasFmt, tenantCtx));
     } else {
-      r = await enviarSmsZenvia(e.whatsapp, montarSms(e, votosFmt, diasFmt));
+      r = await enviarSmsZenvia(e.whatsapp, montarSms(e, votosFmt, diasFmt, tenantCtx));
     }
     if (r.ok) {
       enviados += 1;

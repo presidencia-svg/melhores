@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { enviarMensagemTexto, verificarStatus } from "@/lib/zapi/client";
 import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 import { enviarTemplate, metaConfigurada } from "@/lib/meta-whatsapp/client";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
 import {
   Elegivel,
   calcularDias,
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   }
 
+  const tenant = await getCurrentTenant();
   const supabase = createSupabaseAdminClient();
   const [
     { data: elegiveis, error },
@@ -56,7 +58,8 @@ export async function POST(req: Request) {
     supabase.from("votos").select("*", { head: true, count: "exact" }),
     supabase
       .from("edicao")
-      .select("inicio_votacao")
+      .select("inicio_votacao, nome")
+      .eq("tenant_id", tenant.id)
       .eq("ativa", true)
       .order("ano", { ascending: false })
       .limit(1)
@@ -71,6 +74,10 @@ export async function POST(req: Request) {
 
   const votosFmt = formatVotosMil(totalVotos ?? 0);
   const diasFmt = formatDias(calcularDias(edicao?.inicio_votacao));
+  const tenantCtx = {
+    nomeCampanha: edicao?.nome ?? `Melhores do Ano ${tenant.nome}`,
+    dominio: tenant.dominio ?? "votar.cdlaju.com.br",
+  };
 
   const lista = (elegiveis ?? []) as Elegivel[];
   const filtroIds = parsed.data.votante_ids;
@@ -149,9 +156,9 @@ export async function POST(req: Request) {
         ]);
       }
     } else if (canal === "zapi") {
-      r = await enviarMensagemTexto(e.whatsapp, montarMensagem(e, votosFmt, diasFmt));
+      r = await enviarMensagemTexto(e.whatsapp, montarMensagem(e, votosFmt, diasFmt, tenantCtx));
     } else {
-      r = await enviarSmsZenvia(e.whatsapp, montarSms(e, votosFmt, diasFmt));
+      r = await enviarSmsZenvia(e.whatsapp, montarSms(e, votosFmt, diasFmt, tenantCtx));
     }
     if (r.ok) {
       enviados += 1;
