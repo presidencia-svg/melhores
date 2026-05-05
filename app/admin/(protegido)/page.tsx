@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import {
@@ -20,6 +21,8 @@ import { SpcCard } from "./SpcCard";
 import { WhatsAppValidacaoCard } from "./WhatsAppValidacaoCard";
 import { VotosPorDiaCard } from "./VotosPorDiaCard";
 import { AtualizarBtn } from "./AtualizarBtn";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 // 1h: dados pos-eleicao sao imutaveis. Botao "Atualizar" no header
 // invalida o cache na hora caso precise (ex: depois de mesclagem manual).
@@ -45,6 +48,13 @@ type VotanteRecente = {
 type VotosPorDiaRow = { dia: string; total: number };
 
 export default async function AdminDashboard() {
+  // Tenant sem edicao = primeiro acesso. Manda pro wizard antes do dashboard.
+  const tenant = await getCurrentTenant();
+  const status = await getEdicaoStatus(tenant.id);
+  if (status.status === "sem_edicao") {
+    redirect("/admin/onboarding");
+  }
+
   const supabase = createSupabaseAdminClient();
 
   const [
