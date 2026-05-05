@@ -28,9 +28,11 @@ export type Tenant = {
 
   admin_password_hash: string | null;
   admin_totp_secret: string | null;
+  admin_email: string | null;
 
   plano: "starter" | "pro" | "business" | null;
   trial_ate: string | null;
+  criada_via: "manual" | "signup" | null;
 
   criado_em: string;
   atualizado_em: string;
@@ -44,6 +46,6 @@ export const TENANT_COLUNAS = `
   zapi_instance_id, zapi_token, zapi_client_token,
   instagram_page_access_token, instagram_business_account_id,
   instagram_facebook_page_id, instagram_username,
-  admin_password_hash, admin_totp_secret,
-  plano, trial_ate, criado_em, atualizado_em
+  admin_password_hash, admin_totp_secret, admin_email,
+  plano, trial_ate, criada_via, criado_em, atualizado_em
 `.replace(/\s+/g, " ").trim();
