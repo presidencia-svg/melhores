@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Logo } from "@/components/brand/Logo";
-import { CheckCircle2, Mail, Globe2, KeyRound } from "lucide-react";
+import { CheckCircle2, Mail, Globe2, KeyRound, AlertTriangle } from "lucide-react";
 
 export const metadata = {
   title: "Cadastro recebido — Melhores do Ano",
@@ -10,11 +10,19 @@ export const metadata = {
 export default async function SucessoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ slug?: string }>;
+  searchParams: Promise<{
+    slug?: string;
+    dominio?: string;
+    dns?: string;
+    email?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const slug = sp.slug ?? "";
-  const dominioFinal = slug ? `${slug}.cdlaju.com.br` : "";
+  const dominio = sp.dominio ?? (slug ? `${slug}.melhoresdoano.app` : "");
+  const dnsAuto = sp.dns === "1";
+  const emailEnviado = sp.email === "1";
+  const loginUrl = dominio ? `https://${dominio}/admin/login` : "";
 
   return (
     <div className="flex flex-col flex-1 min-h-screen items-center justify-center bg-gradient-to-b from-cdl-blue/5 to-background px-4 py-10">
@@ -43,20 +51,28 @@ export default async function SucessoPage({
                 <Globe2 className="w-5 h-5 text-cdl-blue shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-medium text-cdl-blue">
-                    1. Sua URL será ativada em até 24h
+                    1. {dnsAuto ? "Domínio ativado" : "Domínio será ativado em breve"}
                   </h3>
-                  {dominioFinal ? (
+                  {dominio ? (
                     <p className="text-sm text-muted mt-1">
                       Endereço:{" "}
                       <code className="bg-zinc-100 px-2 py-0.5 rounded">
-                        https://{dominioFinal}
+                        https://{dominio}
                       </code>
                     </p>
                   ) : null}
-                  <p className="text-xs text-muted mt-1">
-                    A equipe da CDL Aracaju configura o DNS e te avisa por
-                    email quando estiver no ar.
-                  </p>
+                  {dnsAuto ? (
+                    <p className="text-xs text-cdl-green-dark mt-1">
+                      ✓ DNS provisionado. SSL emite em ~5 minutos. Refresh
+                      depois.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-orange-600 mt-1 inline-flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      DNS automático off — equipe da CDL Aracaju vai ativar
+                      manualmente em até 24h.
+                    </p>
+                  )}
                 </div>
               </li>
 
@@ -66,13 +82,20 @@ export default async function SucessoPage({
                   <h3 className="font-medium text-cdl-blue">
                     2. Faça login no painel admin
                   </h3>
-                  <p className="text-sm text-muted mt-1">
-                    Quando o domínio estiver ativo, acesse{" "}
-                    <code className="bg-zinc-100 px-2 py-0.5 rounded">
-                      /admin/login
-                    </code>{" "}
-                    com o email e a senha que você cadastrou.
-                  </p>
+                  {loginUrl ? (
+                    <p className="text-sm text-muted mt-1">
+                      <a
+                        href={loginUrl}
+                        className="text-cdl-blue hover:underline break-all"
+                      >
+                        {loginUrl}
+                      </a>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted mt-1">
+                      Use o email e senha que você cadastrou.
+                    </p>
+                  )}
                 </div>
               </li>
 
@@ -80,14 +103,21 @@ export default async function SucessoPage({
                 <Mail className="w-5 h-5 text-cdl-blue shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-medium text-cdl-blue">
-                    3. Configure WhatsApp e Instagram
+                    3. {emailEnviado ? "Email de boas-vindas enviado" : "Próximos passos no painel"}
                   </h3>
-                  <p className="text-sm text-muted mt-1">
-                    No painel você vai colar o phone_number_id do Meta
-                    WhatsApp e os tokens do Instagram da sua organização.
-                    Documentação passo a passo é entregue junto com o
-                    primeiro acesso.
-                  </p>
+                  {emailEnviado ? (
+                    <p className="text-sm text-muted mt-1">
+                      Enviamos um email com link de login + instruções
+                      detalhadas pra continuar a configuração (categorias,
+                      candidatos, WhatsApp/Instagram).
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted mt-1">
+                      Quando entrar no painel pela primeira vez, um wizard
+                      vai te guiar nos passos: criar edição, configurar
+                      WhatsApp Meta e Instagram.
+                    </p>
+                  )}
                 </div>
               </li>
             </ol>

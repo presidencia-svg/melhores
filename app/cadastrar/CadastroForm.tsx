@@ -76,6 +76,7 @@ export function CadastroForm() {
       const json = (await res.json().catch(() => ({}))) as {
         error?: string;
         tenant?: { slug: string; nome: string; dominio: string };
+        operacional?: { dnsAuto: boolean; emailEnviado: boolean };
       };
       if (!res.ok || !json.tenant) {
         setErro(json.error ?? "Falha no cadastro");
@@ -85,8 +86,14 @@ export function CadastroForm() {
         setTurnstileToken(null);
         return;
       }
+      const params = new URLSearchParams({
+        slug: json.tenant.slug,
+        dominio: json.tenant.dominio,
+        dns: json.operacional?.dnsAuto ? "1" : "0",
+        email: json.operacional?.emailEnviado ? "1" : "0",
+      });
       router.push(
-        `/cadastrar/sucesso?slug=${encodeURIComponent(json.tenant.slug)}`
+        `/cadastrar/sucesso?${params.toString()}`
       );
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha de rede");
@@ -146,7 +153,7 @@ export function CadastroForm() {
             disabled={carregando}
           />
           <span className="px-3 text-xs text-muted bg-zinc-50 h-10 flex items-center">
-            .cdlaju.com.br
+            .melhoresdoano.app
           </span>
         </div>
         <p className="text-xs text-muted mt-1">

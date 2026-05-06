@@ -4,6 +4,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { hashSenha } from "@/lib/admin/password";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { getClientIp } from "@/lib/utils";
+import { provisionarDominio } from "@/lib/operacional/dns";
+import { enviarEmailBoasVindas } from "@/lib/operacional/email";
 
 // Slugs reservados (rotas existentes ou conflitos previsiveis).
 const SLUG_RESERVADOS = new Set([
@@ -144,9 +146,10 @@ export async function POST(req: Request) {
   const trialDias = 14;
   const trialAte = new Date(Date.now() + trialDias * 86_400_000).toISOString();
 
-  // Dominio default = "{slug}.cdlaju.com.br" (CDL Aracaju opera a plataforma).
-  // Tenant pode trocar pra dominio proprio depois.
-  const dominioDefault = `${parsed.data.slug}.cdlaju.com.br`;
+  // Dominio default = "{slug}.melhoresdoano.app" — dominio da plataforma SaaS.
+  // CDL Aracaju (tenant #1) mantem votar.cdlaju.com.br via seed antigo;
+  // novos tenants entram em melhoresdoano.app pra DNS automatizado.
+  const dominioDefault = `${parsed.data.slug}.melhoresdoano.app`;
 
   const { data: tenant, error: tenantErr } = await supabase
     .from("tenants")
@@ -183,12 +186,58 @@ export async function POST(req: Request) {
 
   await supabase.from("rate_limit_ip").insert({ ip, acao: "cadastro_tenant" });
 
+  // Operacional: provisionamento de DNS + email de boas-vindas em paralelo.
+  // Ambos sao gracious-fail (logam erro mas nao quebram signup) — tenant
+  // ja existe e pode ser corrigido manualmente se algo aqui falhar.
+  const [dnsRes, emailRes] = await Promise.allSettled([
+    tenant.dominio
+      ? provisionarDominio(tenant.dominio)
+      : Promise.resolve({ skipped: true as const, motivo: "sem dominio" }),
+    enviarEmailBoasVindas(parsed.data.admin_email, {
+      nome: tenant.nome,
+      slug: tenant.slug,
+      dominio: tenant.dominio,
+    }),
+  ]);
+
+  // Logs uteis em prod: ambos sao opcionais mas se falharem queremos saber.
+  if (dnsRes.status === "rejected") {
+    console.error("[cadastrar] dns provisionamento crashou:", dnsRes.reason);
+  } else if ("ok" in dnsRes.value && dnsRes.value.ok === false) {
+    console.error(
+      `[cadastrar] dns ${dnsRes.value.etapa}: ${dnsRes.value.detalhe}`
+    );
+  } else if ("skipped" in dnsRes.value && dnsRes.value.skipped) {
+    console.warn("[cadastrar] dns pulado:", dnsRes.value.motivo);
+  }
+  if (emailRes.status === "rejected") {
+    console.error("[cadastrar] email crashou:", emailRes.reason);
+  } else if ("ok" in emailRes.value && emailRes.value.ok === false) {
+    console.error("[cadastrar] email falhou:", emailRes.value.detalhe);
+  } else if ("skipped" in emailRes.value && emailRes.value.skipped) {
+    console.warn("[cadastrar] email pulado:", emailRes.value.motivo);
+  }
+
+  // Front usa esses flags pra ajustar a copy do /cadastrar/sucesso.
+  const dnsAuto =
+    dnsRes.status === "fulfilled" &&
+    "ok" in dnsRes.value &&
+    dnsRes.value.ok === true;
+  const emailEnviado =
+    emailRes.status === "fulfilled" &&
+    "ok" in emailRes.value &&
+    emailRes.value.ok === true;
+
   return NextResponse.json({
     ok: true,
     tenant: {
       slug: tenant.slug,
       nome: tenant.nome,
       dominio: tenant.dominio,
+    },
+    operacional: {
+      dnsAuto,
+      emailEnviado,
     },
   });
 }
