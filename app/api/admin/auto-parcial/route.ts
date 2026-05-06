@@ -3,6 +3,7 @@ import { z } from "zod";
 import { isAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 // Aceita ligado e/ou cap_dia — um, outro ou os dois.
 const Body = z
@@ -21,6 +22,9 @@ export async function GET() {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
   const tenant = await getCurrentTenant();
+  const edicaoStatus = await getEdicaoStatus(tenant.id);
+  const edicaoId =
+    edicaoStatus.status !== "sem_edicao" ? edicaoStatus.edicao.id : "";
   const supabase = createSupabaseAdminClient();
 
   const umaHoraAtras = new Date(Date.now() - 60 * 60_000).toISOString();
@@ -40,14 +44,17 @@ export async function GET() {
     supabase
       .from("votantes")
       .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicaoId)
       .gte("parcial_enviada_em", umaHoraAtras),
     supabase
       .from("votantes")
       .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicaoId)
       .gte("parcial_enviada_em", umDiaAtras),
     supabase
       .from("v_parcial_stats")
       .select("total, ja_receberam, na_fila, enviadas_hoje")
+      .eq("edicao_id", edicaoId)
       .maybeSingle(),
   ]);
 

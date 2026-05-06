@@ -38,6 +38,7 @@ export default async function DuelosPage({
   const { data: duelos } = await supabase
     .from("v_duelos")
     .select("*")
+    .eq("edicao_id", edicao?.id ?? "")
     .order("diff", { ascending: true })
     .order("total_votos", { ascending: false });
 

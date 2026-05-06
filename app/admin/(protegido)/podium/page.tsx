@@ -32,7 +32,10 @@ export default async function PodiumPage({
 
   const supabase = createSupabaseAdminClient();
 
-  let query = supabase.from("v_podium").select("*");
+  let query = supabase
+    .from("v_podium")
+    .select("*")
+    .eq("edicao_id", edicao?.id ?? "");
   if (ordem === "votos") {
     query = query.order("total_subcat", { ascending: false });
   } else {
@@ -42,7 +45,8 @@ export default async function PodiumPage({
     query,
     supabase
       .from("subcategorias")
-      .select("id, categoria:categorias(id, nome)"),
+      .select("id, categoria:categorias(id, nome)")
+      .eq("edicao_id", edicao?.id ?? ""),
   ]);
 
   // Enriquece cada Podium com categoria_nome via lookup local

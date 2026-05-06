@@ -1,6 +1,8 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { ResultadosFiltrados } from "./ResultadosFiltrados";
 import { AtualizarBtn } from "../AtualizarBtn";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 type Resultado = {
   candidato_id: string;
@@ -24,6 +26,12 @@ type Resultado = {
 export const revalidate = 3600;
 
 export default async function ResultadosPage() {
+  const tenant = await getCurrentTenant();
+  const status = await getEdicaoStatus(tenant.id);
+  if (status.status === "sem_edicao") {
+    return <div className="p-8 text-red-600">Crie uma edição ativa primeiro.</div>;
+  }
+  const edicao = status.edicao;
   const supabase = createSupabaseAdminClient();
 
   // Paginacao manual: PostgREST default trunca em 1000 linhas.
@@ -38,6 +46,7 @@ export default async function ResultadosPage() {
     const { data, error } = await supabase
       .from(viewName)
       .select("*")
+      .eq("edicao_id", edicao.id)
       .range(offset, offset + PAGE_SIZE - 1);
     if (error) {
       console.error(`[resultados] erro ao consultar ${viewName}:`, error);

@@ -3,6 +3,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { maskCpf } from "@/lib/cpf";
 import { Camera, MessageSquare, MapPin, Clock } from "lucide-react";
 import { AtualizarBtn } from "../AtualizarBtn";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 // 1h: pos-eleicao a lista de votantes e' imutavel. Botao "Atualizar" no
 // header invalida o cache na hora se precisar.
@@ -20,18 +22,26 @@ export default async function VotantesPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
   const offset = (page - 1) * PAGE_SIZE;
 
+  const tenant = await getCurrentTenant();
+  const status = await getEdicaoStatus(tenant.id);
+  if (status.status === "sem_edicao") {
+    return <div className="p-8 text-red-600">Crie uma edição ativa primeiro.</div>;
+  }
+  const edicao = status.edicao;
   const supabase = createSupabaseAdminClient();
 
   // RPC traz votantes paginados ja com count de votos no banco — sem
   // baixar votos/fingerprints inteiros (que truncavam em 1000).
   const [{ data: linhas }, { data: fpsCompart }] = await Promise.all([
     supabase.rpc("votantes_listagem", {
+      p_edicao_id: edicao.id,
       p_offset: offset,
       p_limit: PAGE_SIZE,
     }),
     supabase
       .from("v_fingerprints_compartilhados")
-      .select("device_fingerprint, total"),
+      .select("device_fingerprint, total")
+      .eq("edicao_id", edicao.id),
   ]);
 
   type LinhaVotante = {

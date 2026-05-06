@@ -58,11 +58,8 @@ export default async function AdminDashboard() {
   const edicao = status.edicao;
   const supabase = createSupabaseAdminClient();
 
-  // Tudo escopado em edicao_id (denorm via migration 035) pra isolar tenants.
-  // ⚠ Views (v_votos_por_dia, v_top_candidatos, etc) ainda nao tem filtro
-  // por tenant_id no SQL — elas agregam global. Como so existe 1 tenant ativo
-  // hoje (CDL Aracaju), ainda funciona. TODO multi-tenant: refazer essas
-  // views aceitando tenant_id ou edicao_id como param.
+  // Tudo escopado em edicao_id. Tabelas via denorm (035), views projetam
+  // edicao_id e a gente filtra .eq("edicao_id", X) (036).
   const [
     { count: totalVotantes },
     { count: totalVotos },
@@ -132,25 +129,35 @@ export default async function AdminDashboard() {
       .eq("edicao_id", edicao.id)
       .order("criado_em", { ascending: false })
       .limit(8),
-    supabase.from("v_votos_por_dia").select("dia, total"),
+    supabase
+      .from("v_votos_por_dia")
+      .select("dia, total")
+      .eq("edicao_id", edicao.id),
     supabase
       .from("v_top_candidatos")
       .select("candidato_id, candidato_nome, subcategoria_id, subcategoria_nome, categoria_id, categoria_nome, total_votos")
+      .eq("edicao_id", edicao.id)
       .limit(8),
     supabase
       .from("v_resultados_por_categoria")
       .select("categoria_id, categoria_nome, total_votos")
+      .eq("edicao_id", edicao.id)
       .limit(5),
     supabase
       .from("v_resumo_hoje")
       .select("votos, votantes, otps, parciais")
+      .eq("edicao_id", edicao.id)
       .maybeSingle(),
-    supabase.from("v_votos_por_hora_hoje").select("hora, total"),
+    supabase
+      .from("v_votos_por_hora_hoje")
+      .select("hora, total")
+      .eq("edicao_id", edicao.id),
     supabase
       .from("v_subcats_acirradas")
       .select(
         "subcategoria_id, subcategoria_nome, primeiro_nome, primeiro_votos, segundo_nome, segundo_votos, diff"
       )
+      .eq("edicao_id", edicao.id)
       .limit(5),
   ]);
 

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { fetchMetaInsights } from "@/lib/meta-whatsapp/insights";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -129,6 +131,11 @@ export default async function WhatsAppInsightsPage({
   // eslint-disable-next-line react-hooks/purity -- server component, valor deterministico por render
   const nowMs = Date.now();
   const cutoff = new Date(nowMs - days * 86_400_000).toISOString();
+
+  const tenant = await getCurrentTenant();
+  const edicaoStatus = await getEdicaoStatus(tenant.id);
+  const edicaoId =
+    edicaoStatus.status !== "sem_edicao" ? edicaoStatus.edicao.id : "";
   const supabase = createSupabaseAdminClient();
 
   const [
@@ -164,27 +171,41 @@ export default async function WhatsAppInsightsPage({
     supabase
       .from("votantes")
       .select("id", { head: true, count: "exact" })
+      .eq("edicao_id", edicaoId)
       .gte("criado_em", cutoff),
-    supabase.from("votantes").select("id", { head: true, count: "exact" }),
     supabase
       .from("votantes")
       .select("id", { head: true, count: "exact" })
+      .eq("edicao_id", edicaoId),
+    supabase
+      .from("votantes")
+      .select("id", { head: true, count: "exact" })
+      .eq("edicao_id", edicaoId)
       .eq("whatsapp_validado", true),
     supabase
       .from("votantes")
       .select("id", { head: true, count: "exact" })
+      .eq("edicao_id", edicaoId)
       .not("parcial_enviada_em", "is", null)
       .gte("parcial_enviada_em", cutoff),
     supabase
       .from("votantes")
       .select("id", { head: true, count: "exact" })
+      .eq("edicao_id", edicaoId)
       .not("incentivo_enviado_em", "is", null)
       .gte("incentivo_enviado_em", cutoff),
-    supabase.from("v_votos_por_dia").select("dia, total"),
+    supabase
+      .from("v_votos_por_dia")
+      .select("dia, total")
+      .eq("edicao_id", edicaoId),
     supabase
       .from("v_resultados")
-      .select("subcategoria_id, subcategoria_nome, candidato_nome, total_votos"),
-    supabase.from("v_otp_por_dia").select("dia, total"),
+      .select("subcategoria_id, subcategoria_nome, candidato_nome, total_votos")
+      .eq("edicao_id", edicaoId),
+    supabase
+      .from("v_otp_por_dia")
+      .select("dia, total")
+      .eq("edicao_id", edicaoId),
   ]);
 
   const funil = (funilRes.data?.[0] ?? null) as FunilRow | null;

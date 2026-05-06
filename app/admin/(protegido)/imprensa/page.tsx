@@ -22,22 +22,28 @@ export default async function ImprensaPage() {
   // Pagina sem truncamento — pega tudo (sao ~600 linhas: 102 subs * 6).
   const PAGE_SIZE = 1000;
   const linhas: LinhaTop6[] = [];
-  for (let offset = 0; ; offset += PAGE_SIZE) {
-    const { data } = await supabase
-      .from("v_top6_por_sub")
-      .select("*")
-      .range(offset, offset + PAGE_SIZE - 1);
-    if (!data || data.length === 0) break;
-    linhas.push(...(data as LinhaTop6[]));
-    if (data.length < PAGE_SIZE) break;
+  if (edicao) {
+    for (let offset = 0; ; offset += PAGE_SIZE) {
+      const { data } = await supabase
+        .from("v_top6_por_sub")
+        .select("*")
+        .eq("edicao_id", edicao.id)
+        .range(offset, offset + PAGE_SIZE - 1);
+      if (!data || data.length === 0) break;
+      linhas.push(...(data as LinhaTop6[]));
+      if (data.length < PAGE_SIZE) break;
+    }
   }
 
-  // Numeros da campanha (1 linha) — pra secao de transparencia
-  const { data: numerosRow } = await supabase
-    .from("v_numeros_campanha")
-    .select("*")
-    .maybeSingle();
-  const numeros = (numerosRow ?? null) as NumerosCampanha | null;
+  // Numeros da campanha (1 linha) — vira RPC apos migration 036.
+  let numeros: NumerosCampanha | null = null;
+  if (edicao) {
+    const { data: numerosRow } = await supabase.rpc("numeros_campanha", {
+      p_edicao_id: edicao.id,
+    });
+    const arr = (numerosRow ?? []) as NumerosCampanha[];
+    numeros = arr[0] ?? null;
+  }
 
   return (
     <div className="p-8 space-y-6">

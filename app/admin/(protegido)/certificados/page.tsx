@@ -24,11 +24,13 @@ export default async function CertificadosPage() {
     supabase
       .from("v_podium")
       .select("subcategoria_id, subcategoria_nome, top1_nome, top1_votos")
+      .eq("edicao_id", edicao?.id ?? "")
       .gt("top1_votos", 0)
       .order("subcategoria_nome", { ascending: true }),
     supabase
       .from("subcategorias")
-      .select("id, categoria:categorias(id, nome)"),
+      .select("id, categoria:categorias(id, nome)")
+      .eq("edicao_id", edicao?.id ?? ""),
   ]);
 
   type SubcatRow = {
