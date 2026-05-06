@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 export async function GET(req: Request) {
   if (!(await isAdmin())) {
@@ -17,8 +19,15 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Cooldown inválido (0-1440 min)" }, { status: 400 });
   }
 
+  const tenant = await getCurrentTenant();
+  const edicaoStatus = await getEdicaoStatus(tenant.id);
+  if (edicaoStatus.status === "sem_edicao") {
+    return NextResponse.json({ ok: true, threshold, cooldown, elegiveis: [] });
+  }
+
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.rpc("incentivo_elegives", {
+    p_edicao_id: edicaoStatus.edicao.id,
     p_threshold: threshold,
     p_min_minutos_apos_voto: cooldown,
   });

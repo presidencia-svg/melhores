@@ -159,15 +159,21 @@ export default async function WhatsAppInsightsPage({
     otpPorDiaRes,
   ] = await Promise.all([
     fetchMetaInsights(days),
-    supabase.rpc("insights_funil", { dias: days }),
-    supabase.rpc("insights_incentivo_roi", { dias: days }),
-    supabase.rpc("insights_parcial_roi", { dias: days }),
-    supabase.rpc("insights_votos_heatmap", { dias: Math.min(days, 14) }),
-    supabase.from("v_votos_velocidade_48h").select("hora, total"),
-    supabase.rpc("insights_subs_aceleracao"),
-    supabase.rpc("insights_origem", { dias: days }),
-    supabase.rpc("insights_otp_periodo", { dias: days }),
-    supabase.rpc("insights_votos_periodo", { dias: days }),
+    supabase.rpc("insights_funil", { p_edicao_id: edicaoId, dias: days }),
+    supabase.rpc("insights_incentivo_roi", { p_edicao_id: edicaoId, dias: days }),
+    supabase.rpc("insights_parcial_roi", { p_edicao_id: edicaoId, dias: days }),
+    supabase.rpc("insights_votos_heatmap", {
+      p_edicao_id: edicaoId,
+      dias: Math.min(days, 14),
+    }),
+    supabase
+      .from("v_votos_velocidade_48h")
+      .select("hora, total")
+      .eq("edicao_id", edicaoId),
+    supabase.rpc("insights_subs_aceleracao", { p_edicao_id: edicaoId }),
+    supabase.rpc("insights_origem", { p_edicao_id: edicaoId, dias: days }),
+    supabase.rpc("insights_otp_periodo", { p_edicao_id: edicaoId, dias: days }),
+    supabase.rpc("insights_votos_periodo", { p_edicao_id: edicaoId, dias: days }),
     supabase
       .from("votantes")
       .select("id", { head: true, count: "exact" })

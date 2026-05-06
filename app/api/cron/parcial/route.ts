@@ -188,21 +188,28 @@ async function handle(req: Request) {
     });
   }
 
-  // 4. Fila com filtros inteligentes + edicao do tenant pra ctx das mensagens
-  const [{ data: elegiveisRaw, error: erroRpc }, { data: edicao }] = await Promise.all([
-    supabase.rpc("parcial_elegives_auto", {
+  // 4. Edicao primeiro (RPC depende do id pra filtrar votantes do tenant)
+  const { data: edicao } = await supabase
+    .from("edicao")
+    .select("id, nome")
+    .eq("tenant_id", tenant.id)
+    .eq("ativa", true)
+    .order("ano", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!edicao) {
+    return NextResponse.json({ ok: true, skip: "sem_edicao" });
+  }
+
+  // Fila com filtros inteligentes
+  const { data: elegiveisRaw, error: erroRpc } = await supabase.rpc(
+    "parcial_elegives_auto",
+    {
+      p_edicao_id: edicao.id,
       p_min_minutos_apos_voto: MIN_MINUTOS_APOS_VOTO,
       p_max_diff_pct: MAX_DIFF_PCT,
-    }),
-    supabase
-      .from("edicao")
-      .select("nome")
-      .eq("tenant_id", tenant.id)
-      .eq("ativa", true)
-      .order("ano", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+    }
+  );
   if (erroRpc) {
     return NextResponse.json(
       { error: `RPC falhou: ${erroRpc.message}` },

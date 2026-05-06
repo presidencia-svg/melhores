@@ -117,26 +117,32 @@ async function handle(req: Request) {
     });
   }
 
-  // 4. Busca elegives empate (ambos os lados, cooldown de 2 dias)
-  const [
-    { data: elegiveis, error: erroRpc },
-    { count: totalVotos },
-    { data: edicao },
-  ] = await Promise.all([
-    supabase.rpc("incentivo_elegives_empate", {
-      p_cooldown_horas: COOLDOWN_HORAS,
-      p_min_minutos_apos_voto: 30,
-    }),
-    supabase.from("votos").select("*", { head: true, count: "exact" }),
-    supabase
-      .from("edicao")
-      .select("inicio_votacao, nome")
-      .eq("tenant_id", tenant.id)
-      .eq("ativa", true)
-      .order("ano", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  // 4. Edicao primeiro (RPC e queries dependem do id).
+  const { data: edicao } = await supabase
+    .from("edicao")
+    .select("id, inicio_votacao, nome")
+    .eq("tenant_id", tenant.id)
+    .eq("ativa", true)
+    .order("ano", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!edicao) {
+    return NextResponse.json({ ok: true, skip: "sem_edicao" });
+  }
+
+  // Busca elegives empate (ambos os lados, cooldown de 2 dias)
+  const [{ data: elegiveis, error: erroRpc }, { count: totalVotos }] =
+    await Promise.all([
+      supabase.rpc("incentivo_elegives_empate", {
+        p_edicao_id: edicao.id,
+        p_cooldown_horas: COOLDOWN_HORAS,
+        p_min_minutos_apos_voto: 30,
+      }),
+      supabase
+        .from("votos")
+        .select("*", { head: true, count: "exact" })
+        .eq("edicao_id", edicao.id),
+    ]);
 
   if (erroRpc) {
     return NextResponse.json(

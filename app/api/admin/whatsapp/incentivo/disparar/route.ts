@@ -46,24 +46,36 @@ export async function POST(req: Request) {
 
   const tenant = await getCurrentTenant();
   const supabase = createSupabaseAdminClient();
+
+  // Edicao ativa do tenant primeiro — necessaria pra escopar RPC e queries.
+  const { data: edicao } = await supabase
+    .from("edicao")
+    .select("id, inicio_votacao, nome")
+    .eq("tenant_id", tenant.id)
+    .eq("ativa", true)
+    .order("ano", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!edicao) {
+    return NextResponse.json(
+      { error: "Sem edição ativa pra esse tenant." },
+      { status: 400 }
+    );
+  }
+
   const [
     { data: elegiveis, error },
     { count: totalVotos },
-    { data: edicao },
   ] = await Promise.all([
     supabase.rpc("incentivo_elegives", {
+      p_edicao_id: edicao.id,
       p_threshold: parsed.data.threshold,
       p_min_minutos_apos_voto: parsed.data.cooldown,
     }),
-    supabase.from("votos").select("*", { head: true, count: "exact" }),
     supabase
-      .from("edicao")
-      .select("inicio_votacao, nome")
-      .eq("tenant_id", tenant.id)
-      .eq("ativa", true)
-      .order("ano", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .from("votos")
+      .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicao.id),
   ]);
   if (error) {
     return NextResponse.json(
