@@ -1,7 +1,7 @@
 // Provisionamento automatico de dominio pra novo tenant.
 //
-// Fluxo (C — usando melhoresdoano.app em Cloudflare + Vercel):
-//   1. Cloudflare: cria CNAME `{slug}.melhoresdoano.app` apontando pra
+// Fluxo (C — usando melhoresdoano.app.br em Cloudflare + Vercel):
+//   1. Cloudflare: cria CNAME `{slug}.melhoresdoano.app.br` apontando pra
 //      cname.vercel-dns.com (target padrao da Vercel pra dominios custom)
 //   2. Vercel: adiciona o dominio no projeto pra Vercel emitir SSL e
 //      rotear o request pro nosso app
@@ -11,7 +11,7 @@
 //
 // ENV vars necessarias:
 //   CLOUDFLARE_API_TOKEN  — token com permissao "Zone:DNS:Edit" no zone alvo
-//   CLOUDFLARE_ZONE_ID    — zone id de melhoresdoano.app
+//   CLOUDFLARE_ZONE_ID    — zone id de melhoresdoano.app.br
 //   VERCEL_API_TOKEN      — personal access token Vercel
 //   VERCEL_PROJECT_ID     — id do projeto Vercel (acha em Settings → General)
 //   VERCEL_TEAM_ID        — opcional, so se o projeto estiver em team
@@ -43,7 +43,7 @@ export function dnsConfigurado(): boolean {
 }
 
 // Provisiona um dominio novo em ambas as plataformas.
-// `dominio` deve ser FQDN ex: "cdlsaopaulo.melhoresdoano.app".
+// `dominio` deve ser FQDN ex: "cdlsaopaulo.melhoresdoano.app.br".
 export async function provisionarDominio(
   dominio: string
 ): Promise<DnsProvisionResult> {

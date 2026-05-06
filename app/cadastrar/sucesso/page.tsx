@@ -19,7 +19,7 @@ export default async function SucessoPage({
 }) {
   const sp = await searchParams;
   const slug = sp.slug ?? "";
-  const dominio = sp.dominio ?? (slug ? `${slug}.melhoresdoano.app` : "");
+  const dominio = sp.dominio ?? (slug ? `${slug}.melhoresdoano.app.br` : "");
   const dnsAuto = sp.dns === "1";
   const emailEnviado = sp.email === "1";
   const loginUrl = dominio ? `https://${dominio}/admin/login` : "";

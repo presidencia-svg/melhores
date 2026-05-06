@@ -146,10 +146,10 @@ export async function POST(req: Request) {
   const trialDias = 14;
   const trialAte = new Date(Date.now() + trialDias * 86_400_000).toISOString();
 
-  // Dominio default = "{slug}.melhoresdoano.app" — dominio da plataforma SaaS.
+  // Dominio default = "{slug}.melhoresdoano.app.br" — dominio da plataforma SaaS.
   // CDL Aracaju (tenant #1) mantem votar.cdlaju.com.br via seed antigo;
-  // novos tenants entram em melhoresdoano.app pra DNS automatizado.
-  const dominioDefault = `${parsed.data.slug}.melhoresdoano.app`;
+  // novos tenants entram em melhoresdoano.app.br pra DNS automatizado.
+  const dominioDefault = `${parsed.data.slug}.melhoresdoano.app.br`;
 
   const { data: tenant, error: tenantErr } = await supabase
     .from("tenants")

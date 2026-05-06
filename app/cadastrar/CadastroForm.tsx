@@ -153,7 +153,7 @@ export function CadastroForm() {
             disabled={carregando}
           />
           <span className="px-3 text-xs text-muted bg-zinc-50 h-10 flex items-center">
-            .melhoresdoano.app
+            .melhoresdoano.app.br
           </span>
         </div>
         <p className="text-xs text-muted mt-1">

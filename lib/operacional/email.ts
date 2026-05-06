@@ -10,7 +10,7 @@
 //
 // ENV vars:
 //   RESEND_API_KEY  — pega no dashboard do Resend
-//   RESEND_FROM     — email remetente (ex: "Melhores do Ano <ola@melhoresdoano.app>")
+//   RESEND_FROM     — email remetente (ex: "Melhores do Ano <ola@melhoresdoano.app.br>")
 //                     dominio precisa estar verificado no Resend (SPF/DKIM)
 
 import axios from "axios";
@@ -25,7 +25,7 @@ export type EmailResult =
 function getEnv() {
   return {
     apiKey: process.env.RESEND_API_KEY ?? "",
-    from: process.env.RESEND_FROM ?? "Melhores do Ano <ola@melhoresdoano.app>",
+    from: process.env.RESEND_FROM ?? "Melhores do Ano <ola@melhoresdoano.app.br>",
   };
 }
 
