@@ -18,6 +18,18 @@ export async function POST(req: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
 
   const supabase = createSupabaseAdminClient();
+
+  // edicao_id da subcategoria herda da categoria pai (denorm necessario
+  // pelo schema 035 — coluna NOT NULL).
+  const { data: categoria } = await supabase
+    .from("categorias")
+    .select("edicao_id")
+    .eq("id", parsed.data.categoriaId)
+    .maybeSingle();
+  if (!categoria) {
+    return NextResponse.json({ error: "Categoria não encontrada" }, { status: 404 });
+  }
+
   const { count } = await supabase
     .from("subcategorias")
     .select("*", { head: true, count: "exact" })
@@ -25,6 +37,7 @@ export async function POST(req: Request) {
 
   const { error } = await supabase.from("subcategorias").insert({
     categoria_id: parsed.data.categoriaId,
+    edicao_id: categoria.edicao_id,
     nome: parsed.data.nome,
     slug: parsed.data.slug,
     descricao: parsed.data.descricao,

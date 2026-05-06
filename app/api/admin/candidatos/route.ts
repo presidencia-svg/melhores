@@ -34,6 +34,16 @@ export async function POST(req: Request) {
   const nomeFormatado = tituloPT(parsed.data.nome);
   const nomeNorm = normalizarNome(nomeFormatado);
 
+  // edicao_id herda da subcategoria pai (denorm — schema 035).
+  const { data: subcat } = await supabase
+    .from("subcategorias")
+    .select("edicao_id")
+    .eq("id", parsed.data.subcategoria_id)
+    .maybeSingle();
+  if (!subcat) {
+    return NextResponse.json({ error: "Subcategoria não encontrada" }, { status: 404 });
+  }
+
   // Bloqueia nome duplicado na mesma subcategoria (entre aprovados)
   const { data: existente } = await supabase
     .from("candidatos")
@@ -53,6 +63,7 @@ export async function POST(req: Request) {
     .from("candidatos")
     .insert({
       subcategoria_id: parsed.data.subcategoria_id,
+      edicao_id: subcat.edicao_id,
       nome: nomeFormatado,
       nome_normalizado: nomeNorm,
       descricao: parsed.data.descricao || null,

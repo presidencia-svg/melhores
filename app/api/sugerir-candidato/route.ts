@@ -51,10 +51,21 @@ export async function POST(req: Request) {
   }
 
   // 2) Não tem match — cria novo candidato JÁ APROVADO (atômico, sem update posterior)
+  // edicao_id herda da subcategoria pai (denorm — schema 035).
+  const { data: subcat } = await supabase
+    .from("subcategorias")
+    .select("edicao_id")
+    .eq("id", parsed.data.subcategoriaId)
+    .maybeSingle();
+  if (!subcat) {
+    return NextResponse.json({ error: "Subcategoria não encontrada" }, { status: 404 });
+  }
+
   const { data: novo, error } = await supabase
     .from("candidatos")
     .insert({
       subcategoria_id: parsed.data.subcategoriaId,
+      edicao_id: subcat.edicao_id,
       nome: nomeFormatado,
       nome_normalizado: nomeNorm,
       origem: "sugerido",

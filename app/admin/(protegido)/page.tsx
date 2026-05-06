@@ -55,10 +55,15 @@ export default async function AdminDashboard() {
     redirect("/admin/onboarding");
   }
 
+  const edicao = status.edicao;
   const supabase = createSupabaseAdminClient();
 
+  // Tudo escopado em edicao_id (denorm via migration 035) pra isolar tenants.
+  // ⚠ Views (v_votos_por_dia, v_top_candidatos, etc) ainda nao tem filtro
+  // por tenant_id no SQL — elas agregam global. Como so existe 1 tenant ativo
+  // hoje (CDL Aracaju), ainda funciona. TODO multi-tenant: refazer essas
+  // views aceitando tenant_id ou edicao_id como param.
   const [
-    { data: edicao },
     { count: totalVotantes },
     { count: totalVotos },
     { count: totalCandidatos },
@@ -77,31 +82,54 @@ export default async function AdminDashboard() {
     { data: acirradasRaw },
   ] = await Promise.all([
     supabase
-      .from("edicao")
-      .select(
-        "id, ano, nome, inicio_votacao, fim_votacao, divulgacao_resultado"
-      )
-      .eq("ativa", true)
-      .order("ano", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase.from("votantes").select("*", { head: true, count: "exact" }),
-    supabase.from("votos").select("*", { head: true, count: "exact" }),
-    supabase.from("candidatos").select("*", { head: true, count: "exact" }).eq("status", "aprovado"),
-    supabase.from("categorias").select("*", { head: true, count: "exact" }).eq("ativa", true),
-    supabase.from("subcategorias").select("*", { head: true, count: "exact" }).eq("ativa", true),
-    supabase.from("candidatos").select("*", { head: true, count: "exact" }).eq("status", "pendente"),
-    supabase.from("votantes").select("*", { head: true, count: "exact" }).eq("whatsapp_validado", true),
-    supabase.from("votantes").select("*", { head: true, count: "exact" }).not("selfie_url", "is", null),
+      .from("votantes")
+      .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicao.id),
+    supabase
+      .from("votos")
+      .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicao.id),
+    supabase
+      .from("candidatos")
+      .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicao.id)
+      .eq("status", "aprovado"),
+    supabase
+      .from("categorias")
+      .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicao.id)
+      .eq("ativa", true),
+    supabase
+      .from("subcategorias")
+      .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicao.id)
+      .eq("ativa", true),
+    supabase
+      .from("candidatos")
+      .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicao.id)
+      .eq("status", "pendente"),
     supabase
       .from("votantes")
       .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicao.id)
+      .eq("whatsapp_validado", true),
+    supabase
+      .from("votantes")
+      .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicao.id)
+      .not("selfie_url", "is", null),
+    supabase
+      .from("votantes")
+      .select("*", { head: true, count: "exact" })
+      .eq("edicao_id", edicao.id)
       .or(
         "user_agent.ilike.%Mobile%,user_agent.ilike.%Android%,user_agent.ilike.%iPhone%,user_agent.ilike.%iPad%"
       ),
     supabase
       .from("votantes")
       .select("id, nome, user_agent, criado_em")
+      .eq("edicao_id", edicao.id)
       .order("criado_em", { ascending: false })
       .limit(8),
     supabase.from("v_votos_por_dia").select("dia, total"),

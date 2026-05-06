@@ -1,25 +1,22 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { CandidatosManager } from "./CandidatosManager";
 import { CandidatosLista } from "./CandidatosLista";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 export default async function CandidatosAdminPage() {
-  const supabase = createSupabaseAdminClient();
-  const { data: edicao } = await supabase
-    .from("edicao")
-    .select("id, ano, nome")
-    .eq("ativa", true)
-    .order("ano", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (!edicao) {
+  const tenant = await getCurrentTenant();
+  const status = await getEdicaoStatus(tenant.id);
+  if (status.status === "sem_edicao") {
     return <div className="p-8 text-red-600">Crie uma edição ativa primeiro.</div>;
   }
+  const edicao = status.edicao;
+  const supabase = createSupabaseAdminClient();
 
   const { data: subs } = await supabase
     .from("subcategorias")
-    .select("id, nome, categoria:categorias!inner(nome, edicao_id)")
-    .eq("categoria.edicao_id", edicao.id)
+    .select("id, nome, categoria:categorias!inner(nome)")
+    .eq("edicao_id", edicao.id)
     .order("nome");
 
   // Lista plana pra usar no Mover (id + label "Categoria → Subcategoria")
@@ -38,14 +35,14 @@ export default async function CandidatosAdminPage() {
   // Com 1.000+ candidatos, sem isso o admin so via os primeiros 1k.
   const PAGE_SIZE = 1000;
   const SELECT_COLS =
-    "id, nome, descricao, foto_url, origem, status, sugestoes_count, subcategoria:subcategorias!inner(id, nome, categoria:categorias!inner(nome, edicao_id))";
+    "id, nome, descricao, foto_url, origem, status, sugestoes_count, subcategoria:subcategorias!inner(id, nome, categoria:categorias!inner(nome))";
   const candidatos: NonNullable<Awaited<ReturnType<typeof carregar>>> = [];
   async function carregar(offset: number) {
     return (
       await supabase
         .from("candidatos")
         .select(SELECT_COLS)
-        .eq("subcategoria.categoria.edicao_id", edicao!.id)
+        .eq("edicao_id", edicao.id)
         .neq("status", "rejeitado")
         // Ordenacao tem que ser ESTAVEL — com so .order("nome"), candidatos
         // com mesmo nome (ex: 3 Bruno Moraes) ficam em ordem indefinida

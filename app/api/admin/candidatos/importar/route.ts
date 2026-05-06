@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAdmin } from "@/lib/admin/auth";
+import { isAdmin, getAdminTenantOuNull } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { normalizarNome } from "@/lib/utils";
 
@@ -75,11 +75,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "CSV vazio ou colunas faltando" }, { status: 400 });
   }
 
+  const tenant = await getAdminTenantOuNull();
+  if (!tenant) return NextResponse.json({ error: "Sessão inválida" }, { status: 401 });
+
   const supabase = createSupabaseAdminClient();
 
   const { data: edicao } = await supabase
     .from("edicao")
     .select("id")
+    .eq("tenant_id", tenant.id)
     .eq("ativa", true)
     .order("ano", { ascending: false })
     .limit(1)
@@ -102,6 +106,7 @@ export async function POST(req: Request) {
 
   const inserir: Array<{
     subcategoria_id: string;
+    edicao_id: string;
     nome: string;
     nome_normalizado: string;
     descricao: string | null;
@@ -122,6 +127,7 @@ export async function POST(req: Request) {
     }
     inserir.push({
       subcategoria_id: subId,
+      edicao_id: edicao.id,
       nome: l.nome,
       nome_normalizado: normalizarNome(l.nome),
       descricao: l.descricao || null,

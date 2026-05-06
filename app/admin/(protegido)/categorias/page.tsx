@@ -1,19 +1,16 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { CategoriasManager } from "./CategoriasManager";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 export default async function CategoriasAdminPage() {
-  const supabase = createSupabaseAdminClient();
-  const { data: edicao } = await supabase
-    .from("edicao")
-    .select("id, ano, nome")
-    .eq("ativa", true)
-    .order("ano", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (!edicao) {
+  const tenant = await getCurrentTenant();
+  const status = await getEdicaoStatus(tenant.id);
+  if (status.status === "sem_edicao") {
     return <div className="p-8 text-red-600">Crie uma edição ativa primeiro.</div>;
   }
+  const edicao = status.edicao;
+  const supabase = createSupabaseAdminClient();
 
   const { data: categorias } = await supabase
     .from("categorias")

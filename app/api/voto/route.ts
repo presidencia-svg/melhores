@@ -45,10 +45,11 @@ export async function POST(req: Request) {
   }
   await supabase.from("rate_limit_ip").insert({ ip, acao: `voto:${sessao.id}` });
 
-  // Valida candidato pertence à subcategoria e está aprovado
+  // Valida candidato pertence à subcategoria e está aprovado.
+  // edicao_id do candidato (denorm — schema 035) e' usado pra scope no voto.
   const { data: cand } = await supabase
     .from("candidatos")
-    .select("id, subcategoria_id, status")
+    .select("id, subcategoria_id, status, edicao_id")
     .eq("id", candidatoId)
     .maybeSingle();
 
@@ -61,7 +62,13 @@ export async function POST(req: Request) {
   // duplicacao e o erro vira 409. Nao permite trocar voto ja registrado.
   const { error } = await supabase
     .from("votos")
-    .insert({ votante_id: sessao.id, subcategoria_id: subcategoriaId, candidato_id: candidatoId, ip });
+    .insert({
+      votante_id: sessao.id,
+      subcategoria_id: subcategoriaId,
+      candidato_id: candidatoId,
+      edicao_id: cand.edicao_id,
+      ip,
+    });
 
   if (error) {
     // Postgres '23505' = unique_violation

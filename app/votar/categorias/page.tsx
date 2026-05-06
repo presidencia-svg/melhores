@@ -8,29 +8,25 @@ import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { SmallCaps, Divider } from "@/components/brand/Marks";
 import { seededShuffle } from "@/lib/utils";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 
 export default async function CategoriasPage() {
   const sessao = await getVotanteSessao();
   if (!sessao) redirect("/votar");
   if (!sessao.selfie_url) redirect("/votar/selfie");
 
-  const supabase = createSupabaseAdminClient();
-
-  const { data: edicao } = await supabase
-    .from("edicao")
-    .select("id")
-    .eq("ativa", true)
-    .order("ano", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (!edicao) {
+  const tenant = await getCurrentTenant();
+  const edicaoStatus = await getEdicaoStatus(tenant.id);
+  if (edicaoStatus.status === "sem_edicao") {
     return (
       <VotoLayout step={3}>
         <p className="text-center text-muted">Edição não encontrada.</p>
       </VotoLayout>
     );
   }
+  const edicao = edicaoStatus.edicao;
+  const supabase = createSupabaseAdminClient();
 
   const { data: categoriasRaw } = await supabase
     .from("categorias")
