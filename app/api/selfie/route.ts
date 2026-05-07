@@ -8,6 +8,8 @@ import {
 } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getClientIp } from "@/lib/utils";
+import { isWhatsAppValidacaoLigada } from "@/lib/whatsapp/mode";
+import { debitarCredito, type MotivoDebito } from "@/lib/creditos";
 
 const Body = z.object({ image: z.string().startsWith("data:image/") });
 const BUCKET = "selfies";
@@ -81,6 +83,68 @@ export async function POST(req: Request) {
       }
     }
 
+    // ===== Debito de credito antes de criar votante =====
+    // Define motivo conforme modo do tenant: SPC + WhatsApp ligados → mais
+    // caro; sem SPC → voto_minimo.
+    //
+    // EXCECAO LEGACY: tenant slug 'aracaju' (CDL Aracaju) nao debita —
+    // cortesia perpetua porque ja tinha votacao em prod antes do modelo
+    // de creditos. Quando CDL Aracaju quiser entrar no modelo, basta
+    // remover a condicao + fazer recargas normais.
+    const { data: edicaoTenant } = await supabase
+      .from("edicao")
+      .select("tenant_id, tenants!inner(slug)")
+      .eq("id", p.edicao_id)
+      .maybeSingle();
+    if (!edicaoTenant) {
+      return NextResponse.json(
+        { error: "Edição não encontrada" },
+        { status: 500 }
+      );
+    }
+
+    type TenantInfo = { slug: string };
+    const tenantInfo = (Array.isArray(edicaoTenant.tenants)
+      ? edicaoTenant.tenants[0]
+      : edicaoTenant.tenants) as TenantInfo | undefined;
+    const cobrancaAtiva = tenantInfo?.slug !== "aracaju";
+    let motivoDebitado: MotivoDebito | null = null;
+
+    if (cobrancaAtiva) {
+      const waLigadaParaCobranca = await isWhatsAppValidacaoLigada(
+        edicaoTenant.tenant_id
+      );
+
+      let motivo: MotivoDebito;
+      if (!p.spc_validado && !waLigadaParaCobranca) {
+        motivo = "voto_minimo";
+      } else if (p.spc_validado && !waLigadaParaCobranca) {
+        motivo = "voto_spc";
+      } else {
+        motivo = "voto_spc_whatsapp";
+      }
+
+      const debito = await debitarCredito({
+        tenantId: edicaoTenant.tenant_id,
+        motivo,
+        descricao: "Cadastro de votante",
+        edicaoId: p.edicao_id,
+      });
+
+      if (!debito.ok) {
+        await clearPreCadastro();
+        return NextResponse.json(
+          {
+            error:
+              "Esta votação está pausada temporariamente. Tente novamente em alguns minutos.",
+            motivo_admin: debito.motivo,
+          },
+          { status: 503 }
+        );
+      }
+      motivoDebitado = motivo;
+    }
+
     const { data: novo, error: insertErr } = await supabase
       .from("votantes")
       .insert({
@@ -97,6 +161,21 @@ export async function POST(req: Request) {
       .select("id")
       .single();
     if (insertErr || !novo) {
+      // Estorna debito se houve.
+      if (motivoDebitado) {
+        console.error("[selfie] insert votante falhou apos debito:", insertErr);
+        const { creditarCredito, PRECOS } = await import("@/lib/creditos");
+        try {
+          await creditarCredito({
+            tenantId: edicaoTenant.tenant_id,
+            valorCentavos: PRECOS[motivoDebitado],
+            motivo: "estorno",
+            descricao: "Estorno auto: insert votante falhou",
+          });
+        } catch (e) {
+          console.error("[selfie] estorno falhou:", e);
+        }
+      }
       return NextResponse.json({ error: "Falha ao registrar votante" }, { status: 500 });
     }
     votanteId = novo.id;
