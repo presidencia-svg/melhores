@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { creditarCredito } from "@/lib/creditos";
-import { consultarOrder } from "@/lib/pagseguro/client";
+import { consultarPagamento } from "@/lib/mercadopago/client";
 
-// Webhook PagSeguro — recebe notificacao de mudanca de status. NAO confiamos
-// no payload puro (pode vir adulterado); a gente consulta de volta a API
-// PagSeguro pra confirmar status real.
+// Webhook Mercado Pago — recebe notificacao { type, action, data: { id } }
+// quando status de pagamento muda. Nao confiamos no payload puro: consultamos
+// /v1/payments/{id} pra ver status real.
 //
-// PagSeguro chama esse endpoint via POST com o payload da order/charge.
-// Pegamos o reference_id (que e' nosso pagamento.id) e atualizamos.
+// MP chama esse endpoint via POST. external_reference no MP e' nosso
+// pagamento.id, que vem em payment.external_reference depois de consultar.
 
 export async function POST(req: Request) {
   let body: Record<string, unknown> = {};
@@ -18,57 +18,60 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "json inválido" }, { status: 400 });
   }
 
-  // Tenta extrair reference_id ou order id de varias formas
-  // (PagSeguro varia o payload conforme o evento)
-  const referenceId =
-    (body.reference_id as string) ??
-    (body.charges as Array<{ reference_id?: string }>)?.[0]?.reference_id ??
-    null;
-  const orderId =
-    (body.id as string) ??
-    null;
+  // MP manda dois tipos de evento; ambos com data.id
+  const tipo = (body.type as string) ?? (body.action as string) ?? "";
+  if (!tipo.includes("payment")) {
+    return NextResponse.json({ ok: true, ignored: "tipo nao-payment" });
+  }
 
-  if (!referenceId && !orderId) {
-    console.warn("[creditos/webhook] payload sem reference_id nem orderId:", body);
-    return NextResponse.json({ ok: true, ignored: true });
+  const data = body.data as { id?: string | number } | undefined;
+  const paymentId = data?.id ? String(data.id) : null;
+  if (!paymentId) {
+    return NextResponse.json({ ok: true, ignored: "sem id" });
+  }
+
+  // Consulta pagamento real no MP
+  const { status: mpStatus, payload } = await consultarPagamento(paymentId);
+  if (!mpStatus) {
+    console.warn("[creditos/webhook] MP sem status pra", paymentId);
+    return NextResponse.json({ ok: true, ignored: "sem status MP" });
+  }
+
+  const externalRef = (payload as { external_reference?: string })
+    ?.external_reference;
+  if (!externalRef) {
+    console.warn("[creditos/webhook] MP sem external_reference:", paymentId);
+    return NextResponse.json({ ok: true, ignored: "sem external_reference" });
   }
 
   const supabase = createSupabaseAdminClient();
-
-  // 1. Acha o pagamento pelo reference_id (nosso UUID) ou ps_charge_id
-  let query = supabase.from("pagamentos").select("*");
-  if (referenceId) query = query.eq("id", referenceId);
-  else if (orderId) query = query.eq("ps_charge_id", orderId);
-
-  const { data: pagamento } = await query.maybeSingle();
+  const { data: pagamento } = await supabase
+    .from("pagamentos")
+    .select("*")
+    .eq("id", externalRef)
+    .maybeSingle();
 
   if (!pagamento) {
-    console.warn("[creditos/webhook] pagamento nao encontrado:", { referenceId, orderId });
-    return NextResponse.json({ ok: true, ignored: true });
+    console.warn("[creditos/webhook] pagamento nao achado:", externalRef);
+    return NextResponse.json({ ok: true, ignored: "pagamento nao encontrado" });
   }
 
   if (pagamento.status === "pago") {
-    // Idempotencia — ja processamos.
     return NextResponse.json({ ok: true, already_processed: true });
   }
 
-  // 2. Consulta status REAL do PagSeguro (nao confia no payload do webhook)
-  const psOrderId = pagamento.ps_charge_id ?? orderId;
-  if (!psOrderId) {
-    return NextResponse.json({ ok: true, ignored: "sem orderId" });
-  }
-  const { status: psStatus, payload: psPayload } = await consultarOrder(psOrderId);
+  console.log(
+    `[creditos/webhook] pagamento ${pagamento.id} status MP: ${mpStatus}`
+  );
 
-  console.log(`[creditos/webhook] pagamento ${pagamento.id} status PagSeguro: ${psStatus}`);
-
-  if (psStatus === "PAID") {
-    // 3. Atualiza pagamento → pago + adiciona credito
+  if (mpStatus === "approved") {
     await supabase
       .from("pagamentos")
       .update({
         status: "pago",
         pago_em: new Date().toISOString(),
-        ps_payload: psPayload as Record<string, unknown>,
+        mp_payment_id: paymentId,
+        mp_payload: payload as Record<string, unknown>,
       })
       .eq("id", pagamento.id);
 
@@ -77,30 +80,28 @@ export async function POST(req: Request) {
         tenantId: pagamento.tenant_id,
         valorCentavos: pagamento.valor_centavos,
         motivo: "recarga",
-        descricao: `Recarga via PagSeguro (${pagamento.valor_centavos / 100} BRL)`,
+        descricao: `Recarga via Mercado Pago (${pagamento.valor_centavos / 100} BRL)`,
         pagamentoId: pagamento.id,
       });
     } catch (e) {
       console.error("[creditos/webhook] creditarCredito falhou:", e);
-      // Nao retornamos erro — pagamento esta marcado como pago, podemos
-      // reconciliar manualmente via super-admin. Mais critico nao perder
-      // o webhook do PagSeguro.
     }
 
     return NextResponse.json({ ok: true, status: "pago" });
   }
 
-  if (psStatus === "DECLINED" || psStatus === "CANCELED") {
+  if (mpStatus === "rejected" || mpStatus === "cancelled") {
     await supabase
       .from("pagamentos")
       .update({
         status: "cancelado",
-        ps_payload: psPayload as Record<string, unknown>,
+        mp_payment_id: paymentId,
+        mp_payload: payload as Record<string, unknown>,
       })
       .eq("id", pagamento.id);
     return NextResponse.json({ ok: true, status: "cancelado" });
   }
 
-  // Outros status (WAITING, IN_ANALYSIS) — deixa pendente
-  return NextResponse.json({ ok: true, status: psStatus ?? "pendente" });
+  // Outros (pending, in_process, authorized) — deixa pendente
+  return NextResponse.json({ ok: true, status: mpStatus });
 }

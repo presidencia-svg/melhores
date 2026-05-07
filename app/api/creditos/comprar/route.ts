@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdmin, getAdminTenantOuNull } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { criarCheckout, pagseguroConfigurado } from "@/lib/pagseguro/client";
+import { criarPreferencia, mercadoPagoConfigurado } from "@/lib/mercadopago/client";
 
 const Body = z.object({
   valor_centavos: z.number().int().min(500).max(100000000), // R$ 5 a R$ 1M
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Sessão inválida" }, { status: 401 });
   }
 
-  if (!pagseguroConfigurado()) {
+  if (!mercadoPagoConfigurado()) {
     return NextResponse.json(
       { error: "Pagamento não configurado. Avise o suporte." },
       { status: 503 }
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
   const supabase = createSupabaseAdminClient();
 
-  // 1. Cria pagamento `pendente` no banco — id e' usado como reference_id no PS
+  // 1. Cria pagamento `pendente` no banco — id e' usado como external_reference
   const { data: pagamento, error: insertErr } = await supabase
     .from("pagamentos")
     .insert({
@@ -57,48 +57,44 @@ export async function POST(req: Request) {
     );
   }
 
-  // 2. PagSeguro Checkout Pro
+  // 2. MP Checkout Pro
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL ||
     `https://${tenant.dominio ?? "melhoresdoano.app.br"}`;
 
-  const result = await criarCheckout({
+  const result = await criarPreferencia({
     pagamentoId: pagamento.id,
     valorCentavos: parsed.data.valor_centavos,
-    comprador: {
-      nome: tenant.nome,
-      email: parsed.data.email,
-      cnpjOuCpf: tenant.cnpj ?? undefined,
-    },
+    emailComprador: parsed.data.email,
+    nomeComprador: tenant.nome,
     redirectUrl: `${siteUrl}/admin/creditos/sucesso?pagamento=${pagamento.id}`,
     notificationUrl: `${siteUrl}/api/creditos/webhook`,
   });
 
   if (!result.ok) {
-    // Marca pagamento como cancelado pra nao deixar pendente orfao
     await supabase
       .from("pagamentos")
-      .update({ status: "cancelado", ps_payload: { erro: result.detalhe } })
+      .update({ status: "cancelado", mp_payload: { erro: result.detalhe } })
       .eq("id", pagamento.id);
     return NextResponse.json(
-      { error: `PagSeguro: ${result.detalhe}` },
+      { error: `Mercado Pago: ${result.detalhe}` },
       { status: 502 }
     );
   }
 
-  // 3. Salva referencias do PS no pagamento
+  // 3. Salva referencias do MP
   await supabase
     .from("pagamentos")
     .update({
-      ps_charge_id: result.id,
-      ps_payment_url: result.payUrl,
-      ps_payload: result.payload as Record<string, unknown>,
+      mp_preference_id: result.preferenceId,
+      mp_init_point: result.initPoint,
+      mp_payload: result.payload as Record<string, unknown>,
     })
     .eq("id", pagamento.id);
 
   return NextResponse.json({
     ok: true,
     pagamento_id: pagamento.id,
-    pay_url: result.payUrl,
+    pay_url: result.initPoint,
   });
 }

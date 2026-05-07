@@ -62,7 +62,7 @@ export default async function SucessoPagamentoPage({
                   Pagamento em processamento
                 </h1>
                 <p className="text-sm text-muted mt-2 max-w-md">
-                  O PagSeguro está processando sua transação. Pix geralmente
+                  O Mercado Pago está processando sua transação. Pix geralmente
                   confirma em segundos; cartão pode levar até 30 minutos.
                 </p>
                 {pagamento && (

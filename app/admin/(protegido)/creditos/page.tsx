@@ -21,7 +21,7 @@ export default async function CreditosPage() {
       .limit(30),
     supabase
       .from("pagamentos")
-      .select("id, valor_centavos, status, metodo, criado_em, pago_em, ps_payment_url")
+      .select("id, valor_centavos, status, metodo, criado_em, pago_em, mp_init_point")
       .eq("tenant_id", tenant.id)
       .order("criado_em", { ascending: false })
       .limit(10),
@@ -152,9 +152,9 @@ export default async function CreditosPage() {
                     >
                       {p.status}
                     </span>
-                    {p.status === "pendente" && p.ps_payment_url ? (
+                    {p.status === "pendente" && p.mp_init_point ? (
                       <a
-                        href={p.ps_payment_url}
+                        href={p.mp_init_point}
                         target="_blank"
                         rel="noopener"
                         className="text-xs text-cdl-blue hover:underline"
@@ -230,7 +230,7 @@ export default async function CreditosPage() {
 
 function labelMotivo(motivo: string): string {
   const mapa: Record<string, string> = {
-    recarga: "Recarga via PagSeguro",
+    recarga: "Recarga via Mercado Pago",
     voto_minimo: "Voto (sem SPC)",
     voto_spc: "Voto + SPC",
     voto_spc_whatsapp: "Voto + SPC + WhatsApp",

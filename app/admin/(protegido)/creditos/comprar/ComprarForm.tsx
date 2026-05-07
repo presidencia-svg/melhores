@@ -59,7 +59,7 @@ export function ComprarForm({
         setErro(json.error ?? "Falha ao iniciar pagamento");
         return;
       }
-      // Redireciona pra checkout do PagSeguro
+      // Redireciona pra checkout do Mercado Pago
       window.location.href = json.pay_url;
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha de rede");
@@ -146,7 +146,7 @@ export function ComprarForm({
         className="h-12 inline-flex items-center justify-center gap-2 rounded-md bg-cdl-blue text-white font-medium hover:bg-cdl-blue-dark disabled:opacity-50"
       >
         {carregando ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-        Continuar pra PagSeguro →
+        Continuar pra Mercado Pago →
       </button>
     </form>
   );

@@ -1,5 +1,5 @@
 // Wallet de creditos prepago — todo voto, marketing e manutencao consome
-// daqui. Recargas via PagSeguro creditam aqui (lib/pagseguro/webhook).
+// daqui. Recargas via Mercado Pago creditam aqui (api/creditos/webhook).
 //
 // Tabela `creditos_tenant.saldo_centavos` e' a fonte da verdade. Helpers
 // usam funcoes SQL `debitar_credito` e `creditar_credito` pra garantir
