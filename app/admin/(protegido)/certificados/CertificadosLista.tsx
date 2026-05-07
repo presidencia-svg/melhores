@@ -47,8 +47,9 @@ export function CertificadosLista({
       edicao,
       nomeOrgao,
       dominio,
+      logoSrc: branding.logoUrl ?? "/cdl-logo.png",
     }),
-    [signatario, cargo, branding.cidade, branding.ano, edicao, nomeOrgao, dominio]
+    [signatario, cargo, branding.cidade, branding.ano, edicao, nomeOrgao, dominio, branding.logoUrl]
   );
 
   // Agrupa pra mostrar lista de vencedores ordenada por categoria pai.
