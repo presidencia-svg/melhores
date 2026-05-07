@@ -24,8 +24,10 @@ function senhaPlainEq(input: string, expected: string): boolean {
 
 // Verifica senha do admin pra um tenant especifico.
 //   - Se tenant.admin_password_hash existir → scrypt verify.
-//   - Senao, fallback pra env ADMIN_PASSWORD (compat com CDL Aracaju enquanto
-//     o hash nao foi gravado no banco).
+//   - Senao, fallback pra env ADMIN_PASSWORD so' pro tenant legacy
+//     (CDL Aracaju, slug 'aracaju'). Tenants novos sempre tem hash
+//     setado no signup, entao esse fallback so' aplica pro tenant #1
+//     antes da migracao pro hash via /admin/seguranca.
 export async function senhaCorretaParaTenant(
   senha: string,
   tenant: Tenant
@@ -33,6 +35,7 @@ export async function senhaCorretaParaTenant(
   if (tenant.admin_password_hash) {
     return verificarSenhaHash(senha, tenant.admin_password_hash);
   }
+  if (tenant.slug !== "aracaju") return false;
   return senhaPlainEq(senha, process.env.ADMIN_PASSWORD ?? "");
 }
 

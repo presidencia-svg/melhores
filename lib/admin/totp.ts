@@ -5,11 +5,13 @@ const LABEL_PADRAO = "Painel Admin";
 
 // Resolve o secret TOTP pro tenant.
 //   - Se tenant.admin_totp_secret existir → usa esse.
-//   - Senao, fallback pra env ADMIN_TOTP_SECRET (compat CDL Aracaju enquanto
-//     nao migrou pro DB).
+//   - Senao, fallback pra env ADMIN_TOTP_SECRET so' pro tenant legacy
+//     (CDL Aracaju, slug 'aracaju'). Tenants novos via signup nao herdam
+//     TOTP do env — eles ativam manualmente em /admin/seguranca.
 function getSecretParaTenant(tenant: Tenant): string | null {
   const fromTenant = tenant.admin_totp_secret;
   if (fromTenant && fromTenant.length >= 16) return fromTenant;
+  if (tenant.slug !== "aracaju") return null;
   const fromEnv = process.env.ADMIN_TOTP_SECRET;
   if (fromEnv && fromEnv.length >= 16) return fromEnv;
   return null;
