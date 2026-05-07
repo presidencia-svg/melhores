@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Logo } from "@/components/brand/Logo";
 import { isAdmin } from "@/lib/admin/auth";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { LayoutDashboard, FolderTree, Users, Trophy, MessageSquare, Inbox, LogOut, UserCheck, ShieldCheck, BarChart3, Swords, Medal, Newspaper, Award, Wallet, Palette } from "lucide-react";
@@ -28,7 +27,9 @@ export default async function AdminProtectedLayout({
               className="h-14 w-auto max-w-full object-contain"
             />
           ) : (
-            <Logo variant="white" className="text-white" />
+            <div className="font-display text-xl font-bold leading-tight text-white">
+              melhoresdoano<span className="text-white/60">.app</span>
+            </div>
           )}
           <p className="text-xs text-white/60 mt-2">{tenant.nome}</p>
         </div>
