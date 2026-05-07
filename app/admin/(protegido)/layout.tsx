@@ -2,7 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { isAdmin } from "@/lib/admin/auth";
-import { LayoutDashboard, FolderTree, Users, Trophy, MessageSquare, Inbox, LogOut, UserCheck, ShieldCheck, BarChart3, Swords, Medal, Newspaper, Award, Wallet } from "lucide-react";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { LayoutDashboard, FolderTree, Users, Trophy, MessageSquare, Inbox, LogOut, UserCheck, ShieldCheck, BarChart3, Swords, Medal, Newspaper, Award, Wallet, Palette } from "lucide-react";
 
 export default async function AdminProtectedLayout({
   children,
@@ -13,12 +14,23 @@ export default async function AdminProtectedLayout({
     redirect("/admin/login");
   }
 
+  const tenant = await getCurrentTenant();
+
   return (
     <div className="min-h-screen flex bg-background">
       <aside className="w-64 bg-cdl-blue-dark text-white flex flex-col print:hidden">
         <div className="px-6 py-6 border-b border-white/10">
-          <Logo variant="white" className="text-white" />
-          <p className="text-xs text-white/60 mt-2">Painel Administrativo</p>
+          {tenant.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={tenant.logo_url}
+              alt={tenant.nome}
+              className="h-14 w-auto max-w-full object-contain"
+            />
+          ) : (
+            <Logo variant="white" className="text-white" />
+          )}
+          <p className="text-xs text-white/60 mt-2">{tenant.nome}</p>
         </div>
 
         <nav className="flex-1 p-3 flex flex-col gap-0.5 overflow-y-auto">
@@ -66,6 +78,9 @@ export default async function AdminProtectedLayout({
           </NavLink>
 
           <SectionLabel>Conta</SectionLabel>
+          <NavLink href="/admin/marca" icon={<Palette className="w-4 h-4" />}>
+            Marca
+          </NavLink>
           <NavLink href="/admin/creditos" icon={<Wallet className="w-4 h-4" />}>
             Créditos
           </NavLink>
