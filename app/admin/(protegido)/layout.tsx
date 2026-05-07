@@ -27,8 +27,8 @@ export default async function AdminProtectedLayout({
               className="h-14 w-auto max-w-full object-contain"
             />
           ) : (
-            <div className="font-display text-xl font-bold leading-tight text-white">
-              melhoresdoano<span className="text-white/60">.app</span>
+            <div className="font-display text-3xl font-bold leading-none tracking-tight text-white">
+              CDL
             </div>
           )}
           <p className="text-xs text-white/60 mt-2">{tenant.nome}</p>
