@@ -21,10 +21,12 @@ export default async function AdminProtectedLayout({
           <p className="text-xs text-white/60 mt-2">Painel Administrativo</p>
         </div>
 
-        <nav className="flex-1 p-3 flex flex-col gap-1">
+        <nav className="flex-1 p-3 flex flex-col gap-0.5 overflow-y-auto">
           <NavLink href="/admin" icon={<LayoutDashboard className="w-4 h-4" />}>
-            Dashboard
+            Início
           </NavLink>
+
+          <SectionLabel>Campanha</SectionLabel>
           <NavLink href="/admin/categorias" icon={<FolderTree className="w-4 h-4" />}>
             Categorias
           </NavLink>
@@ -32,32 +34,38 @@ export default async function AdminProtectedLayout({
             Candidatos
           </NavLink>
           <NavLink href="/admin/sugestoes" icon={<Inbox className="w-4 h-4" />}>
-            Sugestões
+            Sugestões recebidas
           </NavLink>
-          <NavLink href="/admin/votantes" icon={<UserCheck className="w-4 h-4" />}>
-            Votantes
-          </NavLink>
+
+          <SectionLabel>Resultados</SectionLabel>
           <NavLink href="/admin/resultados" icon={<Trophy className="w-4 h-4" />}>
-            Resultados
+            Ranking ao vivo
           </NavLink>
           <NavLink href="/admin/duelos" icon={<Swords className="w-4 h-4" />}>
-            Duelos
+            Empates
           </NavLink>
           <NavLink href="/admin/podium" icon={<Medal className="w-4 h-4" />}>
-            Pódio
+            Pódio final
           </NavLink>
           <NavLink href="/admin/certificados" icon={<Award className="w-4 h-4" />}>
             Certificados
           </NavLink>
+
+          <SectionLabel>Engajamento</SectionLabel>
+          <NavLink href="/admin/votantes" icon={<UserCheck className="w-4 h-4" />}>
+            Votantes
+          </NavLink>
+          <NavLink href="/admin/whatsapp" icon={<MessageSquare className="w-4 h-4" />}>
+            Lista WhatsApp
+          </NavLink>
+          <NavLink href="/admin/whatsapp/insights" icon={<BarChart3 className="w-4 h-4" />}>
+            Mensagens enviadas
+          </NavLink>
           <NavLink href="/admin/imprensa" icon={<Newspaper className="w-4 h-4" />}>
             Imprensa
           </NavLink>
-          <NavLink href="/admin/whatsapp" icon={<MessageSquare className="w-4 h-4" />}>
-            WhatsApp
-          </NavLink>
-          <NavLink href="/admin/whatsapp/insights" icon={<BarChart3 className="w-4 h-4" />}>
-            Insights WA
-          </NavLink>
+
+          <SectionLabel>Conta</SectionLabel>
           <NavLink href="/admin/creditos" icon={<Wallet className="w-4 h-4" />}>
             Créditos
           </NavLink>
@@ -99,5 +107,13 @@ function NavLink({
       {icon}
       {children}
     </Link>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-white/40">
+      {children}
+    </div>
   );
 }
