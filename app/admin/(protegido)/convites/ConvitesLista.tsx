@@ -285,17 +285,17 @@ export function ConvitesLista({
         {vencedores.map((v) => (
           <div
             key={v.subcategoria_id}
-            className="bg-zinc-100 rounded-lg p-4 print:p-0 print:bg-transparent print:rounded-none print:break-after-page"
+            className="convite-page bg-zinc-100 rounded-lg p-4 print:p-0 print:bg-transparent print:rounded-none print:break-after-page"
           >
             <div
-              className="origin-top-left mx-auto print:scale-100 print:origin-top-left"
+              className="convite-preview-wrapper origin-top-left mx-auto"
               style={{
                 width: `${210 * PREVIEW_SCALE}mm`,
                 height: `${297 * PREVIEW_SCALE}mm`,
               }}
             >
               <div
-                className="bg-white shadow-sm print:shadow-none print:transform-none"
+                className="convite-preview-inner bg-white shadow-sm print:shadow-none"
                 style={{
                   transform: `scale(${PREVIEW_SCALE})`,
                   transformOrigin: "top left",
@@ -323,6 +323,18 @@ export function ConvitesLista({
           }
           body {
             background: white;
+          }
+          /* Override inline scale: na impressao volta pra tamanho real A4 */
+          .convite-preview-wrapper {
+            width: 210mm !important;
+            height: 297mm !important;
+            margin: 0 !important;
+          }
+          .convite-preview-inner {
+            transform: none !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            box-shadow: none !important;
           }
         }
       `}</style>
