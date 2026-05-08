@@ -31,6 +31,7 @@ export function CertificadosLista({
   const [signatario, setSignatario] = useState("Elison do Bomfim");
   const [cargo, setCargo] = useState(`Presidente · ${branding.nome}`);
   const [edicao, setEdicao] = useState("34ª edição");
+  const [ano, setAno] = useState<number>(branding.ano);
   const [imprimindo, setImprimindo] = useState(false);
 
   const Comp = VARIANTES[variante].Componente;
@@ -43,13 +44,13 @@ export function CertificadosLista({
       signatario,
       cargo,
       cidade: branding.cidade,
-      ano: branding.ano,
+      ano,
       edicao,
       nomeOrgao,
       dominio,
       logoSrc: branding.logoUrl ?? "/cdl-logo.png",
     }),
-    [signatario, cargo, branding.cidade, branding.ano, edicao, nomeOrgao, dominio, branding.logoUrl]
+    [signatario, cargo, branding.cidade, ano, edicao, nomeOrgao, dominio, branding.logoUrl]
   );
 
   // Agrupa pra mostrar lista de vencedores ordenada por categoria pai.
@@ -109,7 +110,7 @@ export function CertificadosLista({
             Dados que aparecem em todos os certificados
           </p>
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-4">
           <label className="flex flex-col gap-1">
             <span className="text-xs uppercase tracking-wider text-muted font-mono">
               Signatário
@@ -141,6 +142,19 @@ export function CertificadosLista({
               value={edicao}
               onChange={(e) => setEdicao(e.target.value)}
               className="border border-cdl-blue/20 rounded-md px-3 py-2 text-sm bg-white"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs uppercase tracking-wider text-muted font-mono">
+              Ano
+            </span>
+            <input
+              type="number"
+              min={2000}
+              max={2100}
+              value={ano}
+              onChange={(e) => setAno(parseInt(e.target.value, 10) || branding.ano)}
+              className="border border-cdl-blue/20 rounded-md px-3 py-2 text-sm bg-white font-mono"
             />
           </label>
         </div>
