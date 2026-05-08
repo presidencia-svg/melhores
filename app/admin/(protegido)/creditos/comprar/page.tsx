@@ -25,7 +25,8 @@ export default async function ComprarCreditoPage() {
             Comprar créditos
           </h1>
           <p className="text-sm text-muted mb-6">
-            Pagamento via Mercado Pago. Cartão de crédito (até 12x) ou Pix.
+            Pagamento processado direto aqui (você não sai do site). Cartão
+            até 12x ou Pix instantâneo.
           </p>
 
           <div className="grid sm:grid-cols-3 gap-2 mb-6 text-xs text-cdl-blue">
