@@ -1,9 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Printer, Loader2, FileText, Pencil } from "lucide-react";
+import {
+  Printer,
+  Loader2,
+  FileText,
+  Pencil,
+  Calendar,
+  Type,
+} from "lucide-react";
 import type { TenantBranding } from "@/lib/tenant/branding";
-import { ConviteCard } from "./ConviteCard";
+import { VARIANTES, type Variante, type ConviteProps } from "./Variantes";
 
 export type Vencedor = {
   subcategoria_id: string;
@@ -14,6 +21,12 @@ export type Vencedor = {
 
 const PREVIEW_SCALE = 0.5;
 
+const TEXTO_FORMAL_DEFAULT =
+  "a comparecer à Festa de Premiação e Jantar de Gala dos Melhores do Ano, ocasião em que será entregue a placa em inox de honra ao mérito, com superacabamento, em reconhecimento a essa conquista.";
+
+const TEXTO_INCLUSOS_DEFAULT =
+  "🏅 Placa de Honra · 🎶 Banda ao vivo · 🍽 Jantar completo · 🥂 Open bar";
+
 export function ConvitesLista({
   vencedores,
   branding,
@@ -21,7 +34,9 @@ export function ConvitesLista({
   vencedores: Vencedor[];
   branding: TenantBranding;
 }) {
-  // Dados editaveis do evento (defaults: dia 28/05, R$ 1.000 mesa de 2)
+  const [variante, setVariante] = useState<Variante>("classico");
+
+  // Dados do evento
   const [dataFesta, setDataFesta] = useState("28 de maio de 2026");
   const [diaSemana, setDiaSemana] = useState("quarta-feira");
   const [horario, setHorario] = useState("20h");
@@ -35,6 +50,18 @@ export function ConvitesLista({
   const [cargoSignatario, setCargoSignatario] = useState(
     `Presidente · ${branding.nome}`
   );
+
+  // Textos editaveis (defaults bem escritos, mas usuario pode reescrever)
+  const [textoSupra, setTextoSupra] = useState("tem a honra de convidar");
+  const [textoSubcat, setTextoSubcat] = useState(
+    "eleito(a) o(a) Melhor do Ano em"
+  );
+  const [textoFormal, setTextoFormal] = useState(TEXTO_FORMAL_DEFAULT);
+  const [textoInclusos, setTextoInclusos] = useState(TEXTO_INCLUSOS_DEFAULT);
+  const [textoValorObs, setTextoValorObs] = useState(
+    "(placa de premiação + festa inclusos)"
+  );
+
   const [imprimindo, setImprimindo] = useState(false);
 
   function imprimir() {
@@ -47,29 +74,75 @@ export function ConvitesLista({
     });
   }
 
+  const Componente = VARIANTES[variante].Componente;
+
+  const dadosCompartilhados: Omit<
+    ConviteProps,
+    "nomeVencedor" | "categoria" | "grupo"
+  > = {
+    branding,
+    dataFesta,
+    diaSemana,
+    horario,
+    local,
+    enderecoLocal,
+    valorMesa,
+    pessoasPorMesa,
+    dataLimite,
+    telefoneContato,
+    signatario,
+    cargoSignatario,
+    textoSupra,
+    textoSubcat,
+    textoFormal,
+    textoInclusos,
+    textoValorObs,
+  };
+
   return (
     <div className="space-y-6">
-      {/* Form de dados do evento */}
+      {/* TABS de variante */}
+      <div className="flex flex-wrap gap-2 print:hidden">
+        {(Object.keys(VARIANTES) as Variante[]).map((v) => {
+          const ativo = v === variante;
+          return (
+            <button
+              key={v}
+              type="button"
+              onClick={() => setVariante(v)}
+              className={`px-4 py-2 rounded-md text-sm font-medium tracking-wide transition-colors border ${
+                ativo
+                  ? "bg-cdl-blue text-white border-cdl-blue"
+                  : "bg-cream-100 text-cdl-blue border-cdl-blue/20 hover:bg-cdl-blue/5"
+              }`}
+            >
+              {VARIANTES[v].nome}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Form: Dados do evento */}
       <div className="rounded-xl border border-cdl-blue/15 bg-cream-100 p-4 print:hidden">
         <div className="flex items-center gap-2 mb-3">
-          <Pencil className="w-4 h-4 text-cdl-blue" />
+          <Calendar className="w-4 h-4 text-cdl-blue" />
           <p className="text-sm font-semibold text-cdl-blue">
-            Dados do evento (aparecem em todos os convites)
+            Dados do evento
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          <Campo label="Data da festa" value={dataFesta} onChange={setDataFesta} />
+          <Campo
+            label="Data da festa"
+            value={dataFesta}
+            onChange={setDataFesta}
+          />
           <Campo
             label="Dia da semana"
             value={diaSemana}
             onChange={setDiaSemana}
           />
           <Campo label="Horário" value={horario} onChange={setHorario} />
-          <Campo
-            label="Local (nome)"
-            value={local}
-            onChange={setLocal}
-          />
+          <Campo label="Local (nome)" value={local} onChange={setLocal} />
           <Campo
             label="Endereço completo"
             value={enderecoLocal}
@@ -110,6 +183,63 @@ export function ConvitesLista({
         </div>
       </div>
 
+      {/* Form: Textos do convite (editaveis) */}
+      <div className="rounded-xl border border-cdl-blue/15 bg-cream-100 p-4 print:hidden">
+        <div className="flex items-center gap-2 mb-3">
+          <Type className="w-4 h-4 text-cdl-blue" />
+          <p className="text-sm font-semibold text-cdl-blue">
+            Textos do convite (edite se quiser mudar)
+          </p>
+        </div>
+        <div className="grid gap-3">
+          <Campo
+            label="Frase acima do nome"
+            value={textoSupra}
+            onChange={setTextoSupra}
+            full
+          />
+          <Campo
+            label="Frase acima da categoria"
+            value={textoSubcat}
+            onChange={setTextoSubcat}
+            full
+          />
+          <CampoTextarea
+            label="Texto formal do convite"
+            value={textoFormal}
+            onChange={setTextoFormal}
+          />
+          <Campo
+            label="Linha de inclusos"
+            value={textoInclusos}
+            onChange={setTextoInclusos}
+            full
+          />
+          <Campo
+            label="Observação abaixo do valor"
+            value={textoValorObs}
+            onChange={setTextoValorObs}
+            full
+          />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setTextoSupra("tem a honra de convidar");
+              setTextoSubcat("eleito(a) o(a) Melhor do Ano em");
+              setTextoFormal(TEXTO_FORMAL_DEFAULT);
+              setTextoInclusos(TEXTO_INCLUSOS_DEFAULT);
+              setTextoValorObs("(placa de premiação + festa inclusos)");
+            }}
+            className="text-xs text-cdl-blue hover:underline inline-flex items-center gap-1"
+          >
+            <Pencil className="w-3 h-3" />
+            Restaurar textos padrão
+          </button>
+        </div>
+      </div>
+
       {/* CTA Imprimir */}
       <div className="rounded-xl border border-cdl-yellow-dark/40 bg-gradient-to-br from-cream-100 to-cream-200 p-5 print:hidden">
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -124,7 +254,7 @@ export function ConvitesLista({
               </p>
               <p className="text-xs text-muted leading-snug mt-0.5">
                 No diálogo de impressão escolha <b>Salvar como PDF</b>, papel{" "}
-                <b>A4 retrato</b>, margens <b>Nenhuma</b> e{" "}
+                <b>A4 retrato</b>, margens <b>Nenhuma</b>,{" "}
                 <b>Gráficos de fundo: ativado</b>.
               </p>
             </div>
@@ -145,11 +275,12 @@ export function ConvitesLista({
         </div>
       </div>
 
-      {/* Preview da lista (escala reduzida na tela, full size no print) */}
+      {/* Preview */}
       <div className="space-y-4 print:space-y-0">
         <p className="text-sm text-muted print:hidden">
-          Pré-visualização (escala 50%) — ao imprimir, cada convite ocupa 1
-          página A4 retrato.
+          Pré-visualização do modelo{" "}
+          <b className="text-cdl-blue">{VARIANTES[variante].nome}</b> (escala
+          50%) — ao imprimir, cada convite ocupa 1 página A4 retrato.
         </p>
         {vencedores.map((v) => (
           <div
@@ -172,22 +303,11 @@ export function ConvitesLista({
                   height: "297mm",
                 }}
               >
-                <ConviteCard
-                  branding={branding}
+                <Componente
+                  {...dadosCompartilhados}
                   nomeVencedor={v.vencedor}
                   categoria={v.categoria}
                   grupo={v.grupo}
-                  dataFesta={dataFesta}
-                  diaSemana={diaSemana}
-                  horario={horario}
-                  local={local}
-                  enderecoLocal={enderecoLocal}
-                  valorMesa={valorMesa}
-                  pessoasPorMesa={pessoasPorMesa}
-                  dataLimite={dataLimite}
-                  telefoneContato={telefoneContato}
-                  signatario={signatario}
-                  cargoSignatario={cargoSignatario}
                 />
               </div>
             </div>
@@ -195,7 +315,6 @@ export function ConvitesLista({
         ))}
       </div>
 
-      {/* Estilos de impressao — A4 sem margens, 1 convite por pagina */}
       <style jsx global>{`
         @media print {
           @page {
@@ -232,6 +351,30 @@ function Campo({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="border border-cdl-blue/20 rounded-md px-3 py-2 text-sm bg-white"
+      />
+    </label>
+  );
+}
+
+function CampoTextarea({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-xs uppercase tracking-wider text-muted font-mono">
+        {label}
+      </span>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={3}
+        className="border border-cdl-blue/20 rounded-md px-3 py-2 text-sm bg-white resize-y"
       />
     </label>
   );
