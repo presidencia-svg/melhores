@@ -6,9 +6,19 @@ import { getEdicaoStatus } from "@/lib/edicao-status";
 
 // Stats agregadas pra exibir antes do botao de disparo no admin/whatsapp.
 // Computa inline (2 queries) — volume baixo, nao precisa view dedicada.
-export async function GET() {
+export async function GET(req: Request) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
+  const url = new URL(req.url);
+  const porCampeaoRaw = url.searchParams.get("por_campeao");
+  const porCampeao = porCampeaoRaw ? parseInt(porCampeaoRaw, 10) : 10;
+  if (!Number.isFinite(porCampeao) || porCampeao < 1 || porCampeao > 100) {
+    return NextResponse.json(
+      { error: "por_campeao deve ser entre 1 e 100" },
+      { status: 400 }
+    );
   }
 
   const tenant = await getCurrentTenant();
@@ -35,7 +45,10 @@ export async function GET() {
 
   const [{ data: elegRows, error: elegErr }, jaReceberamRes, enviadasHojeRes, ultimaRes] =
     await Promise.all([
-      supabase.rpc("elegiveis_cerimonia", { p_edicao_id: edicaoId }),
+      supabase.rpc("elegiveis_cerimonia", {
+        p_edicao_id: edicaoId,
+        p_por_campeao: porCampeao,
+      }),
       supabase
         .from("votantes")
         .select("id", { head: true, count: "exact" })

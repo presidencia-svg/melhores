@@ -57,11 +57,12 @@ export function CerimoniaSection() {
   } | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
 
-  const carregarStats = useCallback(async () => {
+  const carregarStats = useCallback(async (n: number) => {
     try {
-      const res = await fetch("/api/admin/whatsapp/cerimonia/stats", {
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `/api/admin/whatsapp/cerimonia/stats?por_campeao=${n}`,
+        { cache: "no-store" }
+      );
       if (res.ok) {
         const data = await res.json();
         setStats({
@@ -77,10 +78,15 @@ export function CerimoniaSection() {
     }
   }, []);
 
+  // Re-fetch stats sempre que porCampeao muda (debounce 350ms pra nao
+  // bombardear servidor enquanto usuario digita).
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch on mount
-    carregarStats();
-  }, [carregarStats]);
+    const t = setTimeout(() => {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- debounced
+      carregarStats(porCampeao);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [porCampeao, carregarStats]);
 
   async function calcular() {
     setLoading("preview");
@@ -88,7 +94,8 @@ export function CerimoniaSection() {
     setResultado(null);
     try {
       const res = await fetch(
-        `/api/admin/whatsapp/cerimonia/preview?por_campeao=${porCampeao}`
+        `/api/admin/whatsapp/cerimonia/preview?por_campeao=${porCampeao}`,
+        { cache: "no-store" }
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Falha");
@@ -139,7 +146,7 @@ export function CerimoniaSection() {
       });
       setElegiveis(null);
       setSelecionados(new Set());
-      carregarStats();
+      carregarStats(porCampeao);
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro inesperado");
     } finally {
