@@ -11,6 +11,7 @@ import {
   Send,
   Inbox,
   Clock,
+  Trophy,
 } from "lucide-react";
 
 type Elegivel = {
@@ -18,7 +19,7 @@ type Elegivel = {
   votante_nome: string;
   whatsapp: string;
   criado_em?: string;
-  campeoes_votados?: number;
+  campeoes_nomes: string[];
 };
 
 type Stats = {
@@ -30,6 +31,7 @@ type Stats = {
 };
 
 const LOTE_MAX = 50;
+const MAX_CAMPEOES_NA_MSG = 3;
 
 function formatDateTime(iso: string | null): string {
   if (!iso) return "—";
@@ -47,6 +49,7 @@ export function CerimoniaSection() {
   const [erro, setErro] = useState<string | null>(null);
   const [elegiveis, setElegiveis] = useState<Elegivel[] | null>(null);
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const [porCampeao, setPorCampeao] = useState(10);
   const [resultado, setResultado] = useState<{
     enviados: number;
     falhas: number;
@@ -70,7 +73,7 @@ export function CerimoniaSection() {
         });
       }
     } catch {
-      // silencioso — stats nao bloqueia operacao
+      // silencioso
     }
   }, []);
 
@@ -84,7 +87,9 @@ export function CerimoniaSection() {
     setErro(null);
     setResultado(null);
     try {
-      const res = await fetch("/api/admin/whatsapp/cerimonia/preview");
+      const res = await fetch(
+        `/api/admin/whatsapp/cerimonia/preview?por_campeao=${porCampeao}`
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Falha");
       setElegiveis(data.elegiveis);
@@ -100,24 +105,30 @@ export function CerimoniaSection() {
   }
 
   async function disparar() {
-    if (selecionados.size === 0) return;
+    if (!elegiveis || selecionados.size === 0) return;
     if (selecionados.size > LOTE_MAX) {
       setErro(`Máximo ${LOTE_MAX} por disparo. Desmarque alguns.`);
       return;
     }
     if (
       !confirm(
-        `Enviar aviso de cerimônia para ${selecionados.size} pessoa(s)? Cada mensagem custa ~R$ 0,33 (template Marketing). Não dá pra desfazer.`
+        `Enviar para ${selecionados.size} pessoa(s)? Cada mensagem custa ~R$ 0,33 (template Marketing). Não dá pra desfazer.`
       )
     )
       return;
     setLoading("disparar");
     setErro(null);
     try {
+      const payloads = elegiveis
+        .filter((e) => selecionados.has(e.votante_id))
+        .map((e) => ({
+          votante_id: e.votante_id,
+          campeoes_nomes: e.campeoes_nomes.slice(0, MAX_CAMPEOES_NA_MSG),
+        }));
       const res = await fetch("/api/admin/whatsapp/cerimonia/disparar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ votante_ids: Array.from(selecionados) }),
+        body: JSON.stringify({ payloads }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Falha");
@@ -149,15 +160,16 @@ export function CerimoniaSection() {
         <div className="flex items-center gap-3 mb-4">
           <Award className="w-5 h-5 text-cdl-yellow-dark" />
           <h2 className="font-display text-xl font-bold text-cdl-blue">
-            Aviso de cerimônia · entrega dos certificados
+            Aviso de cerimônia · &quot;avisa o campeão&quot;
           </h2>
         </div>
         <p className="text-sm text-muted mb-4">
-          Comunica todos os votantes que escolheram algum campeão (top 1 de
-          qualquer subcategoria) que a entrega dos certificados acontece nos
-          dias <strong>13 e 14 de maio</strong>, das <strong>8h às 18h</strong>,
-          na sede da CDL Aracaju. Dedup garantido: 1 mensagem por pessoa, mesmo
-          que tenha votado em vários campeões diferentes.
+          Manda WhatsApp pros votantes pedindo pra avisarem quem eles votaram
+          (e ganhou) que o certificado já pode ser retirado na sede da CDL
+          Aracaju nos dias <strong>13 e 14 de maio</strong>, das{" "}
+          <strong>8h às 18h</strong>. Cada mensagem lista até{" "}
+          <strong>3 vencedores</strong> que aquela pessoa escolheu. Dedup
+          garantido: 1 mensagem por pessoa.
         </p>
 
         {stats && (
@@ -166,7 +178,7 @@ export function CerimoniaSection() {
               icon={<Users className="w-4 h-4" />}
               label="Total elegíveis"
               value={stats.total}
-              hint="validados + votaram em campeão"
+              hint={`top ${porCampeao}/campeão · com dedup`}
             />
             <StatCard
               icon={<Check className="w-4 h-4 text-emerald-600" />}
@@ -202,7 +214,23 @@ export function CerimoniaSection() {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="flex flex-wrap items-end gap-3 mb-4">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs uppercase tracking-wider text-muted font-mono">
+              Votantes por campeão
+            </span>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={porCampeao}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10);
+                if (Number.isFinite(n) && n >= 1 && n <= 100) setPorCampeao(n);
+              }}
+              className="border border-cdl-blue/20 rounded-md px-3 py-2 text-sm bg-white w-32"
+            />
+          </label>
           <Button onClick={calcular} loading={loading === "preview"}>
             Calcular elegíveis
           </Button>
@@ -270,7 +298,7 @@ export function CerimoniaSection() {
               </div>
             </div>
 
-            <div className="max-h-[420px] overflow-y-auto border border-border rounded-lg divide-y divide-border">
+            <div className="max-h-[480px] overflow-y-auto border border-border rounded-lg divide-y divide-border">
               {elegiveis.length === 0 && (
                 <p className="text-center text-sm text-muted py-12">
                   Ninguém elegível.
@@ -278,39 +306,50 @@ export function CerimoniaSection() {
               )}
               {elegiveis.map((e) => {
                 const checked = selecionados.has(e.votante_id);
+                const campeoesParaMsg = e.campeoes_nomes.slice(
+                  0,
+                  MAX_CAMPEOES_NA_MSG
+                );
+                const extras = e.campeoes_nomes.length - campeoesParaMsg.length;
                 return (
                   <label
                     key={e.votante_id}
-                    className="flex items-center gap-3 p-3 hover:bg-cream-200 cursor-pointer"
+                    className="flex items-start gap-3 p-3 hover:bg-cream-200 cursor-pointer"
                   >
                     <input
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggle(e.votante_id)}
-                      className="w-4 h-4"
+                      className="w-4 h-4 mt-1"
                     />
                     <div className="flex-1 min-w-0">
-                      <span className="font-medium text-sm truncate block">
-                        {e.votante_nome}
-                      </span>
-                      <span className="text-xs text-muted block truncate">
-                        {e.whatsapp}
-                      </span>
-                    </div>
-                    <div className="text-right text-xs text-muted shrink-0 flex flex-col items-end gap-0.5">
-                      {typeof e.campeoes_votados === "number" && (
-                        <span className="font-bold text-cdl-yellow-dark tabular-nums">
-                          {e.campeoes_votados}{" "}
-                          {e.campeoes_votados === 1
-                            ? "campeão votado"
-                            : "campeões votados"}
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="font-medium text-sm truncate">
+                          {e.votante_nome}
                         </span>
-                      )}
+                        <span className="text-xs text-muted font-mono shrink-0">
+                          {e.whatsapp}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-start gap-1.5">
+                        <Trophy className="w-3.5 h-3.5 text-cdl-yellow-dark shrink-0 mt-0.5" />
+                        <div className="text-xs leading-snug">
+                          <span className="text-cdl-blue font-medium">
+                            {campeoesParaMsg.join(" · ")}
+                          </span>
+                          {extras > 0 && (
+                            <span className="text-muted">
+                              {" "}
+                              (+{extras} fora da msg)
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       {e.criado_em && (
-                        <span className="flex items-center gap-1">
+                        <div className="mt-1 flex items-center gap-1 text-[11px] text-muted">
                           <Clock className="w-3 h-3" />
                           {formatDateTime(e.criado_em)}
-                        </span>
+                        </div>
                       )}
                     </div>
                   </label>

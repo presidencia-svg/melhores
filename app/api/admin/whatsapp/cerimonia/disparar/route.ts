@@ -14,28 +14,59 @@ const META_TEMPLATE_LANG = process.env.META_TEMPLATE_LANG ?? "pt_BR";
 // Pacing 2-5s significa ~50 envios em ~5min. Mesmo limite do parcial/incentivo.
 export const maxDuration = 300;
 const LOTE_MAX = 50;
+const MAX_CAMPEOES_NA_MSG = 3;
 
 const Body = z.object({
-  votante_ids: z.array(z.string().uuid()).min(1).max(LOTE_MAX),
+  payloads: z
+    .array(
+      z.object({
+        votante_id: z.string().uuid(),
+        campeoes_nomes: z.array(z.string()).min(1),
+      })
+    )
+    .min(1)
+    .max(LOTE_MAX),
 });
 
-// Mensagem texto fallback (Z-API ou SMS) — usada quando Meta nao
-// estiver configurada. Substitui pela primeira pessoa.
-function montarMensagem(votanteNome: string, nomeOrgao: string): string {
+// Texto fallback (Z-API ou SMS). O votante recebe + lista de campeoes
+// que ele votou e e' avisado de pedir pra eles irem retirar.
+function montarMensagem(
+  votanteNome: string,
+  campeoes: string[],
+  nomeOrgao: string
+): string {
   const primeiroNome =
     (votanteNome.split(" ")[0] ?? "").trim() || "amigo(a)";
+  const lista = campeoes
+    .slice(0, MAX_CAMPEOES_NA_MSG)
+    .map((n) => `• ${n}`)
+    .join("\n");
   return [
     `Olá ${primeiroNome}! 🏆`,
     "",
-    `A entrega dos certificados Melhores do Ano ${nomeOrgao} 2025 acontece nos dias 13 e 14 de maio, das 8h às 18h, na sede da ${nomeOrgao}.`,
+    `Os Melhores do Ano ${nomeOrgao} 2025 foram eleitos! Quem você votou e ganhou:`,
     "",
-    "Como você votou nos vencedores, está convidado(a) a comparecer e celebrar com a gente. Os campeões que você ajudou a escolher agradecem!",
+    lista,
+    "",
+    `Os certificados já podem ser retirados na sede da ${nomeOrgao} nos dias 13 e 14 de maio, das 8h às 18h. Por favor, avise quem ganhou pra vir buscar o certificado!`,
   ].join("\n");
 }
 
-function montarSms(votanteNome: string, nomeOrgao: string): string {
+function montarSms(
+  votanteNome: string,
+  campeoes: string[],
+  nomeOrgao: string
+): string {
   const primeiroNome = (votanteNome.split(" ")[0] ?? "").trim() || "amigo";
-  return `Ola ${primeiroNome}! Entrega dos certificados Melhores do Ano ${nomeOrgao} 2025: 13 e 14/05 das 8h as 18h na sede da ${nomeOrgao}. Voce votou nos vencedores!`;
+  const lista = campeoes.slice(0, MAX_CAMPEOES_NA_MSG).join(", ");
+  return `Ola ${primeiroNome}! Quem voce votou ganhou: ${lista}. Avise pra retirar o certificado na sede da ${nomeOrgao} dias 13 e 14/05 das 8h as 18h.`;
+}
+
+function formatVar2(campeoes: string[]): string {
+  return campeoes
+    .slice(0, MAX_CAMPEOES_NA_MSG)
+    .map((n) => `• ${n}`)
+    .join("\n");
 }
 
 export async function POST(req: Request) {
@@ -52,10 +83,17 @@ export async function POST(req: Request) {
   const tenant = await getCurrentTenant();
   const supabase = createSupabaseAdminClient();
 
+  // Cria map de id -> campeoes pra usar depois sem 2 lookups
+  const campeoesPorId = new Map<string, string[]>();
+  for (const p of parsed.data.payloads) {
+    campeoesPorId.set(p.votante_id, p.campeoes_nomes);
+  }
+
+  const ids = parsed.data.payloads.map((p) => p.votante_id);
   const { data: votantes, error: vErr } = await supabase
     .from("votantes")
     .select("id, nome, whatsapp, whatsapp_validado, cerimonia_enviada_em")
-    .in("id", parsed.data.votante_ids);
+    .in("id", ids);
 
   if (vErr) {
     return NextResponse.json(
@@ -68,7 +106,6 @@ export async function POST(req: Request) {
     (v) => v.whatsapp_validado && v.whatsapp && !v.cerimonia_enviada_em
   );
 
-  // Nome curto pra exibir nas mensagens — "CDL Aracaju" para tenant default.
   const nomeOrgao = tenant.nome;
 
   // Decide canal: Meta WhatsApp Cloud API > Z-API > SMS Zenvia.
@@ -99,20 +136,32 @@ export async function POST(req: Request) {
   for (const v of elegiveis) {
     const primeiroNome =
       (v.nome.split(" ")[0] ?? "").trim() || "amigo(a)";
+    const campeoes = campeoesPorId.get(v.id) ?? [];
+    if (campeoes.length === 0) {
+      falhas.push({
+        votante_id: v.id,
+        nome: v.nome,
+        motivo: "sem campeoes no payload",
+      });
+      continue;
+    }
 
     let r;
     if (canal === "meta") {
-      // Template tem 1 variavel: primeiro nome
+      // Template tem 2 variaveis: {{1}} primeiro nome, {{2}} lista campeoes
       r = await enviarTemplate(
         v.whatsapp!,
         META_TEMPLATE_CERIMONIA,
         META_TEMPLATE_LANG,
-        [primeiroNome]
+        [primeiroNome, formatVar2(campeoes)]
       );
     } else if (canal === "zapi") {
-      r = await enviarMensagemTexto(v.whatsapp!, montarMensagem(v.nome, nomeOrgao));
+      r = await enviarMensagemTexto(
+        v.whatsapp!,
+        montarMensagem(v.nome, campeoes, nomeOrgao)
+      );
     } else {
-      r = await enviarSmsZenvia(v.whatsapp!, montarSms(v.nome, nomeOrgao));
+      r = await enviarSmsZenvia(v.whatsapp!, montarSms(v.nome, campeoes, nomeOrgao));
     }
 
     if (r.ok) {
@@ -129,7 +178,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // Pacing aleatorio 2-5s — mesmo padrao parcial/incentivo
+    // Pacing aleatorio 2-5s
     const delayMs = 2000 + Math.floor(Math.random() * 3001);
     await new Promise((res) => setTimeout(res, delayMs));
   }
