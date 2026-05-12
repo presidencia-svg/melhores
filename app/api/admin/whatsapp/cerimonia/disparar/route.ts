@@ -28,8 +28,8 @@ const Body = z.object({
     .max(LOTE_MAX),
 });
 
-// Texto fallback (Z-API ou SMS). O votante recebe + lista de campeoes
-// que ele votou e e' avisado de pedir pra eles irem retirar.
+// Frase unica: votante recebe e e' instruido a passar o recado pros
+// vencedores que ele ajudou a eleger.
 function montarMensagem(
   votanteNome: string,
   campeoes: string[],
@@ -37,19 +37,8 @@ function montarMensagem(
 ): string {
   const primeiroNome =
     (votanteNome.split(" ")[0] ?? "").trim() || "amigo(a)";
-  const lista = campeoes
-    .slice(0, MAX_CAMPEOES_NA_MSG)
-    .map((n) => `• ${n}`)
-    .join("\n");
-  return [
-    `Olá ${primeiroNome}! 🏆`,
-    "",
-    `Os Melhores do Ano ${nomeOrgao} 2025 foram eleitos! Quem você votou e ganhou:`,
-    "",
-    lista,
-    "",
-    `Os certificados já podem ser retirados na sede da ${nomeOrgao} nos dias 13 e 14 de maio, das 8h às 18h. Por favor, avise quem ganhou pra vir buscar o certificado!`,
-  ].join("\n");
+  const lista = campeoes.slice(0, MAX_CAMPEOES_NA_MSG).join(", ");
+  return `Olá ${primeiroNome}! Você votou em ${lista}, vencedor(es) do Melhores do Ano ${nomeOrgao} 2025, e agora o certificado já pode ser retirado na sede da ${nomeOrgao} nos dias 13 e 14 de maio, das 8h às 18h — por favor, passe o recado pra quem você ajudou a eleger!`;
 }
 
 function montarSms(
@@ -59,14 +48,12 @@ function montarSms(
 ): string {
   const primeiroNome = (votanteNome.split(" ")[0] ?? "").trim() || "amigo";
   const lista = campeoes.slice(0, MAX_CAMPEOES_NA_MSG).join(", ");
-  return `Ola ${primeiroNome}! Quem voce votou ganhou: ${lista}. Avise pra retirar o certificado na sede da ${nomeOrgao} dias 13 e 14/05 das 8h as 18h.`;
+  return `Ola ${primeiroNome}! Voce votou em ${lista}, vencedor(es) do Melhores do Ano ${nomeOrgao} 2025. Certificado pode ser retirado na sede da ${nomeOrgao} dias 13 e 14/05 das 8h as 18h - passe o recado!`;
 }
 
+// Var {{2}} do template Meta = nomes separados por virgula (texto plano).
 function formatVar2(campeoes: string[]): string {
-  return campeoes
-    .slice(0, MAX_CAMPEOES_NA_MSG)
-    .map((n) => `• ${n}`)
-    .join("\n");
+  return campeoes.slice(0, MAX_CAMPEOES_NA_MSG).join(", ");
 }
 
 export async function POST(req: Request) {
