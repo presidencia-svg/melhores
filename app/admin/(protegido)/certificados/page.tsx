@@ -18,12 +18,15 @@ export default async function CertificadosPage() {
 
   const supabase = createSupabaseAdminClient();
 
-  // Pega top1 de cada subcategoria (com pelo menos 1 voto) + nome da
-  // categoria pai pra agrupar e ordenar a lista. v_podium ja traz top1_nome.
+  // Pega top1 + top2 de cada subcategoria (com pelo menos 1 voto). Quando
+  // top1_votos == top2_votos houve empate tecnico — geramos 1 certificado
+  // pra cada co-campeao. v_podium ordena top1/top2 alfabeticamente no empate.
   const [{ data: podiums }, { data: subcatMapping }] = await Promise.all([
     supabase
       .from("v_podium")
-      .select("subcategoria_id, subcategoria_nome, top1_nome, top1_votos")
+      .select(
+        "subcategoria_id, subcategoria_nome, top1_id, top1_nome, top1_votos, top2_id, top2_nome, top2_votos"
+      )
       .eq("edicao_id", edicao?.id ?? "")
       .gt("top1_votos", 0)
       .order("subcategoria_nome", { ascending: true }),
@@ -49,17 +52,49 @@ export default async function CertificadosPage() {
   type PodiumRow = {
     subcategoria_id: string;
     subcategoria_nome: string;
+    top1_id: string;
     top1_nome: string;
     top1_votos: number;
+    top2_id: string | null;
+    top2_nome: string | null;
+    top2_votos: number;
   };
 
   const linhas = (podiums ?? []) as PodiumRow[];
-  const total = linhas.length;
-  const vencedores: Vencedor[] = linhas.map((p, idx) => ({
-    subcategoria_id: p.subcategoria_id,
-    vencedor: p.top1_nome,
-    categoria: p.subcategoria_nome,
-    grupo: catBySubId.get(p.subcategoria_id) ?? "Outras",
+
+  // Expansao: 1 cert por linha normalmente, 2 certs quando ha empate
+  // tecnico de 1o lugar (top1_votos === top2_votos com top2 valido).
+  type PreExpand = {
+    subcategoria_id: string;
+    vencedor: string;
+    categoria: string;
+    grupo: string;
+  };
+  const expandidos: PreExpand[] = [];
+  for (const p of linhas) {
+    const grupo = catBySubId.get(p.subcategoria_id) ?? "Outras";
+    expandidos.push({
+      subcategoria_id: p.top1_id,
+      vencedor: p.top1_nome,
+      categoria: p.subcategoria_nome,
+      grupo,
+    });
+    if (p.top2_id && p.top2_nome && p.top2_votos === p.top1_votos) {
+      expandidos.push({
+        subcategoria_id: p.top2_id,
+        vencedor: p.top2_nome,
+        categoria: p.subcategoria_nome,
+        grupo,
+      });
+    }
+  }
+
+  const total = expandidos.length;
+  const vencedores: Vencedor[] = expandidos.map((e, idx) => ({
+    subcategoria_id: e.subcategoria_id,
+    vencedor: e.vencedor,
+    categoria: e.categoria,
+    grupo: e.grupo,
     numero: `Nº ${String(idx + 1).padStart(3, "0")} / ${String(total).padStart(3, "0")}`,
   }));
 
