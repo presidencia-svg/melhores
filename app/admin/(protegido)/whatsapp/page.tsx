@@ -5,6 +5,7 @@ import { IncentivoSection } from "./IncentivoSection";
 import { AutoIncentivoSection } from "./AutoIncentivoSection";
 import { AutoParcialSection } from "./AutoParcialSection";
 import { ParcialSection } from "./ParcialSection";
+import { CerimoniaSection } from "./CerimoniaSection";
 import { StatusBanner } from "./StatusBanner";
 
 export default async function WhatsAppPage() {
@@ -66,6 +67,7 @@ export default async function WhatsAppPage() {
       <AutoParcialSection />
       <IncentivoSection />
       <ParcialSection />
+      <CerimoniaSection />
     </div>
   );
 }
