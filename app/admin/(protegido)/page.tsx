@@ -20,13 +20,12 @@ import { EncerramentoCard } from "./EncerramentoCard";
 import { SpcCard } from "./SpcCard";
 import { WhatsAppValidacaoCard } from "./WhatsAppValidacaoCard";
 import { VotosPorDiaCard } from "./VotosPorDiaCard";
-import { AtualizarBtn } from "./AtualizarBtn";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
 
-// 1h: dados pos-eleicao sao imutaveis. Botao "Atualizar" no header
-// invalida o cache na hora caso precise (ex: depois de mesclagem manual).
-export const revalidate = 3600;
+// Dinamico: durante votacao os totais mudam constantemente. Cada acesso ao
+// dashboard re-fetcha do banco. Antes era cache 1h + botao manual.
+export const dynamic = "force-dynamic";
 
 type Resultado = {
   candidato_id: string;
@@ -240,7 +239,6 @@ export default async function AdminDashboard() {
           )}
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <AtualizarBtn path="/admin" />
           {edicao && (
             <div className="rounded-2xl bg-gradient-to-br from-cdl-blue to-cdl-blue-dark text-white px-5 py-3 flex items-center gap-3 shadow-md">
               <Clock className="w-5 h-5" />

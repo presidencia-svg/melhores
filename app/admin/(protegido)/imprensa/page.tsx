@@ -2,14 +2,12 @@ import { Newspaper } from "lucide-react";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/Card";
 import { ImprensaLista, type LinhaTop6, type NumerosCampanha } from "./ImprensaLista";
-import { AtualizarBtn } from "../AtualizarBtn";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
 import { montarBranding } from "@/lib/tenant/branding";
 
-// 1h: pos-eleicao a lista e' imutavel. Botao "Atualizar" no header invalida
-// o cache na hora caso precise (ex: depois de mesclar candidatos via SQL).
-export const revalidate = 3600;
+// Dinamico: refletir mudancas ao vivo. Antes era cache 1h + botao manual.
+export const dynamic = "force-dynamic";
 
 export default async function ImprensaPage() {
   const tenant = await getCurrentTenant();
@@ -59,7 +57,6 @@ export default async function ImprensaPage() {
             ou baixe como .txt pra mandar no email.
           </p>
         </div>
-        <AtualizarBtn path="/admin/imprensa" />
       </header>
 
       {linhas.length === 0 ? (

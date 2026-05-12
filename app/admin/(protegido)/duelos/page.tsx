@@ -3,12 +3,11 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Swords } from "lucide-react";
 import { DuelosLista, type Duelo } from "./DuelosLista";
-import { AtualizarBtn } from "../AtualizarBtn";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
 import { montarBranding } from "@/lib/tenant/branding";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 const TOPS = [10, 25, 50, "all"] as const;
 
@@ -78,7 +77,6 @@ export default async function DuelosPage({
               );
             })}
           </nav>
-          <AtualizarBtn path="/admin/duelos" />
         </div>
       </header>
 

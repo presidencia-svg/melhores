@@ -1,6 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { ResultadosFiltrados } from "./ResultadosFiltrados";
-import { AtualizarBtn } from "../AtualizarBtn";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
 
@@ -21,9 +20,10 @@ type Resultado = {
   score_risco?: number | null;
 };
 
-// 1h: pos-eleicao os resultados sao imutaveis. Botao "Atualizar" no header
-// invalida o cache na hora caso precise (ex: depois de mesclagem de candidatos).
-export const revalidate = 3600;
+// Dinamico: durante votacao os totais mudam o tempo todo, entao buscamos
+// sempre o estado atual. Antes era cache 1h + botao manual, mas ficou lento
+// pro usuario.
+export const dynamic = "force-dynamic";
 
 export default async function ResultadosPage() {
   const tenant = await getCurrentTenant();
@@ -96,7 +96,7 @@ export default async function ResultadosPage() {
             Resultados
           </h1>
           <p className="text-muted mt-1">
-            {gruposOrdenados.length} subcategorias · cache de 1h (use "Atualizar" pra forçar)
+            {gruposOrdenados.length} subcategorias · atualizado ao vivo
           </p>
           {viewWarning && (
             <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
@@ -104,7 +104,6 @@ export default async function ResultadosPage() {
             </div>
           )}
         </div>
-        <AtualizarBtn path="/admin/resultados" />
       </header>
 
       <ResultadosFiltrados grupos={gruposOrdenados} />

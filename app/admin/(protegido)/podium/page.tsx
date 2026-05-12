@@ -3,14 +3,13 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { Medal } from "lucide-react";
 import { PodiumLista, type Podium } from "./PodiumLista";
-import { AtualizarBtn } from "../AtualizarBtn";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
 import { montarBranding } from "@/lib/tenant/branding";
 
-// 1h: pos-eleicao o podio e' imutavel. Botao "Atualizar" no header invalida
-// o cache na hora caso precise (ex: mesclagem de candidatos).
-export const revalidate = 3600;
+// Dinamico: refletir mudancas ao vivo (ex: mesclagem de candidatos, votos
+// novos). Antes era cache 1h + botao manual.
+export const dynamic = "force-dynamic";
 
 const ORDENS = ["votos", "alfabetica"] as const;
 
@@ -91,7 +90,6 @@ export default async function PodiumPage({
               </Link>
             ))}
           </nav>
-          <AtualizarBtn path="/admin/podium" />
         </div>
       </header>
 

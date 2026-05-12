@@ -2,13 +2,12 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { maskCpf } from "@/lib/cpf";
 import { Camera, MessageSquare, MapPin, Clock } from "lucide-react";
-import { AtualizarBtn } from "../AtualizarBtn";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
 
-// 1h: pos-eleicao a lista de votantes e' imutavel. Botao "Atualizar" no
-// header invalida o cache na hora se precisar.
-export const revalidate = 3600;
+// Dinamico: novos votantes entram o tempo todo durante a votacao.
+// Antes era cache 1h + botao manual.
+export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
 const SIGNED_URL_TTL = 60 * 60; // 1h
@@ -106,7 +105,6 @@ export default async function VotantesPage({ searchParams }: Props) {
             {(count ?? 0).toLocaleString("pt-BR")} pessoas identificadas · página {page} de {totalPages || 1}
           </p>
         </div>
-        <AtualizarBtn path="/admin/votantes" />
       </header>
 
       <div className="grid gap-3">
