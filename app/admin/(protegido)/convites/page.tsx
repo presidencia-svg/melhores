@@ -18,11 +18,15 @@ export default async function ConvitesPage() {
 
   const supabase = createSupabaseAdminClient();
 
-  // Top1 de cada subcategoria, mesmo dataset que certificados usam.
+  // Top1 + top2 de cada subcategoria. No empate tecnico (top1_votos ==
+  // top2_votos) emitimos 1 convite pra cada co-campeao, mesma logica
+  // dos certificados.
   const [{ data: podiums }, { data: subcatMapping }] = await Promise.all([
     supabase
       .from("v_podium")
-      .select("subcategoria_id, subcategoria_nome, top1_nome, top1_votos")
+      .select(
+        "subcategoria_id, subcategoria_nome, top1_id, top1_nome, top1_votos, top2_id, top2_nome, top2_votos"
+      )
       .eq("edicao_id", edicao?.id ?? "")
       .gt("top1_votos", 0)
       .order("subcategoria_nome", { ascending: true }),
@@ -50,17 +54,33 @@ export default async function ConvitesPage() {
   type PodiumRow = {
     subcategoria_id: string;
     subcategoria_nome: string;
+    top1_id: string;
     top1_nome: string;
     top1_votos: number;
+    top2_id: string | null;
+    top2_nome: string | null;
+    top2_votos: number;
   };
 
   const linhas = (podiums ?? []) as PodiumRow[];
-  const vencedores: Vencedor[] = linhas.map((p) => ({
-    subcategoria_id: p.subcategoria_id,
-    vencedor: p.top1_nome,
-    categoria: p.subcategoria_nome,
-    grupo: catBySubId.get(p.subcategoria_id) ?? "Outras",
-  }));
+  const vencedores: Vencedor[] = [];
+  for (const p of linhas) {
+    const grupo = catBySubId.get(p.subcategoria_id) ?? "Outras";
+    vencedores.push({
+      subcategoria_id: p.top1_id,
+      vencedor: p.top1_nome,
+      categoria: p.subcategoria_nome,
+      grupo,
+    });
+    if (p.top2_id && p.top2_nome && p.top2_votos === p.top1_votos) {
+      vencedores.push({
+        subcategoria_id: p.top2_id,
+        vencedor: p.top2_nome,
+        categoria: p.subcategoria_nome,
+        grupo,
+      });
+    }
+  }
 
   return (
     <div className="p-8 space-y-6 print:p-0 print:space-y-0">
