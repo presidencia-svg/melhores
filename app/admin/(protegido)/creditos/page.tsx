@@ -1,18 +1,43 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Wallet, ArrowDownToLine, ArrowUpFromLine, Plus } from "lucide-react";
+import { Wallet, ArrowDownToLine, ArrowUpFromLine, Plus, TrendingDown, Vote, MessageSquare, Award, Wrench } from "lucide-react";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getSaldo, formatarReais } from "@/lib/creditos";
 
 export const dynamic = "force-dynamic";
 
+type GastoRow = {
+  motivo: string;
+  total_centavos: number;
+  qtd: number;
+};
+
 export default async function CreditosPage() {
   const tenant = await getCurrentTenant();
   const saldo = await getSaldo(tenant.id);
   const supabase = createSupabaseAdminClient();
 
-  const [{ data: transacoes }, { data: pagamentos }] = await Promise.all([
+  // Inicio do mes corrente em America/Sao_Paulo (UTC-3)
+  const agora = new Date();
+  const inicioMesLocal = new Date(
+    agora.getFullYear(),
+    agora.getMonth(),
+    1,
+    0,
+    0,
+    0
+  );
+  const inicioMesUtc = new Date(
+    inicioMesLocal.getTime() + 3 * 60 * 60 * 1000
+  ).toISOString();
+
+  const [
+    { data: transacoes },
+    { data: pagamentos },
+    { data: gastosMes },
+    { data: gastosTotal },
+  ] = await Promise.all([
     supabase
       .from("transacoes_credito")
       .select("id, valor_centavos, motivo, descricao, saldo_apos_centavos, criado_em")
@@ -25,7 +50,23 @@ export default async function CreditosPage() {
       .eq("tenant_id", tenant.id)
       .order("criado_em", { ascending: false })
       .limit(10),
+    supabase.rpc("gastos_resumo_tenant", {
+      p_tenant_id: tenant.id,
+      p_desde: inicioMesUtc,
+    }),
+    supabase.rpc("gastos_resumo_tenant", {
+      p_tenant_id: tenant.id,
+      p_desde: "1970-01-01T00:00:00Z",
+    }),
   ]);
+
+  const gastosMesList = (gastosMes ?? []) as GastoRow[];
+  const gastosTotalList = (gastosTotal ?? []) as GastoRow[];
+  const totalMes = gastosMesList.reduce((a, b) => a + (b.total_centavos ?? 0), 0);
+  const totalAcumulado = gastosTotalList.reduce(
+    (a, b) => a + (b.total_centavos ?? 0),
+    0
+  );
 
   const saldoBaixo = saldo < 10000; // < R$ 100
   const saldoZerado = saldo <= 0;
@@ -79,6 +120,61 @@ export default async function CreditosPage() {
               Recarregar
             </Link>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Resumo de gastos */}
+      <Card className="mb-6">
+        <CardContent>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-display text-lg font-bold text-cdl-blue flex items-center gap-2">
+              <TrendingDown className="w-5 h-5 text-cdl-blue/70" />
+              Resumo de gastos
+            </h2>
+            <p className="text-xs text-muted">
+              {agora.toLocaleDateString("pt-BR", {
+                month: "long",
+                year: "numeric",
+                timeZone: "America/Sao_Paulo",
+              })}
+            </p>
+          </div>
+
+          {gastosMesList.length === 0 ? (
+            <p className="text-sm text-muted py-2">
+              Nenhum gasto registrado neste mês ainda.
+            </p>
+          ) : (
+            <>
+              <div className="grid sm:grid-cols-2 gap-2 mb-4">
+                {gastosMesList.map((g) => (
+                  <GastoRow key={g.motivo} motivo={g.motivo} row={g} />
+                ))}
+              </div>
+              <div className="flex items-center justify-between pt-3 border-t border-border/50">
+                <span className="text-sm font-semibold text-cdl-blue">
+                  Total no mês
+                </span>
+                <span className="font-mono font-bold text-cdl-blue">
+                  {formatarReais(totalMes)}
+                </span>
+              </div>
+            </>
+          )}
+
+          {totalAcumulado > totalMes && (
+            <p className="text-xs text-muted mt-3 pt-3 border-t border-border/30">
+              Acumulado desde o início:{" "}
+              <span className="font-mono font-bold">
+                {formatarReais(totalAcumulado)}
+              </span>{" "}
+              em{" "}
+              {gastosTotalList
+                .reduce((a, b) => a + (b.qtd ?? 0), 0)
+                .toLocaleString("pt-BR")}{" "}
+              movimentações
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -242,4 +338,49 @@ function labelMotivo(motivo: string): string {
     reembolso: "Reembolso",
   };
   return mapa[motivo] ?? motivo;
+}
+
+function iconeMotivo(motivo: string) {
+  if (motivo.startsWith("voto"))
+    return <Vote className="w-4 h-4 text-cdl-green-dark" />;
+  if (motivo === "marketing")
+    return <MessageSquare className="w-4 h-4 text-purple-600" />;
+  if (motivo === "taxa_campanha")
+    return <Award className="w-4 h-4 text-cdl-yellow-dark" />;
+  if (motivo === "manutencao")
+    return <Wrench className="w-4 h-4 text-zinc-600" />;
+  return <TrendingDown className="w-4 h-4 text-zinc-500" />;
+}
+
+function GastoRow({
+  motivo,
+  row,
+}: {
+  motivo: string;
+  row: { total_centavos: number; qtd: number };
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-md bg-cream-200/50 px-3 py-2">
+      <div className="flex items-center gap-2 min-w-0">
+        {iconeMotivo(motivo)}
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-cdl-blue truncate">
+            {labelMotivo(motivo)}
+          </p>
+          <p className="text-xs text-muted">
+            {row.qtd.toLocaleString("pt-BR")}{" "}
+            {row.qtd === 1 ? "movimentação" : "movimentações"}
+          </p>
+        </div>
+      </div>
+      <span className="font-mono font-bold text-zinc-800 tabular-nums shrink-0 ml-2">
+        {(row.total_centavos / 100).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+          style: "currency",
+          currency: "BRL",
+        })}
+      </span>
+    </div>
+  );
 }

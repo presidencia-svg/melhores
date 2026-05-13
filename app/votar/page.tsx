@@ -1,17 +1,67 @@
 import { redirect } from "next/navigation";
 import { VotoLayout } from "@/components/voto/VotoLayout";
 import { Card, CardContent } from "@/components/ui/Card";
-import { ShieldCheck, Lock, RotateCcw } from "lucide-react";
+import { ShieldCheck, Lock, RotateCcw, PauseCircle } from "lucide-react";
 import { CpfForm } from "./CpfForm";
 import { getVotanteSessao } from "@/lib/sessao";
 import { getSpcMode } from "@/lib/spc/mode";
 import { SmallCaps } from "@/components/brand/Marks";
+import { tryGetCurrentTenant } from "@/lib/tenant/resolver";
+import { getSaldo } from "@/lib/creditos";
 
 export default async function VotarPage() {
   const sessao = await getVotanteSessao();
   if (sessao) {
     if (!sessao.selfie_url) redirect("/votar/selfie");
     redirect("/votar/categorias");
+  }
+
+  // Bloqueia entrada antes de qualquer custo: se saldo do tenant zerar,
+  // mostra tela amigavel de "pausa" em vez do form de CPF. Antes do fix,
+  // o voter passava por SPC (cobrado) e so era bloqueado no selfie.
+  const tenant = await tryGetCurrentTenant();
+  if (tenant) {
+    const saldo = await getSaldo(tenant.id);
+    if (saldo <= 0) {
+      return (
+        <VotoLayout step={1}>
+          <div className="mx-auto max-w-md w-full pt-4 sm:pt-8 animate-fade-in">
+            <div className="text-center mb-6">
+              <PauseCircle className="w-12 h-12 mx-auto text-orange-500" />
+              <h1
+                className="font-display text-navy-800 mt-4"
+                style={{
+                  fontSize: "clamp(32px, 8vw, 44px)",
+                  lineHeight: 1.05,
+                  fontWeight: 300,
+                }}
+              >
+                Votação <span className="font-display-bold">pausada.</span>
+              </h1>
+              <p className="text-muted mt-3 text-sm leading-relaxed">
+                A campanha {tenant.nome} está temporariamente pausada por
+                limite de recursos. Estamos trabalhando para reativar — volte em
+                algumas horas.
+              </p>
+            </div>
+            <Card>
+              <CardContent>
+                <p className="text-xs text-muted text-center">
+                  Se você é administrador da campanha,{" "}
+                  <a
+                    href="/admin/creditos"
+                    className="text-cdl-blue underline hover:text-cdl-blue-dark"
+                  >
+                    recarregue os créditos
+                  </a>{" "}
+                  pra reativar.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </VotoLayout>
+      );
+    }
   }
 
   const spcMode = await getSpcMode();
