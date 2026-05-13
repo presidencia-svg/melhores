@@ -6,6 +6,7 @@ import { enviarMensagemTexto, verificarStatus } from "@/lib/zapi/client";
 import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 import { enviarTemplate, metaConfigurada } from "@/lib/meta-whatsapp/client";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { debitarCredito, creditarCredito, PRECOS } from "@/lib/creditos";
 import {
   Elegivel,
   calcularDias,
@@ -138,6 +139,23 @@ export async function POST(req: Request) {
   const falhas: { votante_id: string; nome: string; motivo: string }[] = [];
 
   for (const e of finalAlvos) {
+    // Debita R$ 0,80 da wallet do tenant antes de enviar. Atomico.
+    const debito = await debitarCredito({
+      tenantId: tenant.id,
+      motivo: "marketing",
+      descricao: `Incentivo: ${e.votante_nome}`,
+      votanteId: e.votante_id,
+      edicaoId: edicao.id,
+    });
+    if (!debito.ok) {
+      falhas.push({
+        votante_id: e.votante_id,
+        nome: e.votante_nome,
+        motivo: `saldo insuficiente (${debito.motivo})`,
+      });
+      continue;
+    }
+
     let r;
     if (canal === "meta") {
       // Empate usa template proprio (6 vars, sem "diferenca"). Caso normal
@@ -188,6 +206,17 @@ export async function POST(req: Request) {
         }),
       ]);
     } else {
+      // Envio falhou apos cobrar — estorna pra wallet do tenant
+      try {
+        await creditarCredito({
+          tenantId: tenant.id,
+          valorCentavos: PRECOS.marketing,
+          motivo: "estorno",
+          descricao: `Estorno incentivo (envio falhou): ${e.votante_nome}`,
+        });
+      } catch (err) {
+        console.error("[incentivo] estorno falhou:", err);
+      }
       falhas.push({
         votante_id: e.votante_id,
         nome: e.votante_nome,

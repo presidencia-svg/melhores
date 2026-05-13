@@ -6,6 +6,7 @@ import { enviarMensagemTexto, verificarStatus } from "@/lib/zapi/client";
 import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 import { enviarTemplate, metaConfigurada } from "@/lib/meta-whatsapp/client";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { debitarCredito, creditarCredito, PRECOS } from "@/lib/creditos";
 
 const META_TEMPLATE_PARCIAL =
   process.env.META_TEMPLATE_PARCIAL ?? "parcial_voto_2025";
@@ -124,7 +125,7 @@ export async function POST(req: Request) {
       .in("id", parsed.data.votante_ids),
     supabase
       .from("edicao")
-      .select("nome")
+      .select("id, nome")
       .eq("tenant_id", tenant.id)
       .eq("ativa", true)
       .order("ano", { ascending: false })
@@ -190,6 +191,24 @@ export async function POST(req: Request) {
       continue;
     }
 
+    // Debita R$ 0,80 da wallet do tenant ANTES de enviar. Atomico via SQL.
+    // Se saldo insuficiente, marca falha e pula (sem cobrar/enviar).
+    const debito = await debitarCredito({
+      tenantId: tenant.id,
+      motivo: "marketing",
+      descricao: `Parcial: ${v.nome}`,
+      votanteId: v.id,
+      edicaoId: edicao?.id,
+    });
+    if (!debito.ok) {
+      falhas.push({
+        votante_id: v.id,
+        nome: v.nome,
+        motivo: `saldo insuficiente (${debito.motivo})`,
+      });
+      continue;
+    }
+
     let r;
     if (canal === "meta") {
       // Template Meta usa só a sub mais acirrada com top 2 (igual SMS)
@@ -233,6 +252,17 @@ export async function POST(req: Request) {
         .update({ parcial_enviada_em: new Date().toISOString() })
         .eq("id", v.id);
     } else {
+      // Envio falhou apos cobrar — estorna pra wallet do tenant
+      try {
+        await creditarCredito({
+          tenantId: tenant.id,
+          valorCentavos: PRECOS.marketing,
+          motivo: "estorno",
+          descricao: `Estorno parcial (envio falhou): ${v.nome}`,
+        });
+      } catch (e) {
+        console.error("[parcial] estorno falhou:", e);
+      }
       falhas.push({
         votante_id: v.id,
         nome: v.nome,

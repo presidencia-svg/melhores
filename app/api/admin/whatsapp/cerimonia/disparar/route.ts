@@ -6,6 +6,8 @@ import { enviarMensagemTexto, verificarStatus } from "@/lib/zapi/client";
 import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 import { enviarTemplate, metaConfigurada } from "@/lib/meta-whatsapp/client";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
+import { debitarCredito, creditarCredito, PRECOS } from "@/lib/creditos";
 
 const META_TEMPLATE_CERIMONIA =
   process.env.META_TEMPLATE_CERIMONIA ?? "cerimonia_certificados_2025";
@@ -68,6 +70,9 @@ export async function POST(req: Request) {
   }
 
   const tenant = await getCurrentTenant();
+  const edicaoStatus = await getEdicaoStatus(tenant.id);
+  const edicaoId =
+    edicaoStatus.status !== "sem_edicao" ? edicaoStatus.edicao.id : null;
   const supabase = createSupabaseAdminClient();
 
   // Cria map de id -> campeoes pra usar depois sem 2 lookups
@@ -133,6 +138,23 @@ export async function POST(req: Request) {
       continue;
     }
 
+    // Debita R$ 0,80 da wallet do tenant antes de enviar.
+    const debito = await debitarCredito({
+      tenantId: tenant.id,
+      motivo: "marketing",
+      descricao: `Cerimônia: ${v.nome}`,
+      votanteId: v.id,
+      edicaoId: edicaoId ?? undefined,
+    });
+    if (!debito.ok) {
+      falhas.push({
+        votante_id: v.id,
+        nome: v.nome,
+        motivo: `saldo insuficiente (${debito.motivo})`,
+      });
+      continue;
+    }
+
     let r;
     if (canal === "meta") {
       // Template tem 2 variaveis: {{1}} primeiro nome, {{2}} lista campeoes
@@ -158,6 +180,17 @@ export async function POST(req: Request) {
         .update({ cerimonia_enviada_em: new Date().toISOString() })
         .eq("id", v.id);
     } else {
+      // Envio falhou apos cobrar — estorna pra wallet
+      try {
+        await creditarCredito({
+          tenantId: tenant.id,
+          valorCentavos: PRECOS.marketing,
+          motivo: "estorno",
+          descricao: `Estorno cerimônia (envio falhou): ${v.nome}`,
+        });
+      } catch (err) {
+        console.error("[cerimonia] estorno falhou:", err);
+      }
       falhas.push({
         votante_id: v.id,
         nome: v.nome,
