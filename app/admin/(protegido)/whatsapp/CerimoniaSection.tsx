@@ -117,9 +117,13 @@ export function CerimoniaSection() {
       setErro(`Máximo ${LOTE_MAX} por disparo. Desmarque alguns.`);
       return;
     }
+    // Preco fonte: lib/creditos/index.ts → PRECOS.marketing (80 centavos).
+    const PRECO_CENTAVOS = 80;
+    const totalCentavos = selecionados.size * PRECO_CENTAVOS;
+    const totalFmt = `R$ ${(totalCentavos / 100).toFixed(2).replace(".", ",")}`;
     if (
       !confirm(
-        `Enviar para ${selecionados.size} pessoa(s)? Cada mensagem custa ~R$ 0,33 (template Marketing). Não dá pra desfazer.`
+        `Enviar para ${selecionados.size} pessoa(s)? Cada mensagem custa R$ 0,80 (template Marketing) — total ${totalFmt}. Não dá pra desfazer.`
       )
     )
       return;
