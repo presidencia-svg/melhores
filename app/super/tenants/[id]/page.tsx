@@ -5,7 +5,7 @@ import { ArrowLeft, Wallet, ShieldOff, ShieldCheck } from "lucide-react";
 import { isSuperAdmin } from "@/lib/super-admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { formatarReais } from "@/lib/creditos";
-import { CortesiaForm, BloquearButton } from "./TenantActions";
+import { CortesiaForm, BloquearButton, DeletarTenantCard } from "./TenantActions";
 
 export const dynamic = "force-dynamic";
 
@@ -167,6 +167,19 @@ export default async function SuperTenantDetalhe({
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="mb-6 border-red-200">
+        <CardContent>
+          <h2 className="font-display text-lg font-bold text-red-700 mb-3">
+            Zona de perigo
+          </h2>
+          <DeletarTenantCard
+            tenantId={tenant.id}
+            slug={tenant.slug}
+            nome={tenant.nome}
+          />
         </CardContent>
       </Card>
 
