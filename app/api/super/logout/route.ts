@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { clearSuperSession } from "@/lib/super-admin/auth";
 
-export async function POST() {
+// Redireciona pra /super/login do mesmo host (sempre melhoresdoano.app.br
+// porque super-admin so existe la, mas o req.url e' suficiente sem env var).
+export async function POST(req: Request) {
   await clearSuperSession();
-  return NextResponse.redirect(new URL("/super/login", process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"));
+  return NextResponse.redirect(new URL("/super/login", req.url));
 }
