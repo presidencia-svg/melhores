@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { normalizarNome, nomeCandidatoValido, tituloPT } from "@/lib/utils";
+import { isSugestoesPublicasLigadas } from "@/lib/sugestoes/mode";
 
 const Body = z.object({
   subcategoriaId: z.string().uuid(),
@@ -22,6 +23,13 @@ export async function POST(req: Request) {
   const parsed = Body.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ error: "Requisição inválida" }, { status: 400 });
+  }
+
+  if (!(await isSugestoesPublicasLigadas())) {
+    return NextResponse.json(
+      { error: "Sugestão pública de candidato está desligada pelo admin" },
+      { status: 403 }
+    );
   }
 
   const supabase = createSupabaseAdminClient();

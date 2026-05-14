@@ -18,9 +18,10 @@ type Props = {
   subcategoriaId: string;
   candidatos: Candidato[];
   votoAtual: string | null;
+  sugestoesLigadas: boolean;
 };
 
-export function CandidatosLista({ subcategoriaId, candidatos, votoAtual }: Props) {
+export function CandidatosLista({ subcategoriaId, candidatos, votoAtual, sugestoesLigadas }: Props) {
   const router = useRouter();
   const [busca, setBusca] = useState("");
   const [selecionado, setSelecionado] = useState<string | null>(null);
@@ -147,16 +148,20 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual }: Props
         {filtrados.length === 0 && busca && (
           <div className="p-6 text-center text-muted text-sm">
             Nenhum candidato encontrado para “{busca}”.
-            <br />
-            <button
-              onClick={() => {
-                setShowSugestao(true);
-                setNovoNome(busca);
-              }}
-              className="mt-3 inline-flex items-center gap-1 text-cdl-blue font-semibold hover:underline"
-            >
-              <Plus className="w-4 h-4" /> Sugerir “{busca}”
-            </button>
+            {sugestoesLigadas && (
+              <>
+                <br />
+                <button
+                  onClick={() => {
+                    setShowSugestao(true);
+                    setNovoNome(busca);
+                  }}
+                  className="mt-3 inline-flex items-center gap-1 text-cdl-blue font-semibold hover:underline"
+                >
+                  <Plus className="w-4 h-4" /> Sugerir “{busca}”
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -188,7 +193,7 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual }: Props
         })}
       </div>
 
-      {!showSugestao && filtrados.length > 0 && (
+      {sugestoesLigadas && !showSugestao && filtrados.length > 0 && (
         <button
           onClick={() => setShowSugestao(true)}
           className="text-sm text-cdl-blue hover:underline self-start inline-flex items-center gap-1"

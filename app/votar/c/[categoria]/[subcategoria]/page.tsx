@@ -8,6 +8,7 @@ import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { CandidatosLista } from "./CandidatosLista";
 import { SmallCaps } from "@/components/brand/Marks";
+import { isSugestoesPublicasLigadas } from "@/lib/sugestoes/mode";
 
 type Params = { params: Promise<{ categoria: string; subcategoria: string }> };
 
@@ -52,12 +53,15 @@ export default async function VotarSubcategoriaPage({ params }: Params) {
     .eq("status", "aprovado")
     .order("nome");
 
-  const { data: votoExistente } = await supabase
-    .from("votos")
-    .select("candidato_id")
-    .eq("votante_id", sessao.id)
-    .eq("subcategoria_id", subcategoria.id)
-    .maybeSingle();
+  const [{ data: votoExistente }, sugestoesLigadas] = await Promise.all([
+    supabase
+      .from("votos")
+      .select("candidato_id")
+      .eq("votante_id", sessao.id)
+      .eq("subcategoria_id", subcategoria.id)
+      .maybeSingle(),
+    isSugestoesPublicasLigadas(),
+  ]);
 
   // Voto e definitivo: se ja votou nessa subcategoria, redireciona pra
   // listagem. Bloqueia acesso direto pela URL tambem.
@@ -98,6 +102,7 @@ export default async function VotarSubcategoriaPage({ params }: Params) {
               subcategoriaId={subcategoria.id}
               candidatos={candidatos ?? []}
               votoAtual={null}
+              sugestoesLigadas={sugestoesLigadas}
             />
           </CardContent>
         </Card>

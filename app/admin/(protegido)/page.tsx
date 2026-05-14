@@ -19,6 +19,7 @@ import {
 import { EncerramentoCard } from "./EncerramentoCard";
 import { SpcCard } from "./SpcCard";
 import { WhatsAppValidacaoCard } from "./WhatsAppValidacaoCard";
+import { SugestoesPublicasCard } from "./SugestoesPublicasCard";
 import { VotosPorDiaCard } from "./VotosPorDiaCard";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
@@ -267,6 +268,9 @@ export default async function AdminDashboard() {
 
       {/* Toggle de validacao WhatsApp (OTP) */}
       <WhatsAppValidacaoCard />
+
+      {/* Toggle de sugestao publica de candidato */}
+      <SugestoesPublicasCard />
 
       {/* KPIs principais */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
