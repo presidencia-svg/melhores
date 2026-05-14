@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isAdmin, getAdminTenantOuNull } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { debitarCredito, creditarCredito, PRECOS, formatarReais } from "@/lib/creditos";
+import { debitarCredito, creditarCredito, PRECOS } from "@/lib/creditos";
 
 const Body = z.object({
   ano: z.number().int().min(2024).max(2100),
@@ -55,24 +55,14 @@ export async function POST(req: Request) {
     );
   }
 
-  // Cobra a taxa de campanha (R$ 500 — 1x por edicao) ANTES de criar.
-  // Se saldo insuficiente, bloqueia a criacao com 402 — admin precisa
-  // recarregar primeiro.
+  // Tenta cobrar a taxa de campanha (R$ 500 — 1x por edicao). Se nao
+  // tiver saldo, cria a edicao mesmo assim (taxa nao cobrada agora — fica
+  // pendente; admin recarrega depois).
   const taxa = await debitarCredito({
     tenantId: tenant.id,
     motivo: "taxa_campanha",
     descricao: `Taxa de campanha: ${parsed.data.nome} (${parsed.data.ano})`,
   });
-  if (!taxa.ok) {
-    return NextResponse.json(
-      {
-        error: `Saldo insuficiente pra criar a edição. Taxa: ${formatarReais(
-          PRECOS.taxa_campanha
-        )}. Saldo atual: ${formatarReais(taxa.saldo_atual)}. Recarregue em /admin/creditos.`,
-      },
-      { status: 402 }
-    );
-  }
 
   // Desativa edicoes antigas do mesmo tenant antes de criar a nova ativa.
   await supabase
@@ -94,16 +84,18 @@ export async function POST(req: Request) {
     .single();
 
   if (error || !edicao) {
-    // Falhou apos cobrar a taxa — estorna pra wallet
-    try {
-      await creditarCredito({
-        tenantId: tenant.id,
-        valorCentavos: PRECOS.taxa_campanha,
-        motivo: "estorno",
-        descricao: `Estorno taxa de campanha (criacao falhou): ${parsed.data.nome}`,
-      });
-    } catch (e) {
-      console.error("[edicao] estorno taxa falhou:", e);
+    // Falhou — se a taxa foi cobrada, estorna pra wallet
+    if (taxa.ok) {
+      try {
+        await creditarCredito({
+          tenantId: tenant.id,
+          valorCentavos: PRECOS.taxa_campanha,
+          motivo: "estorno",
+          descricao: `Estorno taxa de campanha (criacao falhou): ${parsed.data.nome}`,
+        });
+      } catch (e) {
+        console.error("[edicao] estorno taxa falhou:", e);
+      }
     }
     return NextResponse.json(
       { error: `Falha ao criar edição: ${error?.message ?? "?"}` },
