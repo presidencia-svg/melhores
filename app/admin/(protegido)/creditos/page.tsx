@@ -4,6 +4,7 @@ import { Wallet, ArrowDownToLine, ArrowUpFromLine, Plus, TrendingDown, Vote, Mes
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getSaldo, formatarReais } from "@/lib/creditos";
+import { AplicarCupom } from "./AplicarCupom";
 
 export const dynamic = "force-dynamic";
 
@@ -122,6 +123,9 @@ export default async function CreditosPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Aplicar cupom promocional */}
+      <AplicarCupom />
 
       {/* Resumo de gastos */}
       <Card className="mb-6">

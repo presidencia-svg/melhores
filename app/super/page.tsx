@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Users, Wallet, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Users, Wallet, CheckCircle2, XCircle, Clock, Ticket } from "lucide-react";
 import { isSuperAdmin } from "@/lib/super-admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { formatarReais } from "@/lib/creditos";
@@ -73,14 +73,23 @@ export default async function SuperDashboard() {
             Plataforma Melhores do Ano · gestão de clientes
           </p>
         </div>
-        <form action="/api/super/logout" method="post">
-          <button
-            type="submit"
-            className="text-sm text-muted hover:text-red-600"
+        <div className="flex items-center gap-3">
+          <Link
+            href="/super/cupons"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-md border border-cdl-blue/30 text-cdl-blue font-medium hover:bg-cdl-blue/5 text-sm"
           >
-            Sair
-          </button>
-        </form>
+            <Ticket className="w-4 h-4" />
+            Cupons
+          </Link>
+          <form action="/api/super/logout" method="post">
+            <button
+              type="submit"
+              className="text-sm text-muted hover:text-red-600"
+            >
+              Sair
+            </button>
+          </form>
+        </div>
       </header>
 
       <div className="grid sm:grid-cols-4 gap-3 mb-6">
