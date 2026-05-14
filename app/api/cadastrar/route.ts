@@ -182,6 +182,8 @@ export async function POST(req: Request) {
     { tenant_id: tenant.id, chave: "spc_consulta", valor: "obrigatorio" },
     { tenant_id: tenant.id, chave: "whatsapp_validacao", valor: "ligada" },
     { tenant_id: tenant.id, chave: "auto_parcial", valor: "off" },
+    { tenant_id: tenant.id, chave: "sugestoes_publicas", valor: "ligadas" },
+    { tenant_id: tenant.id, chave: "onboarding_whatsapp", valor: "pendente" },
   ]);
 
   await supabase.from("rate_limit_ip").insert({ ip, acao: "cadastro_tenant" });

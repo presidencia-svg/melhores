@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/Card";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { CheckCircle2, Circle } from "lucide-react";
 import {
   EdicaoStep,
@@ -21,8 +22,24 @@ export default async function OnboardingPage({
 }) {
   const tenant = await getCurrentTenant();
   const status = await getEdicaoStatus(tenant.id);
+  const supabase = createSupabaseAdminClient();
+  const [{ data: onbWaRow }, { data: waValRow }] = await Promise.all([
+    supabase
+      .from("app_config")
+      .select("valor")
+      .eq("tenant_id", tenant.id)
+      .eq("chave", "onboarding_whatsapp")
+      .maybeSingle(),
+    supabase
+      .from("app_config")
+      .select("valor")
+      .eq("tenant_id", tenant.id)
+      .eq("chave", "whatsapp_validacao")
+      .maybeSingle(),
+  ]);
   const temEdicao = status.status !== "sem_edicao";
-  const temMeta = Boolean(tenant.meta_phone_number_id);
+  const temMeta = onbWaRow?.valor === "feito";
+  const validacaoLigada = (waValRow?.valor ?? "ligada") !== "desligada";
   const temInstagram = Boolean(tenant.instagram_page_access_token);
 
   const sp = await searchParams;
@@ -106,15 +123,8 @@ export default async function OnboardingPage({
           )}
           {step === "meta" && (
             <MetaStep
-              valoresAtuais={{
-                meta_phone_number_id: tenant.meta_phone_number_id,
-                meta_template_otp: tenant.meta_template_otp,
-                meta_template_incentivo: tenant.meta_template_incentivo,
-                meta_template_incentivo_empate:
-                  tenant.meta_template_incentivo_empate,
-                meta_template_parcial: tenant.meta_template_parcial,
-                meta_template_lang: tenant.meta_template_lang,
-              }}
+              jaConfigurado={temMeta}
+              validacaoLigada={validacaoLigada}
             />
           )}
           {step === "instagram" && (

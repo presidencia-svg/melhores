@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, CheckCircle2, ExternalLink } from "lucide-react";
+import { Loader2, CheckCircle2, ExternalLink, MessageSquare, MessageSquareOff } from "lucide-react";
 
 const ANO_ATUAL = new Date().getFullYear();
 
@@ -166,91 +166,37 @@ export function EdicaoStep({
 }
 
 // ============================================================================
-// Step 2 — WhatsApp (opcional, com modo de validacao escolhido pelo tenant)
+// Step 2 — WhatsApp (opcional)
+//
+// Envio dos disparos sempre passa pelo numero do super admin (env
+// META_WHATSAPP_PHONE_IDS), entao o tenant so escolhe se quer ou nao
+// validacao OTP. Sem cadastro de Phone Number ID, sem nomes de template.
 // ============================================================================
-
-type MetaValores = {
-  meta_phone_number_id: string | null;
-  meta_template_otp: string | null;
-  meta_template_incentivo: string | null;
-  meta_template_incentivo_empate: string | null;
-  meta_template_parcial: string | null;
-  meta_template_lang: string | null;
-};
 
 type ModoValidacao = "meta" | "sem_validacao";
 
-export function MetaStep({ valoresAtuais }: { valoresAtuais: MetaValores }) {
+export function MetaStep({
+  jaConfigurado,
+  validacaoLigada,
+}: {
+  jaConfigurado: boolean;
+  validacaoLigada: boolean;
+}) {
   const router = useRouter();
   const [modo, setModo] = useState<ModoValidacao>(
-    valoresAtuais.meta_phone_number_id ? "meta" : "meta"
+    jaConfigurado && !validacaoLigada ? "sem_validacao" : "meta"
   );
-  const [phoneId, setPhoneId] = useState(
-    valoresAtuais.meta_phone_number_id ?? ""
-  );
-  const [templOtp, setTemplOtp] = useState(
-    valoresAtuais.meta_template_otp ?? "codigo_verificacao"
-  );
-  const [templIncentivo, setTemplIncentivo] = useState(
-    valoresAtuais.meta_template_incentivo ?? "incentivo_voto"
-  );
-  const [templEmpate, setTemplEmpate] = useState(
-    valoresAtuais.meta_template_incentivo_empate ?? "incentivo_empate"
-  );
-  const [templParcial, setTemplParcial] = useState(
-    valoresAtuais.meta_template_parcial ?? "parcial_voto"
-  );
-  const [lang, setLang] = useState(valoresAtuais.meta_template_lang ?? "pt_BR");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  async function submitMeta(e: React.FormEvent) {
-    e.preventDefault();
+  async function submit() {
     setErro(null);
     setCarregando(true);
     try {
-      // Garante que validacao WhatsApp esteja LIGADA quando o tenant
-      // configura Meta. Caso ele tinha desligado antes e agora trocou.
-      await fetch("/api/admin/whatsapp-validacao", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ligada: true }),
-      });
-
       const res = await fetch("/api/admin/onboarding/meta", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          meta_phone_number_id: phoneId.trim() || null,
-          meta_template_otp: templOtp.trim(),
-          meta_template_incentivo: templIncentivo.trim(),
-          meta_template_incentivo_empate: templEmpate.trim(),
-          meta_template_parcial: templParcial.trim(),
-          meta_template_lang: lang.trim(),
-        }),
-      });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        setErro(json.error ?? "Falha");
-        return;
-      }
-      router.push("/admin/onboarding?step=instagram");
-      router.refresh();
-    } catch (e) {
-      setErro(e instanceof Error ? e.message : "Falha de rede");
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  async function submitSemValidacao() {
-    setErro(null);
-    setCarregando(true);
-    try {
-      const res = await fetch("/api/admin/whatsapp-validacao", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ligada: false }),
+        body: JSON.stringify({ validacao: modo === "meta" }),
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -278,6 +224,12 @@ export function MetaStep({ valoresAtuais }: { valoresAtuais: MetaValores }) {
         </p>
       </div>
 
+      <div className="rounded-lg border border-cdl-blue/30 bg-cdl-blue/5 p-3 text-xs text-cdl-blue leading-relaxed">
+        <strong>Os disparos saem do número oficial da plataforma</strong> —
+        você não precisa de conta Meta nem Phone Number ID próprio. Só
+        escolhe se quer pedir código WhatsApp pros votantes ou não.
+      </div>
+
       {/* Modo selector */}
       <div className="grid sm:grid-cols-2 gap-3">
         <button
@@ -290,14 +242,14 @@ export function MetaStep({ valoresAtuais }: { valoresAtuais: MetaValores }) {
           }`}
         >
           <div className="flex items-center gap-2 font-medium text-cdl-blue mb-1">
-            ✉️ WhatsApp Meta
+            <MessageSquare className="w-4 h-4" /> Com WhatsApp
             <span className="text-[10px] uppercase tracking-wider bg-cdl-green/15 text-cdl-green-dark px-1.5 py-0.5 rounded">
               Recomendado
             </span>
           </div>
           <p className="text-xs text-muted">
-            CPF + selfie + OTP no WhatsApp. Anti-fraude máximo. Requer conta
-            Meta Business verificada.
+            CPF + selfie + OTP no WhatsApp. Anti-fraude máximo. Cada OTP
+            consome créditos da carteira do tenant.
           </p>
         </button>
 
@@ -311,197 +263,34 @@ export function MetaStep({ valoresAtuais }: { valoresAtuais: MetaValores }) {
           }`}
         >
           <div className="flex items-center gap-2 font-medium text-cdl-blue mb-1">
-            🪪 Sem WhatsApp
+            <MessageSquareOff className="w-4 h-4" /> Sem WhatsApp
           </div>
           <p className="text-xs text-muted">
             CPF + selfie apenas (sem código). Mais simples pro votante,
-            menos rigoroso anti-fraude.
+            menos rigoroso anti-fraude. Não consome créditos de OTP.
           </p>
         </button>
       </div>
 
-      {modo === "meta" ? (
-        <form onSubmit={submitMeta} className="flex flex-col gap-4 mt-2">
-          <details className="text-sm rounded-lg border border-border bg-zinc-50/60 p-3">
-            <summary className="text-cdl-blue cursor-pointer hover:underline font-medium">
-              📖 Como conseguir o Phone Number ID (passo a passo)
-            </summary>
-            <ol className="list-decimal pl-5 space-y-2 mt-3 text-xs text-foreground leading-relaxed">
-              <li>
-                <strong>Verificar conta Meta Business</strong>: acesse{" "}
-                <a
-                  href="https://business.facebook.com"
-                  target="_blank"
-                  rel="noopener"
-                  className="text-cdl-blue hover:underline"
-                >
-                  business.facebook.com
-                </a>
-                . Em Configurações → Centro de Negócios → Verificação,
-                envie documentos da empresa (CNPJ + endereço). Aprovação
-                leva ~3 dias úteis.
-              </li>
-              <li>
-                <strong>Criar conta WhatsApp Business</strong>: ainda no
-                Business Manager, vá em Contas → Contas do WhatsApp → Adicionar.
-                Vincule um número de telefone que sua organização vai usar
-                (não pode ser o mesmo já cadastrado em outro WhatsApp).
-              </li>
-              <li>
-                <strong>Aprovar templates de mensagem</strong>: em
-                Configurações → Modelos de Mensagem, crie 4 modelos
-                (com nomes que você vai colar abaixo): código de verificação
-                (OTP), incentivo de voto, incentivo de empate, parcial.
-                Aprovação Meta leva 5min a 24h. Use os templates do CDL
-                Aracaju como referência se precisar.
-              </li>
-              <li>
-                <strong>Pegar o Phone Number ID</strong>: em Configurações →
-                Números de Telefone, clique no número aprovado. Aparece um
-                ID numérico de ~15 dígitos. Cole no campo abaixo.
-              </li>
-              <li>
-                <strong>Configurar webhook</strong> (opcional, só se
-                quiser receber respostas dos votantes). A gente faz isso
-                junto se precisar.
-              </li>
-            </ol>
-            <p className="text-xs text-orange-600 mt-3 leading-relaxed">
-              ⚠ Sem conta verificada, Meta limita você a 250 mensagens/dia.
-              Verificar é obrigatório pra qualquer eleição com mais de 250
-              votantes (a maioria).
-            </p>
-          </details>
+      {erro ? <p className="text-sm text-red-600">{erro}</p> : null}
 
-          <a
-            href="https://business.facebook.com/wa/manage/phone-numbers/"
-            target="_blank"
-            rel="noopener"
-            className="text-xs text-cdl-blue hover:underline inline-flex items-center gap-1"
-          >
-            Abrir Meta Business Manager
-            <ExternalLink className="w-3 h-3" />
-          </a>
-
-          <label className="text-sm font-medium text-cdl-blue">
-            Phone Number ID
-            <input
-              value={phoneId}
-              onChange={(e) =>
-                setPhoneId(e.target.value.replace(/\D/g, "").slice(0, 30))
-              }
-              placeholder="123456789012345"
-              className="mt-1 w-full h-10 rounded-md border border-border bg-white px-3 font-mono"
-              disabled={carregando}
-            />
-          </label>
-
-          <details className="text-sm">
-            <summary className="text-cdl-blue cursor-pointer hover:underline">
-              Configurar nomes dos templates Meta (avançado)
-            </summary>
-            <div className="grid sm:grid-cols-2 gap-3 mt-3">
-              <label className="text-xs font-medium text-cdl-blue">
-                Template OTP
-                <input
-                  value={templOtp}
-                  onChange={(e) => setTemplOtp(e.target.value)}
-                  className="mt-1 w-full h-9 rounded-md border border-border bg-white px-2 font-mono text-xs"
-                  disabled={carregando}
-                />
-              </label>
-              <label className="text-xs font-medium text-cdl-blue">
-                Template Incentivo
-                <input
-                  value={templIncentivo}
-                  onChange={(e) => setTemplIncentivo(e.target.value)}
-                  className="mt-1 w-full h-9 rounded-md border border-border bg-white px-2 font-mono text-xs"
-                  disabled={carregando}
-                />
-              </label>
-              <label className="text-xs font-medium text-cdl-blue">
-                Template Incentivo Empate
-                <input
-                  value={templEmpate}
-                  onChange={(e) => setTemplEmpate(e.target.value)}
-                  className="mt-1 w-full h-9 rounded-md border border-border bg-white px-2 font-mono text-xs"
-                  disabled={carregando}
-                />
-              </label>
-              <label className="text-xs font-medium text-cdl-blue">
-                Template Parcial
-                <input
-                  value={templParcial}
-                  onChange={(e) => setTemplParcial(e.target.value)}
-                  className="mt-1 w-full h-9 rounded-md border border-border bg-white px-2 font-mono text-xs"
-                  disabled={carregando}
-                />
-              </label>
-              <label className="text-xs font-medium text-cdl-blue">
-                Idioma
-                <input
-                  value={lang}
-                  onChange={(e) => setLang(e.target.value)}
-                  className="mt-1 w-full h-9 rounded-md border border-border bg-white px-2 font-mono text-xs"
-                  disabled={carregando}
-                />
-              </label>
-            </div>
-          </details>
-
-          {erro ? <p className="text-sm text-red-600">{erro}</p> : null}
-
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={carregando}
-              className="h-11 inline-flex items-center justify-center gap-2 rounded-md bg-cdl-blue text-white font-medium hover:bg-cdl-blue-dark disabled:opacity-50 px-6"
-            >
-              {carregando ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              Salvar e continuar
-            </button>
-            <Link
-              href="/admin/onboarding?step=instagram"
-              className="h-11 inline-flex items-center px-4 rounded-md border border-border text-muted hover:bg-zinc-50"
-            >
-              Pular
-            </Link>
-          </div>
-        </form>
-      ) : (
-        <div className="flex flex-col gap-4 mt-2 p-4 rounded-lg bg-orange-50 border border-orange-200">
-          <div className="flex items-start gap-3">
-            <ExternalLink className="w-5 h-5 text-orange-600 shrink-0 mt-0.5 rotate-180" />
-            <div>
-              <p className="font-medium text-orange-900">
-                Votação sem validação WhatsApp
-              </p>
-              <p className="text-sm text-orange-800 mt-1 leading-relaxed">
-                Votantes vão se cadastrar com CPF (validado pelo SPC Brasil)
-                + selfie obrigatória. Sem código de WhatsApp. Mais simples,
-                mas anti-fraude depende só do cruzamento CPF + dispositivo.
-              </p>
-              <p className="text-xs text-orange-700 mt-3">
-                Pode ativar a validação WhatsApp depois em{" "}
-                <code className="bg-white/60 px-1 rounded">/admin</code> a
-                qualquer momento.
-              </p>
-            </div>
-          </div>
-
-          {erro ? <p className="text-sm text-red-600">{erro}</p> : null}
-
-          <button
-            type="button"
-            onClick={submitSemValidacao}
-            disabled={carregando}
-            className="h-11 self-start inline-flex items-center gap-2 rounded-md bg-cdl-blue text-white font-medium hover:bg-cdl-blue-dark disabled:opacity-50 px-6"
-          >
-            {carregando ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-            Confirmar e continuar
-          </button>
-        </div>
-      )}
+      <div className="flex gap-2 mt-2">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={carregando}
+          className="h-11 inline-flex items-center justify-center gap-2 rounded-md bg-cdl-blue text-white font-medium hover:bg-cdl-blue-dark disabled:opacity-50 px-6"
+        >
+          {carregando ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {modo === "meta" ? "Ativar WhatsApp e continuar" : "Confirmar sem WhatsApp"}
+        </button>
+        <Link
+          href="/admin/onboarding?step=instagram"
+          className="h-11 inline-flex items-center px-4 rounded-md border border-border text-muted hover:bg-zinc-50"
+        >
+          Pular
+        </Link>
+      </div>
     </div>
   );
 }
