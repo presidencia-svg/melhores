@@ -13,15 +13,27 @@ import {
 } from "lucide-react";
 import { initMercadoPago, CardPayment } from "@mercadopago/sdk-react";
 import Link from "next/link";
+import { PRECOS } from "@/lib/creditos";
+
+// Estima a faixa de votantes que o valor compra: do modo mais caro
+// (CPF + selfie + SPC + WhatsApp = R$ 0,60) ao mais barato (so CPF +
+// selfie = R$ 0,20). Arredonda pra centena pra ficar legivel.
+function faixaVotantes(centavos: number): string {
+  const arredonda = (n: number) => Math.floor(n / 10) * 10;
+  const min = arredonda(centavos / PRECOS.voto_spc_whatsapp); // mais caro = menos votos
+  const max = arredonda(centavos / PRECOS.voto_minimo);       // mais barato = mais votos
+  const fmt = (n: number) => n.toLocaleString("pt-BR");
+  return `${fmt(min)} a ${fmt(max)} votantes`;
+}
 
 const VALORES_SUGERIDOS = [
-  { centavos: 50000, label: "R$ 500", subtitle: "~830 votos SPC" },
-  { centavos: 100000, label: "R$ 1.000", subtitle: "~1.660 votos SPC" },
-  { centavos: 250000, label: "R$ 2.500", subtitle: "~4.150 votos SPC" },
-  { centavos: 500000, label: "R$ 5.000", subtitle: "~8.300 votos SPC" },
-  { centavos: 1000000, label: "R$ 10.000", subtitle: "~16.600 votos SPC" },
-  { centavos: 2500000, label: "R$ 25.000", subtitle: "~41.600 votos SPC" },
-];
+  { centavos: 50000, label: "R$ 500" },
+  { centavos: 100000, label: "R$ 1.000" },
+  { centavos: 250000, label: "R$ 2.500" },
+  { centavos: 500000, label: "R$ 5.000" },
+  { centavos: 1000000, label: "R$ 10.000" },
+  { centavos: 2500000, label: "R$ 25.000" },
+].map((v) => ({ ...v, subtitle: faixaVotantes(v.centavos) }));
 
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ?? "";
 
