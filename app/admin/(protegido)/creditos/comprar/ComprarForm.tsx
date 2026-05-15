@@ -310,15 +310,31 @@ export function ComprarForm({
           {/* Conteudo da aba */}
           {aba === "cartao" ? (
             <div className="bg-white rounded-lg border border-border p-4">
-              <CardPayment
-                initialization={{
-                  amount: valorCentavos / 100,
-                  payer: { email },
-                }}
-                customization={{
-                  paymentMethods: { maxInstallments: 12 },
-                  visual: BRICK_VISUAL,
-                }}
+              {!PUBLIC_KEY ? (
+                <div className="rounded-md border-2 border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 leading-relaxed">
+                  <p className="font-bold mb-1">
+                    ⚠ Pagamento por cartão indisponível
+                  </p>
+                  <p className="text-xs">
+                    A chave pública do Mercado Pago não está configurada
+                    nesta instalação (variável{" "}
+                    <code className="bg-white/60 px-1 rounded">
+                      NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY
+                    </code>
+                    ). Use a aba <strong>Pix</strong> ou avise o suporte
+                    da plataforma pra configurar.
+                  </p>
+                </div>
+              ) : (
+                <CardPayment
+                  initialization={{
+                    amount: valorCentavos / 100,
+                    payer: { email },
+                  }}
+                  customization={{
+                    paymentMethods: { maxInstallments: 12 },
+                    visual: BRICK_VISUAL,
+                  }}
                 onSubmit={async (formData) => {
                   try {
                     const fd = formData as unknown as {
@@ -376,11 +392,12 @@ export function ComprarForm({
                     setEtapa("erro");
                   }
                 }}
-                onError={(err) => {
-                  console.error("MP Brick error:", err);
-                  setErroMsg("Erro no formulário. Recarregue a página.");
-                }}
-              />
+                  onError={(err) => {
+                    console.error("MP Brick error:", err);
+                    setErroMsg("Erro no formulário. Recarregue a página.");
+                  }}
+                />
+              )}
             </div>
           ) : (
             // Aba Pix
