@@ -227,7 +227,7 @@ export default async function GuiaPage() {
           estado: saldo >= PRECOS.taxa_campanha ? "feito" : "pendente",
           icon: <Wallet className="w-5 h-5" />,
           titulo: "Recarregar créditos da carteira",
-          descricao: `Cada voto custa ${formatarReais(PRECOS.voto_spc)}–${formatarReais(PRECOS.voto_spc_whatsapp)}, cada disparo de marketing ${formatarReais(PRECOS.marketing)}, taxa de campanha ${formatarReais(PRECOS.taxa_campanha)}. Recomendado: pelo menos R$ 500 antes de abrir.`,
+          descricao: `Cada votante novo custa ${formatarReais(PRECOS.voto_minimo)} (sem SPC) ou ${formatarReais(PRECOS.voto_spc)} (com SPC). Confirmação WhatsApp: +${formatarReais(PRECOS.whatsapp_confirmacao)} por disparo. Mensagem de incentivo: ${formatarReais(PRECOS.marketing)}. Taxa de campanha: ${formatarReais(PRECOS.taxa_campanha)}. Recomendado: pelo menos R$ 500 antes de abrir.`,
           cta: { label: "Recarregar via Pix", href: "/admin/creditos" },
           detalhe: `Saldo atual: ${formatarReais(saldo)}`,
         },

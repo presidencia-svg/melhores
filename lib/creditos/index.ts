@@ -8,19 +8,24 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 // Tabela de precos centralizada. Atualizar aqui quando precos mudarem.
+//
+// Modelo: cobra POR VOTANTE (1x no cadastro), nao por voto. Confirmacao
+// WhatsApp (OTP) e' debitada separado a cada disparo. Marketing tambem.
 export const PRECOS = {
-  voto_minimo: 20,           // R$ 0,20 — CPF + selfie sem SPC sem WhatsApp
-  voto_spc: 25,              // R$ 0,25 — CPF + selfie + SPC Brasil
-  voto_spc_whatsapp: 60,     // R$ 0,60 — CPF + selfie + SPC + WhatsApp/mailing
-  marketing: 80,             // R$ 0,80 — parcial/incentivo/empate
-  taxa_campanha: 50000,      // R$ 500,00 — 1x por edicao
-  manutencao: 20000,         // R$ 200,00/mes pos-campanha
+  voto_minimo: 20,             // R$ 0,20 — votante: CPF + selfie sem SPC
+  voto_spc: 25,                // R$ 0,25 — votante: CPF + selfie + SPC Brasil
+  whatsapp_confirmacao: 25,    // R$ 0,25 — cada envio de OTP no WhatsApp
+  marketing: 80,               // R$ 0,80 — cada msg de parcial/incentivo/empate
+  taxa_campanha: 50000,        // R$ 500,00 — 1x por edicao
+  manutencao: 20000,           // R$ 200,00/mes pos-campanha
+  // legacy — nao usar mais. Mantido pra leitura de transacoes antigas.
+  voto_spc_whatsapp: 60,
 } as const;
 
 export type MotivoDebito =
   | "voto_minimo"
   | "voto_spc"
-  | "voto_spc_whatsapp"
+  | "whatsapp_confirmacao"
   | "marketing"
   | "taxa_campanha"
   | "manutencao";

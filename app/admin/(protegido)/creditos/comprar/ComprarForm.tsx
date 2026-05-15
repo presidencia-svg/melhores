@@ -15,13 +15,15 @@ import { initMercadoPago, CardPayment } from "@mercadopago/sdk-react";
 import Link from "next/link";
 import { PRECOS } from "@/lib/creditos";
 
-// Estima a faixa de votantes que o valor compra: do modo mais caro
-// (CPF + selfie + SPC + WhatsApp = R$ 0,60) ao mais barato (so CPF +
-// selfie = R$ 0,20). Arredonda pra centena pra ficar legivel.
+// Estima a faixa de votantes que o valor compra:
+//   - Mais barato: R$ 0,20/votante (sem SPC, sem WhatsApp)
+//   - Mais caro:   R$ 0,50/votante (SPC R$ 0,25 + OTP WhatsApp R$ 0,25)
+// Arredonda pra dezena pra ficar legivel.
 function faixaVotantes(centavos: number): string {
   const arredonda = (n: number) => Math.floor(n / 10) * 10;
-  const min = arredonda(centavos / PRECOS.voto_spc_whatsapp); // mais caro = menos votos
-  const max = arredonda(centavos / PRECOS.voto_minimo);       // mais barato = mais votos
+  const custoMaximo = PRECOS.voto_spc + PRECOS.whatsapp_confirmacao;
+  const min = arredonda(centavos / custoMaximo);       // mais caro = menos votantes
+  const max = arredonda(centavos / PRECOS.voto_minimo); // mais barato = mais votantes
   const fmt = (n: number) => n.toLocaleString("pt-BR");
   return `${fmt(min)} a ${fmt(max)} votantes`;
 }

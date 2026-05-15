@@ -8,7 +8,6 @@ import {
 } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getClientIp } from "@/lib/utils";
-import { isWhatsAppValidacaoLigada } from "@/lib/whatsapp/mode";
 import { debitarCredito, type MotivoDebito } from "@/lib/creditos";
 
 const Body = z.object({ image: z.string().startsWith("data:image/") });
@@ -111,18 +110,10 @@ export async function POST(req: Request) {
     let motivoDebitado: MotivoDebito | null = null;
 
     if (cobrancaAtiva) {
-      const waLigadaParaCobranca = await isWhatsAppValidacaoLigada(
-        edicaoTenant.tenant_id
-      );
-
-      let motivo: MotivoDebito;
-      if (!p.spc_validado && !waLigadaParaCobranca) {
-        motivo = "voto_minimo";
-      } else if (p.spc_validado && !waLigadaParaCobranca) {
-        motivo = "voto_spc";
-      } else {
-        motivo = "voto_spc_whatsapp";
-      }
+      // Cobranca do cadastro: so depende se passou pelo SPC ou nao.
+      // OTP no WhatsApp (se ligado) e' debitado separado em /api/whatsapp/
+      // enviar-codigo a cada disparo, nao mais combinado aqui.
+      const motivo: MotivoDebito = p.spc_validado ? "voto_spc" : "voto_minimo";
 
       const debito = await debitarCredito({
         tenantId: edicaoTenant.tenant_id,

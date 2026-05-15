@@ -80,7 +80,8 @@ export default async function CreditosPage() {
           Créditos
         </h1>
         <p className="text-muted mt-1">
-          Saldo prépago da sua campanha. Cada voto e mensagem é debitado em tempo real.
+          Saldo prépago da sua campanha. Cada votante novo e cada mensagem
+          enviada é debitado em tempo real.
         </p>
       </header>
 
@@ -331,15 +332,17 @@ export default async function CreditosPage() {
 function labelMotivo(motivo: string): string {
   const mapa: Record<string, string> = {
     recarga: "Recarga via Mercado Pago",
-    voto_minimo: "Voto (sem SPC)",
-    voto_spc: "Voto + SPC",
-    voto_spc_whatsapp: "Voto + SPC + WhatsApp",
+    voto_minimo: "Votante (sem SPC)",
+    voto_spc: "Votante + SPC",
+    voto_spc_whatsapp: "Votante + SPC + WhatsApp (legado)",
+    whatsapp_confirmacao: "Confirmação WhatsApp (OTP)",
     marketing: "Marketing (incentivo/parcial/empate)",
     taxa_campanha: "Taxa de campanha",
     manutencao: "Manutenção pós-campanha",
     cortesia: "Cortesia",
     estorno: "Estorno",
     reembolso: "Reembolso",
+    cupom: "Cupom promocional",
   };
   return mapa[motivo] ?? motivo;
 }
@@ -347,7 +350,7 @@ function labelMotivo(motivo: string): string {
 function iconeMotivo(motivo: string) {
   if (motivo.startsWith("voto"))
     return <Vote className="w-4 h-4 text-cdl-green-dark" />;
-  if (motivo === "marketing")
+  if (motivo === "whatsapp_confirmacao" || motivo === "marketing")
     return <MessageSquare className="w-4 h-4 text-purple-600" />;
   if (motivo === "taxa_campanha")
     return <Award className="w-4 h-4 text-cdl-yellow-dark" />;

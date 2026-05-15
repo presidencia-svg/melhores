@@ -14,6 +14,7 @@ import { enviarSmsZenvia, zenviaConfigurada } from "@/lib/sms/zenvia";
 import { getClientIp } from "@/lib/utils";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
+import { debitarOtpWhatsApp, estornarOtpWhatsApp } from "@/lib/creditos/whatsapp";
 
 const META_TEMPLATE_OTP =
   process.env.META_TEMPLATE_OTP ?? "codigo_verificacao_2025";
@@ -81,6 +82,20 @@ export async function POST(req: Request) {
     expira_em: expiraEm,
   });
 
+  // Cobra R$ 0,25 do tenant pelo disparo (CDL Aracaju nao paga).
+  const tenantParaCobrar = await getCurrentTenant();
+  const cobranca = await debitarOtpWhatsApp(tenantParaCobrar.id);
+  if (!cobranca.ok) {
+    return NextResponse.json(
+      {
+        error:
+          "Esta votação está pausada temporariamente. Tente novamente em alguns minutos.",
+        motivo_admin: cobranca.motivo,
+      },
+      { status: 503 }
+    );
+  }
+
   // Cascata Meta > Z-API > SMS Zenvia.
   let envioOk = false;
   let canal: "meta" | "zapi" | "sms" | null = null;
@@ -131,6 +146,9 @@ export async function POST(req: Request) {
   }
 
   if (!envioOk) {
+    if (cobranca.cobrado) {
+      await estornarOtpWhatsApp(tenantParaCobrar.id);
+    }
     return NextResponse.json(
       {
         error:
