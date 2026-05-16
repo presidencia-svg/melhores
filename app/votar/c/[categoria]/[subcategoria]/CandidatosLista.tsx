@@ -186,19 +186,7 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual, sugesto
               >
                 {sel && <Check className="w-3 h-3 text-white" />}
               </div>
-              {c.foto_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={c.foto_url}
-                  alt=""
-                  loading="lazy"
-                  className="w-11 h-11 rounded-full object-cover shrink-0 border border-border bg-zinc-100"
-                />
-              ) : (
-                <div className="w-11 h-11 rounded-full shrink-0 bg-cdl-blue/10 text-cdl-blue flex items-center justify-center font-display-bold">
-                  {inicial}
-                </div>
-              )}
+              <CandidatoAvatar fotoUrl={c.foto_url} inicial={inicial} />
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-foreground truncate">{c.nome}</div>
                 {c.descricao && (
@@ -248,5 +236,31 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual, sugesto
         </Button>
       )}
     </div>
+  );
+}
+
+function CandidatoAvatar({
+  fotoUrl,
+  inicial,
+}: {
+  fotoUrl: string | null;
+  inicial: string;
+}) {
+  const [erro, setErro] = useState(false);
+  const placeholder = (
+    <div className="w-11 h-11 rounded-full shrink-0 bg-cdl-blue/10 text-cdl-blue flex items-center justify-center font-display-bold">
+      {inicial}
+    </div>
+  );
+  if (!fotoUrl || erro) return placeholder;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={fotoUrl}
+      alt=""
+      loading="lazy"
+      onError={() => setErro(true)}
+      className="w-11 h-11 rounded-full object-cover shrink-0 border border-border bg-zinc-100"
+    />
   );
 }
