@@ -37,11 +37,22 @@ export function montarCssBranding(tenant: Tenant | null): string | null {
   const overrides: string[] = [];
 
   if (primaria && isHex(primaria)) {
+    // Sobrescreve as vars-fonte (navy-*) que sao usadas direto nas paginas
+    // publicas (/, /votar, etc). As aliases --cdl-blue-* seguem porque
+    // sao definidas em globals.css como var(--navy-*).
+    overrides.push(`--navy-800: ${primaria};`);
+    overrides.push(`--navy-900: ${adjust(primaria, 0.7)};`);
+    overrides.push(`--navy-700: ${adjust(primaria, 1.25)};`);
+    // Tambem sobrescreve as aliases CDL diretamente caso alguem use
+    // --cdl-blue sem passar pela var-fonte (cobertura defensiva)
     overrides.push(`--cdl-blue: ${primaria};`);
     overrides.push(`--cdl-blue-dark: ${adjust(primaria, 0.7)};`);
     overrides.push(`--cdl-blue-light: ${adjust(primaria, 1.25)};`);
   }
   if (secundaria && isHex(secundaria)) {
+    // Sobrescreve --green-* (CTA/sucesso, usado em /votar) e --cdl-green-*
+    overrides.push(`--green-600: ${secundaria};`);
+    overrides.push(`--green-500: ${adjust(secundaria, 1.15)};`);
     overrides.push(`--cdl-green: ${secundaria};`);
     overrides.push(`--cdl-green-dark: ${adjust(secundaria, 0.75)};`);
   }
