@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { initMercadoPago, CardPayment } from "@mercadopago/sdk-react";
 import Link from "next/link";
-import { PRECOS } from "@/lib/creditos";
+import { PRECOS } from "@/lib/creditos/precos";
 
 // Estima a faixa de votantes que o valor compra:
 //   - Mais barato: R$ 0,20/votante (sem SPC, sem WhatsApp)
