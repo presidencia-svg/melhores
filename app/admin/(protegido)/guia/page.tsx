@@ -17,9 +17,9 @@ import {
   Trophy,
   Wallet,
   Instagram,
-  Share2,
   Rocket,
 } from "lucide-react";
+import { LinkVotacaoCard } from "../LinkVotacaoCard";
 
 export const dynamic = "force-dynamic";
 
@@ -256,25 +256,6 @@ export default async function GuiaPage() {
         },
       ],
     },
-    {
-      titulo: "6. Lançar a votação",
-      subtitulo: "Hora de espalhar o link",
-      itens: [
-        {
-          id: "link",
-          estado: linkVotacao && edicao ? "feito" : "pendente",
-          icon: <Share2 className="w-5 h-5" />,
-          titulo: "Compartilhar o link de votação",
-          descricao:
-            "Mande o link nas redes sociais, WhatsApp, e-mail e no site da instituição. Quanto mais divulgação, mais votos.",
-          cta: {
-            label: linkVotacao ? "Ver e copiar" : "Aguardando edição",
-            href: linkVotacao ? "/admin" : "/admin/edicoes",
-          },
-          detalhe: linkVotacao ?? "Domínio não configurado",
-        },
-      ],
-    },
   ];
 
   // Resumo de progresso
@@ -360,6 +341,28 @@ export default async function GuiaPage() {
             </div>
           </section>
         ))}
+
+        {/* Seção 6: Lançar — render custom com o link real visível */}
+        <section>
+          <h2 className="font-display text-lg font-bold text-cdl-blue mb-1">
+            6. Lançar a votação
+          </h2>
+          <p className="text-xs text-muted mb-3">
+            Hora de espalhar o link
+          </p>
+          {linkVotacao && edicao ? (
+            <LinkVotacaoCard url={linkVotacao} edicaoNome={edicao.nome} />
+          ) : (
+            <div className="rounded-xl border-2 border-amber-300 bg-amber-50/60 p-4 text-sm text-amber-900">
+              <p className="font-bold mb-1">⚠ Link ainda não disponível</p>
+              <p className="text-xs leading-relaxed">
+                {!edicao
+                  ? "Crie uma edição primeiro em /admin/edicoes."
+                  : "Domínio do tenant não configurado — fale com o suporte da plataforma."}
+              </p>
+            </div>
+          )}
+        </section>
       </div>
 
       <div className="mt-10 rounded-xl border border-cdl-blue/20 bg-cdl-blue/5 p-5 text-sm text-cdl-blue">

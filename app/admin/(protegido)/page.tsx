@@ -20,6 +20,7 @@ import { EncerramentoCard } from "./EncerramentoCard";
 import { SpcCard } from "./SpcCard";
 import { WhatsAppValidacaoCard } from "./WhatsAppValidacaoCard";
 import { SugestoesPublicasCard } from "./SugestoesPublicasCard";
+import { LinkVotacaoCard } from "./LinkVotacaoCard";
 import { VotosPorDiaCard } from "./VotosPorDiaCard";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
@@ -253,6 +254,14 @@ export default async function AdminDashboard() {
           )}
         </div>
       </header>
+
+      {/* Link da votacao — bem visivel */}
+      {edicao && tenant.dominio && (
+        <LinkVotacaoCard
+          url={`https://${tenant.dominio}/votar`}
+          edicaoNome={edicao.nome}
+        />
+      )}
 
       {/* Encerramento da votacao */}
       {edicao && (
