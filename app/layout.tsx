@@ -4,6 +4,7 @@ import "./globals.css";
 import { MetaPixel } from "@/components/MetaPixel";
 import { tryGetCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
+import { montarCssBranding } from "@/lib/tenant/branding-css";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -82,16 +83,27 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Cores customizadas do tenant (cor_primaria/secundaria) viram CSS vars
+  // que sobrescrevem --cdl-blue, --cdl-green etc da paleta default. Falha
+  // graciosamente (null = usa paleta editorial).
+  const tenant = await tryGetCurrentTenant();
+  const cssBranding = montarCssBranding(tenant);
+
   return (
     <html
       lang="pt-BR"
       className={`${fraunces.variable} ${sora.variable} ${jetbrains.variable} ${pinyon.variable} h-full antialiased`}
     >
+      {cssBranding && (
+        <head>
+          <style dangerouslySetInnerHTML={{ __html: cssBranding }} />
+        </head>
+      )}
       <body className="min-h-full flex flex-col">
         <MetaPixel />
         {children}
