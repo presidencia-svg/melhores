@@ -23,8 +23,33 @@ export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
   const [novoNome, setNovoNome] = useState("");
   const [novaDesc, setNovaDesc] = useState("");
   const [novaFoto, setNovaFoto] = useState("");
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const [erroUpload, setErroUpload] = useState<string | null>(null);
   const [criando, setCriando] = useState(false);
   const [feedback, setFeedback] = useState<{ tipo: "ok" | "erro"; msg: string } | null>(null);
+
+  async function uploadFoto(file: File) {
+    setErroUpload(null);
+    setUploadingFoto(true);
+    try {
+      const fd = new FormData();
+      fd.append("foto", file);
+      const res = await fetch("/api/admin/candidatos/upload-foto", {
+        method: "POST",
+        body: fd,
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        setErroUpload(data.error ?? "Falha no upload");
+        return;
+      }
+      setNovaFoto(data.url);
+    } catch (e) {
+      setErroUpload(e instanceof Error ? e.message : "Falha de rede");
+    } finally {
+      setUploadingFoto(false);
+    }
+  }
 
   async function importar() {
     if (!arquivo) return;
@@ -139,7 +164,7 @@ export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
                 placeholder="Ex.: Xereta Autos"
               />
             </div>
-            <div>
+            <div className="sm:col-span-2">
               <label className="text-xs text-muted block mb-1">Descrição (opcional)</label>
               <Input
                 value={novaDesc}
@@ -148,13 +173,63 @@ export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
                 maxLength={280}
               />
             </div>
-            <div>
-              <label className="text-xs text-muted block mb-1">Foto (URL, opcional)</label>
-              <Input
-                value={novaFoto}
-                onChange={(e) => setNovaFoto(e.target.value)}
-                placeholder="https://..."
-              />
+            <div className="sm:col-span-2">
+              <label className="text-xs text-muted block mb-1">Foto (opcional)</label>
+              <div className="flex flex-wrap items-center gap-3">
+                {novaFoto ? (
+                  <div className="flex items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={novaFoto}
+                      alt="preview"
+                      className="w-14 h-14 rounded-full object-cover border border-border bg-zinc-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setNovaFoto("")}
+                      className="text-xs text-red-600 hover:underline"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-zinc-100 text-zinc-400 flex items-center justify-center text-xs">
+                    sem foto
+                  </div>
+                )}
+                <label className="inline-flex items-center gap-2 h-10 px-4 rounded-md bg-cdl-blue text-white text-sm font-medium cursor-pointer hover:bg-cdl-blue-dark disabled:opacity-50">
+                  <Upload className="w-4 h-4" />
+                  {uploadingFoto ? "Enviando..." : novaFoto ? "Trocar foto" : "Escolher arquivo"}
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    disabled={semSubcategorias || uploadingFoto}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void uploadFoto(f);
+                      e.target.value = ""; // permite reupload do mesmo arquivo
+                    }}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+              <details className="mt-2 text-xs">
+                <summary className="text-muted cursor-pointer hover:text-cdl-blue">
+                  Ou colar a URL de uma imagem online
+                </summary>
+                <Input
+                  value={novaFoto}
+                  onChange={(e) => setNovaFoto(e.target.value)}
+                  placeholder="https://..."
+                  className="mt-2"
+                />
+              </details>
+              {erroUpload && (
+                <p className="text-xs text-red-600 mt-2">⚠ {erroUpload}</p>
+              )}
+              <p className="text-[11px] text-muted mt-2">
+                PNG, JPG ou WebP. Máximo 3MB. Recomendado: foto quadrada.
+              </p>
             </div>
           </div>
 
