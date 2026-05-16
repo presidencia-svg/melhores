@@ -2,14 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Upload, FileText, UserPlus, Check, X } from "lucide-react";
+import { Upload, FileText, UserPlus, Check, X, AlertTriangle, FolderTree } from "lucide-react";
 
 type Sub = { id: string; nome: string; categoria: { nome: string } };
 
 export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
+  const semSubcategorias = subcategorias.length === 0;
+
   const router = useRouter();
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [resultado, setResultado] = useState<{ inseridos: number; ignorados: number; erros: string[] } | null>(null);
@@ -65,7 +68,37 @@ export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
+      {semSubcategorias && (
+        <Card className="border-2 border-amber-300 bg-amber-50/60">
+          <CardContent>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-200 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-amber-800" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="font-display text-lg font-bold text-amber-900">
+                  Cadastre subcategorias primeiro
+                </h2>
+                <p className="text-sm text-amber-900/80 mt-1 leading-relaxed">
+                  Todo candidato precisa pertencer a uma subcategoria (ex:
+                  &ldquo;Melhor pizzaria&rdquo;, &ldquo;Melhor academia&rdquo;).
+                  Hoje você ainda não tem nenhuma — sem isso não dá pra
+                  cadastrar candidato individual nem importar CSV.
+                </p>
+                <Link
+                  href="/admin/categorias"
+                  className="inline-flex items-center gap-2 mt-3 h-10 px-4 rounded-md bg-amber-700 text-white text-sm font-medium hover:bg-amber-800"
+                >
+                  <FolderTree className="w-4 h-4" />
+                  Ir pra Categorias
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className={semSubcategorias ? "opacity-60" : ""}>
         <CardContent>
           <div className="flex items-start gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-cdl-green/10 flex items-center justify-center">
@@ -83,9 +116,14 @@ export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
               <select
                 value={novoSub}
                 onChange={(e) => setNovoSub(e.target.value)}
-                className="w-full h-11 px-3 rounded-xl border border-[rgba(10,42,94,0.15)] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-cdl-blue/30"
+                disabled={semSubcategorias}
+                className="w-full h-11 px-3 rounded-xl border border-[rgba(10,42,94,0.15)] bg-white text-sm focus:outline-none focus:ring-2 focus:ring-cdl-blue/30 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="">— escolha uma subcategoria —</option>
+                <option value="">
+                  {semSubcategorias
+                    ? "Nenhuma subcategoria cadastrada — crie em /admin/categorias"
+                    : "— escolha uma subcategoria —"}
+                </option>
                 {subcategorias.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.categoria.nome} → {s.nome}
@@ -146,7 +184,7 @@ export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={semSubcategorias ? "opacity-60" : ""}>
         <CardContent>
           <div className="flex items-start gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-cdl-blue/10 flex items-center justify-center">
@@ -164,10 +202,11 @@ export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
             <input
               type="file"
               accept=".csv,text/csv"
+              disabled={semSubcategorias}
               onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
-              className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-cdl-blue file:text-white hover:file:bg-cdl-blue-dark file:cursor-pointer cursor-pointer"
+              className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-cdl-blue file:text-white hover:file:bg-cdl-blue-dark file:cursor-pointer cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <Button onClick={importar} disabled={!arquivo} loading={loading}>
+            <Button onClick={importar} disabled={!arquivo || semSubcategorias} loading={loading}>
               Importar
             </Button>
           </div>
@@ -190,23 +229,25 @@ export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent>
-          <div className="flex items-start gap-3">
-            <FileText className="w-5 h-5 text-muted mt-1 shrink-0" />
-            <div>
-              <h3 className="font-semibold text-foreground mb-2">Subcategorias disponíveis ({subcategorias.length})</h3>
-              <div className="grid sm:grid-cols-2 gap-1 text-xs text-muted max-h-64 overflow-y-auto">
-                {subcategorias.map((s) => (
-                  <div key={s.id} className="px-2 py-1 rounded bg-zinc-50">
-                    <strong>{s.categoria.nome}</strong> → {s.nome}
-                  </div>
-                ))}
+      {!semSubcategorias && (
+        <Card>
+          <CardContent>
+            <div className="flex items-start gap-3">
+              <FileText className="w-5 h-5 text-muted mt-1 shrink-0" />
+              <div>
+                <h3 className="font-semibold text-foreground mb-2">Subcategorias disponíveis ({subcategorias.length})</h3>
+                <div className="grid sm:grid-cols-2 gap-1 text-xs text-muted max-h-64 overflow-y-auto">
+                  {subcategorias.map((s) => (
+                    <div key={s.id} className="px-2 py-1 rounded bg-zinc-50">
+                      <strong>{s.categoria.nome}</strong> → {s.nome}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
