@@ -167,6 +167,7 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual, sugesto
 
         {filtrados.map((c) => {
           const sel = selecionado === c.id;
+          const inicial = c.nome.trim().charAt(0).toUpperCase();
           return (
             <button
               key={c.id}
@@ -185,8 +186,24 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual, sugesto
               >
                 {sel && <Check className="w-3 h-3 text-white" />}
               </div>
+              {c.foto_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={c.foto_url}
+                  alt=""
+                  loading="lazy"
+                  className="w-11 h-11 rounded-full object-cover shrink-0 border border-border bg-zinc-100"
+                />
+              ) : (
+                <div className="w-11 h-11 rounded-full shrink-0 bg-cdl-blue/10 text-cdl-blue flex items-center justify-center font-display-bold">
+                  {inicial}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-foreground truncate">{c.nome}</div>
+                {c.descricao && (
+                  <div className="text-xs text-muted truncate">{c.descricao}</div>
+                )}
               </div>
             </button>
           );
