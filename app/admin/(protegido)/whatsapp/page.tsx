@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { Download, MessageSquare } from "lucide-react";
+import { Download, MessageSquare, Send } from "lucide-react";
 import { IncentivoSection } from "./IncentivoSection";
 import { AutoIncentivoSection } from "./AutoIncentivoSection";
 import { AutoParcialSection } from "./AutoParcialSection";
@@ -29,14 +30,23 @@ export default async function WhatsAppPage() {
           <h1 className="font-display text-3xl font-bold text-cdl-blue">WhatsApps validados</h1>
           <p className="text-muted mt-1">{(validados ?? 0).toLocaleString("pt-BR")} pessoas opt-in confirmadas</p>
         </div>
-        <a
-          href="/api/admin/whatsapp/exportar"
-          download
-          className="inline-flex h-12 items-center gap-2 rounded-xl bg-cdl-blue text-white px-6 font-medium hover:bg-cdl-blue-dark transition-colors"
-        >
-          <Download className="w-4 h-4" />
-          Exportar CSV
-        </a>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/whatsapp/teste"
+            className="inline-flex h-12 items-center gap-2 rounded-xl border-2 border-cdl-blue/30 text-cdl-blue px-5 font-medium hover:bg-cdl-blue/5 transition-colors"
+          >
+            <Send className="w-4 h-4" />
+            Testar OTP
+          </Link>
+          <a
+            href="/api/admin/whatsapp/exportar"
+            download
+            className="inline-flex h-12 items-center gap-2 rounded-xl bg-cdl-blue text-white px-6 font-medium hover:bg-cdl-blue-dark transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Exportar CSV
+          </a>
+        </div>
       </header>
 
       <Card>
