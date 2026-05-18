@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getSaldo, formatarReais } from "@/lib/creditos";
 import { AplicarCupom } from "./AplicarCupom";
+import { ReconsultarBotao } from "./ReconsultarBotao";
 
 export const dynamic = "force-dynamic";
 
@@ -222,50 +223,78 @@ export default async function CreditosPage() {
       {pagamentos && pagamentos.length > 0 && (
         <Card className="mb-6">
           <CardContent>
-            <h2 className="font-display text-lg font-bold text-cdl-blue mb-3">
-              Pagamentos recentes
-            </h2>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <h2 className="font-display text-lg font-bold text-cdl-blue">
+                Pagamentos recentes
+              </h2>
+              <span className="text-[11px] text-muted">
+                Webhook MP:{" "}
+                <code className="bg-zinc-100 px-1 rounded">
+                  {tenant.dominio
+                    ? `https://${tenant.dominio}/api/creditos/webhook`
+                    : "(dominio nao configurado)"}
+                </code>
+              </span>
+            </div>
             <div className="divide-y divide-border/50">
-              {pagamentos.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex justify-between items-center py-2 text-sm"
-                >
-                  <div>
-                    <span className="font-mono font-bold">
-                      {formatarReais(p.valor_centavos)}
-                    </span>
-                    <span className="text-muted ml-2">
-                      {new Date(p.criado_em).toLocaleString("pt-BR", {
-                        timeZone: "America/Sao_Paulo",
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded ${
-                        p.status === "pago"
-                          ? "bg-cdl-green/15 text-cdl-green-dark"
-                          : p.status === "pendente"
-                          ? "bg-orange-100 text-orange-700"
-                          : "bg-zinc-100 text-zinc-600"
-                      }`}
-                    >
-                      {p.status}
-                    </span>
-                    {p.status === "pendente" && p.mp_init_point ? (
-                      <a
-                        href={p.mp_init_point}
-                        target="_blank"
-                        rel="noopener"
-                        className="text-xs text-cdl-blue hover:underline"
+              {pagamentos.map((p) => {
+                const idadeMin = Math.floor(
+                  (Date.now() - new Date(p.criado_em).getTime()) / 60_000
+                );
+                const pendenteTravado =
+                  p.status === "pendente" && p.metodo === "cartao" && idadeMin > 3;
+                return (
+                  <div
+                    key={p.id}
+                    className="flex justify-between items-center py-2 text-sm flex-wrap gap-2"
+                  >
+                    <div>
+                      <span className="font-mono font-bold">
+                        {formatarReais(p.valor_centavos)}
+                      </span>
+                      <span className="text-muted ml-2">
+                        {new Date(p.criado_em).toLocaleString("pt-BR", {
+                          timeZone: "America/Sao_Paulo",
+                        })}
+                      </span>
+                      <span className="text-[11px] text-muted ml-2">
+                        ({p.metodo})
+                      </span>
+                      {pendenteTravado && (
+                        <span className="ml-2 text-[11px] text-amber-700">
+                          ⚠ pendente há {idadeMin}min
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded ${
+                          p.status === "pago"
+                            ? "bg-cdl-green/15 text-cdl-green-dark"
+                            : p.status === "pendente"
+                              ? "bg-orange-100 text-orange-700"
+                              : "bg-zinc-100 text-zinc-600"
+                        }`}
                       >
-                        Pagar →
-                      </a>
-                    ) : null}
+                        {p.status}
+                      </span>
+                      {p.status === "pendente" && (
+                        <ReconsultarBotao pagamentoId={p.id} />
+                      )}
+                      {p.status === "pendente" && p.mp_init_point ? (
+                        <a
+                          href={p.mp_init_point}
+                          target="_blank"
+                          rel="noopener"
+                          className="text-xs text-cdl-blue hover:underline"
+                        >
+                          Pagar →
+                        </a>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
