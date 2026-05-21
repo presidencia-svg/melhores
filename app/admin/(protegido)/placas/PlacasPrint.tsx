@@ -287,11 +287,13 @@ export function PlacasPrint({
                 {temAssinatura && (
                   <div className="flex flex-col items-center" style={{ marginBottom: "2mm" }}>
                     <p
-                      className="text-navy-800 italic"
+                      className="text-navy-800"
                       style={{
                         fontFamily:
-                          "var(--font-pinyon), 'Snell Roundhand', cursive",
-                        fontSize: "22pt",
+                          "var(--font-pinyon), 'Snell Roundhand', 'Brush Script MT', cursive",
+                        fontStyle: "normal",
+                        fontWeight: 400,
+                        fontSize: "26pt",
                         lineHeight: 1,
                       }}
                     >
