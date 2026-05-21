@@ -254,17 +254,15 @@ export function PlacasPrint({
                 {/* Bloco de assinatura — so se configurado em /admin/marca */}
                 {temAssinatura && (
                   <div className="flex flex-col items-center" style={{ marginBottom: "1mm" }}>
-                    <span
+                    <p
+                      className="text-navy-800"
                       style={{
-                        display: "block",
-                        width: "50mm",
-                        borderBottom: "0.3mm solid #1a1612",
+                        fontFamily:
+                          "var(--font-pinyon), 'Snell Roundhand', cursive",
+                        fontSize: "22pt",
+                        lineHeight: 1,
                         marginBottom: "0.5mm",
                       }}
-                    />
-                    <p
-                      className="font-display-bold text-navy-800"
-                      style={{ fontSize: "10pt", lineHeight: 1.1 }}
                     >
                       {assinaturaNome}
                     </p>
