@@ -88,6 +88,7 @@ export default async function PlacasPage() {
           placas={placas}
           ano={ano}
           tenantNome={tenant.nome}
+          cidade={tenant.nome.replace(/^CDL\s+/i, "").trim()}
           logoUrl={tenant.logo_url}
         />
       )}
