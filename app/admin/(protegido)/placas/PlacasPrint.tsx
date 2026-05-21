@@ -15,13 +15,18 @@ export function PlacasPrint({
   tenantNome,
   cidade,
   logoUrl,
+  assinaturaNome,
+  assinaturaCargo,
 }: {
   placas: PlacaItem[];
   ano: number;
   tenantNome: string;
   cidade: string;
   logoUrl: string | null;
+  assinaturaNome: string | null;
+  assinaturaCargo: string | null;
 }) {
+  const temAssinatura = Boolean(assinaturaNome?.trim());
   // Por default, todas selecionadas. Admin desmarca as que NAO vai imprimir.
   const [selecionadas, setSelecionadas] = useState<Set<string>>(
     () => new Set(placas.map((p) => p.id))
@@ -226,6 +231,34 @@ export function PlacasPrint({
 
                 {/* Empurra o rodape pra baixo */}
                 <div className="flex-1" />
+
+                {/* Bloco de assinatura — so se configurado em /admin/marca */}
+                {temAssinatura && (
+                  <div className="flex flex-col items-center" style={{ marginBottom: "1mm" }}>
+                    <span
+                      style={{
+                        display: "block",
+                        width: "50mm",
+                        borderBottom: "0.3mm solid #1a1612",
+                        marginBottom: "0.5mm",
+                      }}
+                    />
+                    <p
+                      className="font-display-bold text-navy-800"
+                      style={{ fontSize: "10pt", lineHeight: 1.1 }}
+                    >
+                      {assinaturaNome}
+                    </p>
+                    {assinaturaCargo && (
+                      <p
+                        className="text-zinc-700"
+                        style={{ fontSize: "8pt", lineHeight: 1.2 }}
+                      >
+                        {assinaturaCargo}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Linha decorativa inferior */}
                 <hr

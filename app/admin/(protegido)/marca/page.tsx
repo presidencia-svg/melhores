@@ -28,6 +28,8 @@ export default async function MarcaPage() {
             logoAtual={tenant.logo_url}
             corPrimariaAtual={tenant.cor_primaria}
             corSecundariaAtual={tenant.cor_secundaria}
+            assinaturaNomeAtual={tenant.assinatura_nome}
+            assinaturaCargoAtual={tenant.assinatura_cargo}
           />
         </CardContent>
       </Card>

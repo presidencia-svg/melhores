@@ -40,22 +40,27 @@ export default async function PlacasPage() {
 
   const linhas = (podiums ?? []) as PodiumRow[];
 
-  const placas: PlacaItem[] = [];
+  const placasRaw: PlacaItem[] = [];
   for (const p of linhas) {
-    placas.push({
+    placasRaw.push({
       id: `${p.subcategoria_id}-1`,
       nome: p.top1_nome,
       subcategoria: p.subcategoria_nome,
     });
     // Empate tecnico no 1o lugar → 2 placas pra mesma subcategoria
     if (p.top2_id && p.top2_nome && p.top2_votos === p.top1_votos) {
-      placas.push({
+      placasRaw.push({
         id: `${p.subcategoria_id}-2`,
         nome: p.top2_nome,
         subcategoria: p.subcategoria_nome,
       });
     }
   }
+
+  // Ordenacao alfabetica pelo nome do vencedor (case + acento insensitive)
+  const placas = placasRaw.sort((a, b) =>
+    a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" })
+  );
 
   const ano = edicao?.ano ?? new Date().getFullYear();
 
@@ -90,6 +95,8 @@ export default async function PlacasPage() {
           tenantNome={tenant.nome}
           cidade={tenant.nome.replace(/^CDL\s+/i, "").trim()}
           logoUrl={tenant.logo_url}
+          assinaturaNome={tenant.assinatura_nome}
+          assinaturaCargo={tenant.assinatura_cargo}
         />
       )}
     </div>

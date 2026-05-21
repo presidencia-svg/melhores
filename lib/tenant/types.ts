@@ -9,6 +9,8 @@ export type Tenant = {
   logo_url: string | null;
   cor_primaria: string | null;
   cor_secundaria: string | null;
+  assinatura_nome: string | null;
+  assinatura_cargo: string | null;
 
   meta_phone_number_id: string | null;
   meta_template_otp: string | null;
@@ -40,7 +42,7 @@ export type Tenant = {
 
 export const TENANT_COLUNAS = `
   id, slug, nome, cnpj, dominio, ativo,
-  logo_url, cor_primaria, cor_secundaria,
+  logo_url, cor_primaria, cor_secundaria, assinatura_nome, assinatura_cargo,
   meta_phone_number_id, meta_template_otp, meta_template_incentivo,
   meta_template_incentivo_empate, meta_template_parcial, meta_template_lang,
   zapi_instance_id, zapi_token, zapi_client_token,

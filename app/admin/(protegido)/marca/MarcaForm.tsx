@@ -8,16 +8,24 @@ export function MarcaForm({
   logoAtual,
   corPrimariaAtual,
   corSecundariaAtual,
+  assinaturaNomeAtual,
+  assinaturaCargoAtual,
 }: {
   nomeAtual: string;
   logoAtual: string | null;
   corPrimariaAtual: string | null;
   corSecundariaAtual: string | null;
+  assinaturaNomeAtual: string | null;
+  assinaturaCargoAtual: string | null;
 }) {
   const [logoUrl, setLogoUrl] = useState<string | null>(logoAtual);
   const [corPrimaria, setCorPrimaria] = useState(corPrimariaAtual ?? "#0c2a5b");
   const [corSecundaria, setCorSecundaria] = useState(
     corSecundariaAtual ?? "#1ea049"
+  );
+  const [assinaturaNome, setAssinaturaNome] = useState(assinaturaNomeAtual ?? "");
+  const [assinaturaCargo, setAssinaturaCargo] = useState(
+    assinaturaCargoAtual ?? ""
   );
   const [enviando, setEnviando] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -80,6 +88,8 @@ export function MarcaForm({
           logo_url: logoUrl,
           cor_primaria: corPrimaria,
           cor_secundaria: corSecundaria,
+          assinatura_nome: assinaturaNome.trim() || null,
+          assinatura_cargo: assinaturaCargo.trim() || null,
         }),
       });
       const json = (await res.json()) as { ok?: boolean; error?: string };
@@ -199,6 +209,45 @@ export function MarcaForm({
             />
           </div>
           <p className="text-xs text-muted mt-1">Destaques e ícones.</p>
+        </div>
+      </div>
+
+      {/* Assinatura — usada em placas/certificados */}
+      <div className="border-t border-border pt-5">
+        <h3 className="text-sm font-display-bold text-cdl-blue mb-1">
+          Assinatura nas placas e certificados
+        </h3>
+        <p className="text-xs text-muted mb-3">
+          Nome e cargo de quem assina as homenagens. Aparece no rodapé das
+          placas de homenagem (e futuros certificados).
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-sm font-medium text-cdl-blue mb-2 block">
+              Nome
+            </label>
+            <input
+              type="text"
+              value={assinaturaNome}
+              onChange={(e) => setAssinaturaNome(e.target.value)}
+              placeholder="Ex.: Elison Bomfim"
+              maxLength={80}
+              className="w-full h-10 rounded-md border border-border bg-white px-3"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-cdl-blue mb-2 block">
+              Cargo
+            </label>
+            <input
+              type="text"
+              value={assinaturaCargo}
+              onChange={(e) => setAssinaturaCargo(e.target.value)}
+              placeholder={`Ex.: Presidente ${nomeAtual}`}
+              maxLength={80}
+              className="w-full h-10 rounded-md border border-border bg-white px-3"
+            />
+          </div>
         </div>
       </div>
 

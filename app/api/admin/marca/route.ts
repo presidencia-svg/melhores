@@ -14,6 +14,8 @@ const Body = z.object({
   cor_secundaria: z
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/, "Cor inválida (use formato #rrggbb)"),
+  assinatura_nome: z.string().trim().max(80).nullable().optional(),
+  assinatura_cargo: z.string().trim().max(80).nullable().optional(),
 });
 
 export async function POST(req: Request) {
@@ -39,6 +41,8 @@ export async function POST(req: Request) {
       logo_url: parsed.data.logo_url,
       cor_primaria: parsed.data.cor_primaria,
       cor_secundaria: parsed.data.cor_secundaria,
+      assinatura_nome: parsed.data.assinatura_nome ?? null,
+      assinatura_cargo: parsed.data.assinatura_cargo ?? null,
       atualizado_em: new Date().toISOString(),
     })
     .eq("id", tenant.id);
