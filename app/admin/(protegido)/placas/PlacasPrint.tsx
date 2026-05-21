@@ -32,6 +32,10 @@ export function PlacasPrint({
     () => new Set(placas.map((p) => p.id))
   );
 
+  // Ano editavel — default puxa de edicao.ano mas admin pode sobrescrever
+  // (ex: imprimir placas da edicao 2025 em 2026 quando a entrega atrasa).
+  const [anoExibido, setAnoExibido] = useState<number>(ano);
+
   function toggle(id: string) {
     setSelecionadas((prev) => {
       const next = new Set(prev);
@@ -91,17 +95,32 @@ export function PlacasPrint({
             Desmarcar todas
           </button>
         </div>
-        <button
-          onClick={() => window.print()}
-          disabled={qtdSelecionadas === 0}
-          className="h-11 px-5 inline-flex items-center gap-2 rounded-md bg-cdl-blue text-white font-medium hover:bg-cdl-blue-dark disabled:opacity-50"
-        >
-          <Printer className="w-4 h-4" />
-          Imprimir / Salvar PDF
-          {qtdSelecionadas > 0 && qtdSelecionadas < placas.length && (
-            <span className="text-xs opacity-80">({qtdSelecionadas})</span>
-          )}
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <label className="text-xs text-muted inline-flex items-center gap-2">
+            Edição
+            <input
+              type="number"
+              min={2020}
+              max={2100}
+              value={anoExibido}
+              onChange={(e) =>
+                setAnoExibido(parseInt(e.target.value, 10) || ano)
+              }
+              className="h-9 w-20 rounded-md border border-border bg-white px-2 font-mono text-sm text-center"
+            />
+          </label>
+          <button
+            onClick={() => window.print()}
+            disabled={qtdSelecionadas === 0}
+            className="h-11 px-5 inline-flex items-center gap-2 rounded-md bg-cdl-blue text-white font-medium hover:bg-cdl-blue-dark disabled:opacity-50"
+          >
+            <Printer className="w-4 h-4" />
+            Imprimir / Salvar PDF
+            {qtdSelecionadas > 0 && qtdSelecionadas < placas.length && (
+              <span className="text-xs opacity-80">({qtdSelecionadas})</span>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-6">
@@ -276,7 +295,7 @@ export function PlacasPrint({
                   className="font-mono text-zinc-700 tracking-widest"
                   style={{ fontSize: "9pt", letterSpacing: "0.2em" }}
                 >
-                  EDIÇÃO {ano}
+                  EDIÇÃO {anoExibido}
                 </p>
               </div>
             </div>
