@@ -58,16 +58,24 @@ export function PlacasPrint({
   return (
     <div className="space-y-6">
       {/* CSS de impressao: pagina 150×100mm sem margens, uma placa por pagina.
-          .placa-skip esconde no print mas continua visivel na tela
-          (com opacidade reduzida + checkbox desmarcado). */}
+          print-color-adjust:exact forca browsers a imprimir cores de fundo
+          (gradiente e ouro). .placa-skip esconde no print mas continua visivel
+          na tela (com opacidade reduzida + checkbox desmarcado). */}
       <style>{`
         @media print {
           @page { size: 150mm 100mm; margin: 0; }
           html, body { background: #fff !important; }
-          .placa-page { page-break-after: always; }
+          .placa-page {
+            page-break-after: always;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
           .placa-page:last-child { page-break-after: auto; }
           .placa-skip { display: none !important; }
           .no-print { display: none !important; }
+        }
+        .placa-bg {
+          background: radial-gradient(ellipse at 50% 40%, #fafafa 0%, #e2e2e2 100%);
         }
       `}</style>
 
@@ -129,7 +137,7 @@ export function PlacasPrint({
           return (
             <div
               key={p.id}
-              className={`placa-page bg-white mx-auto shadow border border-zinc-200 print:shadow-none print:border-0 relative transition-opacity ${
+              className={`placa-page placa-bg mx-auto shadow print:shadow-none relative transition-opacity ${
                 marcada ? "" : "placa-skip opacity-30"
               }`}
               style={{ width: "150mm", height: "100mm" }}
@@ -153,14 +161,32 @@ export function PlacasPrint({
                 </span>
               </button>
 
+              {/* Moldura dourada dupla — borda externa + interna */}
               <div
-                className="w-full h-full flex flex-col items-center text-center"
-                style={{ padding: "5mm 10mm" }}
+                style={{
+                  position: "absolute",
+                  inset: "2.5mm",
+                  border: "0.3mm solid #c9a24a",
+                  pointerEvents: "none",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "3.5mm",
+                  border: "0.15mm solid #c9a24a",
+                  pointerEvents: "none",
+                }}
+              />
+
+              <div
+                className="w-full h-full flex flex-col items-center text-center relative"
+                style={{ padding: "6mm 12mm" }}
               >
                 {/* Topo: logo */}
                 <div
                   className="flex items-center justify-center w-full"
-                  style={{ height: "16mm" }}
+                  style={{ height: "13mm" }}
                 >
                   {logoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -168,133 +194,166 @@ export function PlacasPrint({
                       src={logoUrl}
                       alt={tenantNome}
                       style={{
-                        maxHeight: "16mm",
-                        maxWidth: "55mm",
+                        maxHeight: "13mm",
+                        maxWidth: "45mm",
                         objectFit: "contain",
                       }}
                     />
                   ) : (
                     <div
                       className="font-display font-bold text-navy-800"
-                      style={{ fontSize: "16pt" }}
+                      style={{ fontSize: "14pt" }}
                     >
                       {tenantNome}
                     </div>
                   )}
                 </div>
 
-                {/* Linha decorativa superior */}
-                <hr
-                  style={{
-                    width: "60mm",
-                    height: "0.4mm",
-                    background: "var(--gold-500)",
-                    border: "none",
-                    margin: "2mm 0 1mm 0",
-                  }}
-                />
-
-                {/* Titulo do premio (sem ano agora) */}
+                {/* Titulo do premio */}
                 <p
-                  className="font-mono text-zinc-700 tracking-widest"
-                  style={{ fontSize: "10pt", letterSpacing: "0.18em" }}
+                  className="text-zinc-700"
+                  style={{
+                    fontSize: "9pt",
+                    letterSpacing: "0.32em",
+                    marginTop: "1.5mm",
+                    fontWeight: 500,
+                  }}
                 >
                   PRÊMIO MELHORES DO ANO
                 </p>
 
-                {/* Corpo do texto */}
+                {/* Diamante dourado decorativo */}
+                <div
+                  style={{
+                    width: "2mm",
+                    height: "2mm",
+                    background: "#c9a24a",
+                    transform: "rotate(45deg)",
+                    margin: "1.5mm 0",
+                  }}
+                />
+
+                {/* Corpo do texto — italic serif */}
                 <p
-                  className="text-zinc-800 mt-3"
-                  style={{ fontSize: "11pt", lineHeight: 1.35 }}
+                  className="font-display text-zinc-800 italic"
+                  style={{ fontSize: "10pt", lineHeight: 1.35 }}
                 >
                   A {tenantNome} reconhece e homenageia
                 </p>
 
-                {/* Nome do vencedor — destaque */}
+                {/* Nome do vencedor — grande, serif italic bold */}
                 <p
-                  className="font-display-bold text-navy-800 leading-tight mt-1"
-                  style={{ fontSize: "22pt", maxWidth: "130mm" }}
+                  className="font-display-bold text-navy-800 italic leading-tight"
+                  style={{ fontSize: "22pt", maxWidth: "130mm", marginTop: "2mm" }}
                 >
                   {p.nome}
                 </p>
 
+                {/* Linha "pela conquista do 1º Lugar na categoria" */}
                 <p
-                  className="text-zinc-800 mt-2"
-                  style={{ fontSize: "11pt", lineHeight: 1.35 }}
+                  className="font-display text-zinc-800 italic"
+                  style={{ fontSize: "10pt", lineHeight: 1.35, marginTop: "2.5mm" }}
                 >
-                  pela conquista do
+                  pela conquista do{" "}
+                  <span className="font-display-bold">1º Lugar</span> na categoria
                 </p>
 
+                {/* Subcategoria */}
                 <p
-                  className="text-zinc-900 italic"
-                  style={{ fontSize: "13pt", lineHeight: 1.3 }}
+                  className="font-display-bold text-navy-800 italic"
+                  style={{ fontSize: "13pt", lineHeight: 1.2, marginTop: "1mm" }}
                 >
-                  1º Lugar na Categoria{" "}
-                  <span className="font-display-bold not-italic">
-                    {p.subcategoria}
-                  </span>
-                  ,
+                  {p.subcategoria}
                 </p>
 
+                {/* "destacando..." */}
                 <p
-                  className="text-zinc-700 mt-2"
+                  className="font-display text-zinc-700 italic"
                   style={{
-                    fontSize: "10pt",
-                    lineHeight: 1.35,
-                    maxWidth: "130mm",
+                    fontSize: "9pt",
+                    lineHeight: 1.3,
+                    maxWidth: "120mm",
+                    marginTop: "1.5mm",
                   }}
                 >
                   destacando sua relevância, credibilidade e contribuição para a
                   cidade de {cidade}.
                 </p>
 
-                {/* Empurra o rodape pra baixo */}
+                {/* Empurra rodape pra baixo */}
                 <div className="flex-1" />
 
-                {/* Bloco de assinatura — so se configurado em /admin/marca */}
+                {/* Bloco assinatura: nome cursivo + linha curta + cargo */}
                 {temAssinatura && (
-                  <div className="flex flex-col items-center" style={{ marginBottom: "1mm" }}>
+                  <div className="flex flex-col items-center" style={{ marginBottom: "2mm" }}>
                     <p
-                      className="text-navy-800"
+                      className="text-navy-800 italic"
                       style={{
                         fontFamily:
                           "var(--font-pinyon), 'Snell Roundhand', cursive",
                         fontSize: "22pt",
                         lineHeight: 1,
-                        marginBottom: "0.5mm",
                       }}
                     >
                       {assinaturaNome}
                     </p>
+                    <span
+                      style={{
+                        display: "block",
+                        width: "40mm",
+                        height: "0.2mm",
+                        background: "#3a3a3a",
+                        marginTop: "0.5mm",
+                      }}
+                    />
                     {assinaturaCargo && (
                       <p
                         className="text-zinc-700"
-                        style={{ fontSize: "8pt", lineHeight: 1.2 }}
+                        style={{
+                          fontSize: "6.5pt",
+                          letterSpacing: "0.2em",
+                          marginTop: "1mm",
+                          fontWeight: 500,
+                        }}
                       >
-                        {assinaturaCargo}
+                        {assinaturaCargo.toUpperCase()}
                       </p>
                     )}
                   </div>
                 )}
 
-                {/* Linha decorativa inferior */}
-                <hr
-                  style={{
-                    width: "60mm",
-                    height: "0.4mm",
-                    background: "var(--gold-500)",
-                    border: "none",
-                    margin: "0 0 1.5mm 0",
-                  }}
-                />
-
-                {/* Rodape: EDICAO ano */}
-                <p
-                  className="font-mono text-zinc-700 tracking-widest"
-                  style={{ fontSize: "9pt", letterSpacing: "0.2em" }}
+                {/* Rodape: "— EDIÇÃO 2025 —" com tracinhos dourados */}
+                <div
+                  className="flex items-center justify-center"
+                  style={{ gap: "3mm" }}
                 >
-                  EDIÇÃO {anoExibido}
-                </p>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: "10mm",
+                      height: "0.3mm",
+                      background: "#c9a24a",
+                    }}
+                  />
+                  <span
+                    className="text-zinc-700"
+                    style={{
+                      fontSize: "7.5pt",
+                      letterSpacing: "0.32em",
+                      fontWeight: 500,
+                    }}
+                  >
+                    EDIÇÃO {anoExibido}
+                  </span>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: "10mm",
+                      height: "0.3mm",
+                      background: "#c9a24a",
+                    }}
+                  />
+                </div>
               </div>
             </div>
           );
