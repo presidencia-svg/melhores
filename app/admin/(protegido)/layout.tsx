@@ -69,6 +69,9 @@ export default async function AdminProtectedLayout({
           <NavLink href="/admin/certificados" icon={<Award className="w-4 h-4" />}>
             Certificados
           </NavLink>
+          <NavLink href="/admin/placas" icon={<Trophy className="w-4 h-4" />}>
+            Placas de homenagem
+          </NavLink>
           <NavLink href="/admin/convites" icon={<MailOpen className="w-4 h-4" />}>
             Convites da festa
           </NavLink>
