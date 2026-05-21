@@ -131,12 +131,12 @@ export function PlacasPrint({
 
               <div
                 className="w-full h-full flex flex-col items-center text-center"
-                style={{ padding: "6mm 10mm" }}
+                style={{ padding: "5mm 10mm" }}
               >
                 {/* Topo: logo */}
                 <div
                   className="flex items-center justify-center w-full"
-                  style={{ height: "14mm" }}
+                  style={{ height: "16mm" }}
                 >
                   {logoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -144,33 +144,44 @@ export function PlacasPrint({
                       src={logoUrl}
                       alt={tenantNome}
                       style={{
-                        maxHeight: "14mm",
-                        maxWidth: "50mm",
+                        maxHeight: "16mm",
+                        maxWidth: "55mm",
                         objectFit: "contain",
                       }}
                     />
                   ) : (
                     <div
                       className="font-display font-bold text-navy-800"
-                      style={{ fontSize: "14pt" }}
+                      style={{ fontSize: "16pt" }}
                     >
                       {tenantNome}
                     </div>
                   )}
                 </div>
 
-                {/* Titulo do premio */}
+                {/* Linha decorativa superior */}
+                <hr
+                  style={{
+                    width: "60mm",
+                    height: "0.4mm",
+                    background: "var(--gold-500)",
+                    border: "none",
+                    margin: "2mm 0 1mm 0",
+                  }}
+                />
+
+                {/* Titulo do premio (sem ano agora) */}
                 <p
-                  className="font-mono text-zinc-700 tracking-widest mt-1"
-                  style={{ fontSize: "8pt", letterSpacing: "0.15em" }}
+                  className="font-mono text-zinc-700 tracking-widest"
+                  style={{ fontSize: "10pt", letterSpacing: "0.18em" }}
                 >
-                  PRÊMIO MELHORES DO ANO {ano}
+                  PRÊMIO MELHORES DO ANO
                 </p>
 
                 {/* Corpo do texto */}
                 <p
                   className="text-zinc-800 mt-3"
-                  style={{ fontSize: "9pt", lineHeight: 1.35 }}
+                  style={{ fontSize: "11pt", lineHeight: 1.35 }}
                 >
                   A {tenantNome} reconhece e homenageia
                 </p>
@@ -178,21 +189,21 @@ export function PlacasPrint({
                 {/* Nome do vencedor — destaque */}
                 <p
                   className="font-display-bold text-navy-800 leading-tight mt-1"
-                  style={{ fontSize: "18pt", maxWidth: "130mm" }}
+                  style={{ fontSize: "22pt", maxWidth: "130mm" }}
                 >
                   {p.nome}
                 </p>
 
                 <p
                   className="text-zinc-800 mt-2"
-                  style={{ fontSize: "9pt", lineHeight: 1.35 }}
+                  style={{ fontSize: "11pt", lineHeight: 1.35 }}
                 >
                   pela conquista do
                 </p>
 
                 <p
                   className="text-zinc-900 italic"
-                  style={{ fontSize: "10pt", lineHeight: 1.3 }}
+                  style={{ fontSize: "13pt", lineHeight: 1.3 }}
                 >
                   1º Lugar na Categoria{" "}
                   <span className="font-display-bold not-italic">
@@ -203,10 +214,36 @@ export function PlacasPrint({
 
                 <p
                   className="text-zinc-700 mt-2"
-                  style={{ fontSize: "8pt", lineHeight: 1.35, maxWidth: "130mm" }}
+                  style={{
+                    fontSize: "10pt",
+                    lineHeight: 1.35,
+                    maxWidth: "130mm",
+                  }}
                 >
                   destacando sua relevância, credibilidade e contribuição para a
                   cidade de {cidade}.
+                </p>
+
+                {/* Empurra o rodape pra baixo */}
+                <div className="flex-1" />
+
+                {/* Linha decorativa inferior */}
+                <hr
+                  style={{
+                    width: "60mm",
+                    height: "0.4mm",
+                    background: "var(--gold-500)",
+                    border: "none",
+                    margin: "0 0 1.5mm 0",
+                  }}
+                />
+
+                {/* Rodape: EDICAO ano */}
+                <p
+                  className="font-mono text-zinc-700 tracking-widest"
+                  style={{ fontSize: "9pt", letterSpacing: "0.2em" }}
+                >
+                  EDIÇÃO {ano}
                 </p>
               </div>
             </div>
