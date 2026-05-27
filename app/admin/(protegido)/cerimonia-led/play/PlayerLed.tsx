@@ -327,29 +327,6 @@ export function PlayerLed({
             >
               {slide.empresa}
             </p>
-            {/* @ Instagram — auto-scale + word-break pra nao colidir com rodape */}
-            {slide.instagram && (
-              <p
-                style={{
-                  fontFamily: "var(--font-sora), system-ui, sans-serif",
-                  fontSize:
-                    slide.instagram.length > 60
-                      ? "18px"
-                      : slide.instagram.length > 40
-                        ? "22px"
-                        : "26px",
-                  color: "#fbf8f1",
-                  fontWeight: 400,
-                  margin: 0,
-                  lineHeight: 1.3,
-                  wordBreak: "break-word",
-                  flexShrink: 1,
-                  minHeight: 0,
-                }}
-              >
-                {slide.instagram}
-              </p>
-            )}
           </div>
 
           {/* COLUNA DIREITA: circulo branco GRANDE com logo da empresa */}
