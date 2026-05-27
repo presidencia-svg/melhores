@@ -28,12 +28,15 @@ export default async function CerimoniaLedPlay() {
   const ano =
     edicaoStatus.status !== "sem_edicao" ? edicaoStatus.edicao.ano : new Date().getFullYear();
 
+  const cidade = tenant.nome.replace(/^CDL\s+/i, "").trim();
+
   return (
     <PlayerLed
       slides={slides}
       ano={ano}
       tenantNome={tenant.nome}
       logoTenant={tenant.logo_url}
+      cidade={cidade}
     />
   );
 }
