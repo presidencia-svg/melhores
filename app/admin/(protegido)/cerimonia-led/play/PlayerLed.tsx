@@ -98,9 +98,16 @@ export function PlayerLed({
         .led-canvas {
           width: ${LED_W}px;
           height: ${LED_H}px;
-          background: radial-gradient(ellipse at 50% 40%, #fafafa 0%, #d8d8d8 100%);
+          background: linear-gradient(135deg, #061d44 0%, #0a2a5e 55%, #143b7a 100%);
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
+          color: #fbf8f1;
+        }
+        .led-gold {
+          background: linear-gradient(180deg, #f3dfa3 0%, #e6bf5f 35%, #d4a537 65%, #8a6516 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
         }
       `}</style>
 
@@ -112,31 +119,25 @@ export function PlayerLed({
         }}
       >
         <div className="led-canvas relative" style={{ width: LED_W, height: LED_H }}>
-          {/* Moldura dourada dupla */}
-          <div
-            style={{
-              position: "absolute",
-              inset: "20px",
-              border: "3px solid #c9a24a",
-            }}
-          />
+          {/* Moldura dourada unica (linha fina elegante) */}
           <div
             style={{
               position: "absolute",
               inset: "32px",
-              border: "1px solid #c9a24a",
+              border: "1.5px solid #d4a537",
+              pointerEvents: "none",
             }}
           />
 
-          {/* Conteudo em grid horizontal: lado esquerdo (CDL) | centro (empresa) | lado direito (@ + ano) */}
+          {/* Conteudo em 3 colunas: CDL | logo redondo empresa | textos */}
           <div
-            className="w-full h-full flex items-stretch relative"
-            style={{ padding: "60px 80px" }}
+            className="w-full h-full flex items-center relative"
+            style={{ padding: "70px 100px", gap: "70px" }}
           >
             {/* COLUNA ESQUERDA: logo CDL + titulo */}
             <div
               className="flex flex-col items-center justify-center text-center"
-              style={{ width: "420px" }}
+              style={{ width: "360px" }}
             >
               {logoTenant ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -144,109 +145,176 @@ export function PlayerLed({
                   src={logoTenant}
                   alt={tenantNome}
                   style={{
-                    maxHeight: "180px",
-                    maxWidth: "320px",
+                    maxHeight: "160px",
+                    maxWidth: "280px",
                     objectFit: "contain",
+                    filter: "brightness(0) invert(1)",
                   }}
                 />
               ) : (
                 <div
-                  className="font-display font-bold text-navy-800"
-                  style={{ fontSize: "48px" }}
+                  style={{
+                    fontFamily: "var(--font-fraunces), Georgia, serif",
+                    fontWeight: 700,
+                    fontSize: "44px",
+                    color: "#fbf8f1",
+                  }}
                 >
                   {tenantNome}
                 </div>
               )}
+              {/* Diamante dourado */}
               <div
                 style={{
-                  width: "12px",
-                  height: "12px",
-                  background: "#c9a24a",
+                  width: "10px",
+                  height: "10px",
+                  background: "#d4a537",
                   transform: "rotate(45deg)",
-                  margin: "30px 0 18px 0",
+                  margin: "40px 0 20px 0",
                 }}
               />
               <p
                 style={{
-                  fontSize: "22px",
+                  fontFamily: "var(--font-sora), system-ui, sans-serif",
+                  fontSize: "20px",
                   letterSpacing: "0.32em",
-                  color: "#4a4a4a",
+                  color: "#d4a537",
                   fontWeight: 500,
+                  lineHeight: 1.5,
                 }}
               >
-                PRÊMIO MELHORES
+                PRÊMIO
               </p>
               <p
                 style={{
-                  fontSize: "22px",
+                  fontFamily: "var(--font-sora), system-ui, sans-serif",
+                  fontSize: "20px",
                   letterSpacing: "0.32em",
-                  color: "#4a4a4a",
+                  color: "#d4a537",
                   fontWeight: 500,
+                  lineHeight: 1.5,
                 }}
               >
-                DO ANO {ano}
+                MELHORES DO ANO
+              </p>
+              <p
+                style={{
+                  fontFamily: "var(--font-fraunces), Georgia, serif",
+                  fontSize: "32px",
+                  fontWeight: 700,
+                  color: "#fbf8f1",
+                  marginTop: "8px",
+                  fontStyle: "italic",
+                }}
+              >
+                {ano}
               </p>
             </div>
 
-            {/* DIVISOR VERTICAL OURO */}
+            {/* COLUNA CENTRAL: logo redondo da empresa em moldura dourada */}
             <div
-              style={{
-                width: "1px",
-                background: "#c9a24a",
-                margin: "20px 60px",
-              }}
-            />
-
-            {/* COLUNA CENTRAL: logo empresa + nome */}
-            <div className="flex-1 flex flex-col items-center justify-center text-center">
-              {slide.logo_url ? (
-                <div
-                  className="flex items-center justify-center"
-                  style={{ height: "280px", marginBottom: "30px" }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+              className="flex items-center justify-center shrink-0"
+              style={{ width: "440px", height: "440px" }}
+            >
+              <div
+                style={{
+                  width: "420px",
+                  height: "420px",
+                  borderRadius: "50%",
+                  background: "#fbf8f1",
+                  border: "6px solid #d4a537",
+                  boxShadow: "0 0 0 1px #8a6516, 0 0 40px rgba(212, 165, 55, 0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                  padding: "30px",
+                }}
+              >
+                {slide.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={slide.logo_url}
                     alt={slide.empresa}
                     style={{
-                      maxHeight: "280px",
-                      maxWidth: "700px",
+                      maxWidth: "100%",
+                      maxHeight: "100%",
                       objectFit: "contain",
                     }}
                   />
-                </div>
-              ) : null}
+                ) : (
+                  <span
+                    style={{
+                      fontFamily: "var(--font-fraunces), Georgia, serif",
+                      fontStyle: "italic",
+                      fontSize: "60px",
+                      fontWeight: 700,
+                      color: "#0a2a5e",
+                      textAlign: "center",
+                      lineHeight: 1.05,
+                    }}
+                  >
+                    {slide.empresa
+                      .split(" ")
+                      .map((w) => w[0])
+                      .join("")
+                      .slice(0, 3)}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* COLUNA DIREITA: subcategoria + nome empresa + @ */}
+            <div className="flex-1 flex flex-col justify-center" style={{ minWidth: 0 }}>
+              {slide.subcategoria && (
+                <>
+                  <p
+                    style={{
+                      fontFamily: "var(--font-sora), system-ui, sans-serif",
+                      fontSize: "20px",
+                      letterSpacing: "0.32em",
+                      color: "#d4a537",
+                      fontWeight: 500,
+                      marginBottom: "8px",
+                    }}
+                  >
+                    CATEGORIA
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "var(--font-fraunces), Georgia, serif",
+                      fontStyle: "italic",
+                      fontSize: "38px",
+                      fontWeight: 700,
+                      color: "#fbf8f1",
+                      lineHeight: 1.1,
+                      marginBottom: "32px",
+                    }}
+                  >
+                    {slide.subcategoria}
+                  </p>
+                </>
+              )}
               <p
-                className="font-display-bold text-navy-800 italic"
                 style={{
-                  fontSize: slide.empresa.length > 30 ? "56px" : "72px",
-                  lineHeight: 1.05,
-                  maxWidth: "900px",
+                  fontFamily: "var(--font-fraunces), Georgia, serif",
+                  fontStyle: "italic",
+                  fontWeight: 700,
+                  fontSize: slide.empresa.length > 30 ? "60px" : "76px",
+                  lineHeight: 1.0,
+                  color: "#fbf8f1",
+                  textShadow: "0 2px 8px rgba(0,0,0,0.3)",
                 }}
               >
                 {slide.empresa}
               </p>
-              {slide.subcategoria && (
-                <p
-                  className="font-display text-zinc-800 italic"
-                  style={{
-                    fontSize: "30px",
-                    marginTop: "18px",
-                    lineHeight: 1.2,
-                  }}
-                >
-                  1º Lugar em{" "}
-                  <span className="font-display-bold">
-                    {slide.subcategoria}
-                  </span>
-                </p>
-              )}
               {slide.instagram && (
                 <p
-                  className="text-zinc-700"
                   style={{
-                    fontSize: "28px",
-                    marginTop: slide.subcategoria ? "12px" : "24px",
+                    fontFamily: "var(--font-sora), system-ui, sans-serif",
+                    fontSize: "26px",
+                    color: "#d4a537",
+                    marginTop: "28px",
                     letterSpacing: "0.05em",
                   }}
                 >
