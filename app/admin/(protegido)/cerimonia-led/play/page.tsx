@@ -12,7 +12,9 @@ export default async function CerimoniaLedPlay() {
   const [{ data }, edicaoStatus] = await Promise.all([
     supabase
       .from("cerimonia_slides")
-      .select("id, ordem, empresa, recebe, instagram, logo_url")
+      .select(
+        "id, ordem, empresa, recebe, instagram, logo_url, categoria, subcategoria"
+      )
       .eq("tenant_id", tenant.id)
       .order("ordem", { ascending: true }),
     getEdicaoStatus(tenant.id),

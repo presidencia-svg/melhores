@@ -9,6 +9,8 @@ const PatchBody = z.object({
   recebe: z.string().trim().max(200).nullable().optional(),
   instagram: z.string().trim().max(200).nullable().optional(),
   logo_url: z.string().url().nullable().optional(),
+  categoria: z.string().trim().max(120).nullable().optional(),
+  subcategoria: z.string().trim().max(120).nullable().optional(),
   ordem: z.number().int().min(0).optional(),
 });
 

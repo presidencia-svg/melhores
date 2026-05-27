@@ -10,6 +10,8 @@ export type SlidePlayer = {
   recebe: string | null;
   instagram: string | null;
   logo_url: string | null;
+  categoria: string | null;
+  subcategoria: string | null;
 };
 
 const LED_W = 2048;
@@ -224,12 +226,27 @@ export function PlayerLed({
               >
                 {slide.empresa}
               </p>
+              {slide.subcategoria && (
+                <p
+                  className="font-display text-zinc-800 italic"
+                  style={{
+                    fontSize: "30px",
+                    marginTop: "18px",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  1º Lugar em{" "}
+                  <span className="font-display-bold">
+                    {slide.subcategoria}
+                  </span>
+                </p>
+              )}
               {slide.instagram && (
                 <p
                   className="text-zinc-700"
                   style={{
-                    fontSize: "32px",
-                    marginTop: "24px",
+                    fontSize: "28px",
+                    marginTop: slide.subcategoria ? "12px" : "24px",
                     letterSpacing: "0.05em",
                   }}
                 >

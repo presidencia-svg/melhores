@@ -12,14 +12,23 @@ export type SlideRow = {
   recebe: string | null;
   instagram: string | null;
   logo_url: string | null;
+  categoria: string | null;
+  subcategoria: string | null;
+};
+
+export type CatOption = {
+  categoria: string;
+  subcategoria: string;
 };
 
 export function SlidesManager({
   slides,
   tenantNome,
+  catOptions,
 }: {
   slides: SlideRow[];
   tenantNome: string;
+  catOptions: CatOption[];
 }) {
   const router = useRouter();
   const [importando, setImportando] = useState(false);
@@ -37,12 +46,21 @@ export function SlidesManager({
         method: "POST",
         body: fd,
       });
-      const json = (await res.json()) as { ok?: boolean; inseridos?: number; error?: string };
+      const json = (await res.json()) as {
+        ok?: boolean;
+        inseridos?: number;
+        matchados?: number;
+        error?: string;
+      };
       if (!res.ok || !json.ok) {
         setErro(json.error ?? "Falha ao importar");
         return;
       }
-      setOk(`✓ ${json.inseridos} slides importados`);
+      const detalhe =
+        json.matchados !== undefined && json.matchados > 0
+          ? ` · ${json.matchados} com categoria automática do pódio`
+          : "";
+      setOk(`✓ ${json.inseridos} slides importados${detalhe}`);
       router.refresh();
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Falha de rede");
@@ -98,7 +116,12 @@ export function SlidesManager({
             <strong className="text-cdl-blue">{tenantNome}</strong>
           </p>
           {slides.map((s, idx) => (
-            <SlideCard key={s.id} slide={s} ordemExibida={idx + 1} />
+            <SlideCard
+              key={s.id}
+              slide={s}
+              ordemExibida={idx + 1}
+              catOptions={catOptions}
+            />
           ))}
         </div>
       )}
@@ -109,14 +132,52 @@ export function SlidesManager({
 function SlideCard({
   slide,
   ordemExibida,
+  catOptions,
 }: {
   slide: SlideRow;
   ordemExibida: number;
+  catOptions: CatOption[];
 }) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [salvandoCat, setSalvandoCat] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+
+  // valor "categoria||subcategoria" pro select
+  const valorAtual =
+    slide.subcategoria && slide.categoria
+      ? `${slide.categoria}||${slide.subcategoria}`
+      : "";
+
+  async function trocarCategoria(v: string) {
+    setSalvandoCat(true);
+    setErro(null);
+    try {
+      let categoria: string | null = null;
+      let subcategoria: string | null = null;
+      if (v) {
+        const [c, s] = v.split("||");
+        categoria = c ?? null;
+        subcategoria = s ?? null;
+      }
+      const r = await fetch(`/api/admin/cerimonia-led/slides/${slide.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categoria, subcategoria }),
+      });
+      if (!r.ok) {
+        const d = (await r.json()) as { error?: string };
+        setErro(d.error ?? "Falha ao salvar");
+        return;
+      }
+      router.refresh();
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : "Falha de rede");
+    } finally {
+      setSalvandoCat(false);
+    }
+  }
 
   async function uploadLogo(file: File) {
     setErro(null);
@@ -197,6 +258,31 @@ function SlideCard({
                 {slide.instagram}
               </p>
             )}
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              <select
+                value={valorAtual}
+                onChange={(e) => trocarCategoria(e.target.value)}
+                disabled={salvandoCat || catOptions.length === 0}
+                className="text-xs h-8 px-2 rounded border border-border bg-white max-w-full disabled:opacity-50"
+              >
+                <option value="">
+                  {catOptions.length === 0
+                    ? "(crie subcategorias primeiro)"
+                    : "— sem categoria —"}
+                </option>
+                {catOptions.map((o) => (
+                  <option
+                    key={`${o.categoria}||${o.subcategoria}`}
+                    value={`${o.categoria}||${o.subcategoria}`}
+                  >
+                    {o.categoria} → {o.subcategoria}
+                  </option>
+                ))}
+              </select>
+              {salvandoCat && (
+                <Loader2 className="w-3 h-3 animate-spin text-muted" />
+              )}
+            </div>
             {erro && <p className="text-xs text-red-600 mt-1">⚠ {erro}</p>}
           </div>
           <div className="flex items-center gap-2 shrink-0">

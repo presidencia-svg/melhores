@@ -2,21 +2,48 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
 import { Tv, Play } from "lucide-react";
-import { SlidesManager, type SlideRow } from "./SlidesManager";
+import { SlidesManager, type SlideRow, type CatOption } from "./SlidesManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function CerimoniaLedPage() {
   const tenant = await getCurrentTenant();
+  const status = await getEdicaoStatus(tenant.id);
+  const edicaoId = status.status !== "sem_edicao" ? status.edicao.id : null;
   const supabase = createSupabaseAdminClient();
-  const { data } = await supabase
-    .from("cerimonia_slides")
-    .select("id, ordem, empresa, recebe, instagram, logo_url")
-    .eq("tenant_id", tenant.id)
-    .order("ordem", { ascending: true });
+
+  const [{ data }, { data: subcatList }] = await Promise.all([
+    supabase
+      .from("cerimonia_slides")
+      .select(
+        "id, ordem, empresa, recebe, instagram, logo_url, categoria, subcategoria"
+      )
+      .eq("tenant_id", tenant.id)
+      .order("ordem", { ascending: true }),
+    edicaoId
+      ? supabase
+          .from("subcategorias")
+          .select("nome, categoria:categorias(nome)")
+          .eq("edicao_id", edicaoId)
+          .order("nome", { ascending: true })
+      : Promise.resolve({ data: [] }),
+  ]);
 
   const slides = (data ?? []) as SlideRow[];
+
+  type SubRow = {
+    nome: string;
+    categoria: { nome: string } | { nome: string }[] | null;
+  };
+  const catOptions: CatOption[] = ((subcatList ?? []) as SubRow[]).map((r) => {
+    const cat = Array.isArray(r.categoria) ? r.categoria[0] : r.categoria;
+    return {
+      categoria: cat?.nome ?? "—",
+      subcategoria: r.nome,
+    };
+  });
 
   return (
     <div className="p-8 max-w-5xl">
@@ -55,11 +82,15 @@ export default async function CerimoniaLedPage() {
               <code>QUEM VAI RECEBER O PREMIO</code> e{" "}
               <code>@ DO INSTAGRAM</code>. Cada linha vira um slide.
             </p>
-            <SlidesManager slides={[]} tenantNome={tenant.nome} />
+            <SlidesManager slides={[]} tenantNome={tenant.nome} catOptions={catOptions} />
           </CardContent>
         </Card>
       ) : (
-        <SlidesManager slides={slides} tenantNome={tenant.nome} />
+        <SlidesManager
+          slides={slides}
+          tenantNome={tenant.nome}
+          catOptions={catOptions}
+        />
       )}
     </div>
   );

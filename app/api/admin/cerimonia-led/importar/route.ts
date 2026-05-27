@@ -5,6 +5,63 @@ import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
+// Mapa empresa→{categoria, subcategoria} dos top1 do podio.
+// Usado pra auto-preencher slides na importacao.
+async function carregarMapaPodio(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  edicaoId: string | null
+): Promise<Map<string, { categoria: string; subcategoria: string }>> {
+  if (!edicaoId) return new Map();
+  const [{ data: podiums }, { data: subcatMap }] = await Promise.all([
+    supabase
+      .from("v_podium")
+      .select(
+        "subcategoria_id, subcategoria_nome, top1_nome, top1_votos, top2_id, top2_nome, top2_votos"
+      )
+      .eq("edicao_id", edicaoId)
+      .gt("top1_votos", 0),
+    supabase
+      .from("subcategorias")
+      .select("id, categoria:categorias(nome)")
+      .eq("edicao_id", edicaoId),
+  ]);
+
+  type SubRow = {
+    id: string;
+    categoria: { nome: string } | { nome: string }[] | null;
+  };
+  const catBySub = new Map<string, string>();
+  for (const r of (subcatMap ?? []) as SubRow[]) {
+    const cat = Array.isArray(r.categoria) ? r.categoria[0] : r.categoria;
+    if (cat?.nome) catBySub.set(r.id, cat.nome);
+  }
+
+  const m = new Map<string, { categoria: string; subcategoria: string }>();
+  for (const p of (podiums ?? []) as Array<{
+    subcategoria_id: string;
+    subcategoria_nome: string;
+    top1_nome: string;
+    top1_votos: number;
+    top2_id: string | null;
+    top2_nome: string | null;
+    top2_votos: number;
+  }>) {
+    const categoria = catBySub.get(p.subcategoria_id) ?? "—";
+    m.set(normalize(p.top1_nome), {
+      categoria,
+      subcategoria: p.subcategoria_nome,
+    });
+    // Empatado em 1o lugar tambem entra
+    if (p.top2_nome && p.top2_votos === p.top1_votos) {
+      m.set(normalize(p.top2_nome), {
+        categoria,
+        subcategoria: p.subcategoria_nome,
+      });
+    }
+  }
+  return m;
+}
+
 // Importa planilha xlsx pra cerimonia_slides. Espera colunas:
 //   EMPRESA / QUEM VAI RECEBER O PREMIO / @ DO INSTAGRAM
 // (variacoes case-insensitive). Cria 1 slide por linha. Sobrescreve
@@ -88,6 +145,9 @@ export async function POST(req: Request) {
     .delete()
     .eq("tenant_id", tenant.id);
 
+  // Carrega mapa do podio pra auto-match de categoria/subcategoria
+  const mapaPodio = await carregarMapaPodio(supabase, edicaoId);
+
   const insertRows: Array<{
     tenant_id: string;
     edicao_id: string | null;
@@ -95,9 +155,12 @@ export async function POST(req: Request) {
     empresa: string;
     recebe: string | null;
     instagram: string | null;
+    categoria: string | null;
+    subcategoria: string | null;
   }> = [];
 
   let ordem = 0;
+  let matchados = 0;
   for (const row of rows) {
     const empresa = String(row[colMap.empresa] ?? "").trim();
     if (!empresa) continue;
@@ -107,6 +170,8 @@ export async function POST(req: Request) {
     const instagram = colMap.instagram
       ? String(row[colMap.instagram] ?? "").trim() || null
       : null;
+    const match = mapaPodio.get(normalize(empresa));
+    if (match) matchados++;
     insertRows.push({
       tenant_id: tenant.id,
       edicao_id: edicaoId,
@@ -114,6 +179,8 @@ export async function POST(req: Request) {
       empresa,
       recebe,
       instagram,
+      categoria: match?.categoria ?? null,
+      subcategoria: match?.subcategoria ?? null,
     });
   }
 
@@ -129,5 +196,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, inseridos: insertRows.length });
+  return NextResponse.json({
+    ok: true,
+    inseridos: insertRows.length,
+    matchados,
+  });
 }
