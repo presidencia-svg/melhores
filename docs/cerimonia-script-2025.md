@@ -11,13 +11,13 @@
 | # | Bloco | Duração | LED |
 |---|-------|---------|-----|
 | 1 | Abertura — chamada do presidente | 30 s | Logo CDL animada |
-| 2 | Discurso de Elison Bomfim | ~6 min | Imagens institucionais ao fundo |
+| 2 | Discurso de Elison Bomfim | ~8 min | Imagens institucionais ao fundo |
 | 3 | Chamada de Greice Franco | 30 s | Nome + cargo |
 | 4 | Hino Nacional Brasileiro | ~3 min 30 s | Bandeira do Brasil |
 | 5 | Abertura da premiação | 1 min | Logo CDL |
 | 6 | Anúncio + entrega — 46 categorias | ~70 min | Slideshow `/admin/cerimonia-led/play` |
 | 7 | Encerramento de Greice | ~3 min | Selo "65 anos · 1961-2026" |
-| | **Total** | **~85 min** | |
+| | **Total** | **~87 min** | |
 
 ---
 
@@ -35,7 +35,7 @@
 
 ---
 
-## 2. DISCURSO · Elison Bomfim · ~6 minutos
+## 2. DISCURSO · Elison Bomfim · ~8 minutos
 
 > **[ELISON BOMFIM]**
 >
@@ -49,7 +49,15 @@
 >
 > *(pausa)*
 >
-> A CDL também rompeu fronteiras. Estivemos em **vários países** levando o nome do comércio sergipano, aprendendo com os melhores do mundo, trazendo de volta tudo aquilo que pode ser aplicado aqui, na nossa cidade. E o ano de 2026 vai marcar de vez essa virada: em agosto, nós da CDL Aracaju vamos estar em João Pessoa, na **58ª Convenção Nacional do Comércio Lojista — o OMNIVAREJO 2026**, no Centro de Convenções da Paraíba, junto com mais de três mil empresários do Brasil inteiro. E nós vamos lá levantar a bandeira de Aracaju.
+> E essa nova era se traduz, principalmente, em **ação na rua**. Em coisa que move o caixa do lojista, que move a porta da loja, que aquece o comércio da nossa cidade. Foi assim com o **Liquida Aju**, a maior liquidação coletiva de Aracaju, reunindo dezenas de lojas em uma campanha única que movimentou o varejo no momento que mais precisava de fôlego. Foi assim com o **Natal de Prêmios** — o consumidor comprando no lojista associado, concorrendo a prêmios reais, e fortalecendo o comércio local em vez de migrar pra fora. Iniciativas que nasceram pra **fazer o lojista vender mais**. E é isso que a CDL deve ser.
+>
+> *(pausa)*
+>
+> A CDL também **rompeu fronteiras**. Estivemos em vários países levando o nome do comércio sergipano, aprendendo com os melhores do mundo, trazendo de volta tudo aquilo que pode ser aplicado aqui, na nossa cidade. Estivemos na **NRF em Nova York** — o maior evento de varejo do planeta — vendo de perto as tendências que vão chegar no Brasil, na inteligência artificial aplicada ao comércio, no novo consumidor, no varejo do futuro. E logo depois, no nosso **pós-NRF**, sentamos aqui em Aracaju com os lojistas pra traduzir aquilo tudo em prática — no chão da loja, no caixa, no atendimento. Não fomos pra tirar foto. Fomos pra trazer **resultado**.
+>
+> *(pausa · respira)*
+>
+> E o ano de 2026 vai marcar de vez essa virada: em agosto, nós da CDL Aracaju vamos estar em João Pessoa, na **58ª Convenção Nacional do Comércio Lojista — o OMNIVAREJO 2026**, no Centro de Convenções da Paraíba, junto com mais de três mil empresários do Brasil inteiro. E nós vamos lá levantar a bandeira de Aracaju.
 >
 > *(pausa · respira)*
 >
