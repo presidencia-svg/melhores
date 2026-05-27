@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
+import { ordenarPorCategoria } from "@/lib/cerimonia/ordenar";
 import { PlayerLed, type SlidePlayer } from "./PlayerLed";
 
 export const dynamic = "force-dynamic";
@@ -20,10 +21,13 @@ export default async function CerimoniaLedPlay() {
     getEdicaoStatus(tenant.id),
   ]);
 
-  const slides = (data ?? []) as SlidePlayer[];
-  if (slides.length === 0) {
+  const slidesRaw = (data ?? []) as SlidePlayer[];
+  if (slidesRaw.length === 0) {
     redirect("/admin/cerimonia-led");
   }
+  // Ordena por categoria → subcategoria → empresa pra cerimonia seguir a
+  // sequencia logica que o anunciador vai usar.
+  const slides = ordenarPorCategoria(slidesRaw);
 
   const ano =
     edicaoStatus.status !== "sem_edicao" ? edicaoStatus.edicao.ano : new Date().getFullYear();

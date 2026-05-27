@@ -41,33 +41,19 @@ export function PlayerLed({
   const [exportando, setExportando] = useState<{ atual: number; total: number } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // Slides reordenados por categoria > subcategoria > empresa pro export
-  const slidesOrdemCategoria = [...slides].sort((a, b) => {
-    const ca = (a.categoria ?? "zzz").toLowerCase();
-    const cb = (b.categoria ?? "zzz").toLowerCase();
-    if (ca !== cb) return ca.localeCompare(cb, "pt-BR");
-    const sa = (a.subcategoria ?? "").toLowerCase();
-    const sb = (b.subcategoria ?? "").toLowerCase();
-    if (sa !== sb) return sa.localeCompare(sb, "pt-BR");
-    return a.empresa.localeCompare(b.empresa, "pt-BR");
-  });
-
   async function exportarPNGs() {
     if (exportando) return;
     setTocando(false); // pausa auto-advance
     const idxOriginal = idx;
     const zip = new JSZip();
-    const total = slidesOrdemCategoria.length;
-
-    // Map id → posicao na lista ordenada (pra setIdx achar pelo id na lista original)
-    const posOriginalPorId = new Map(slides.map((s, i) => [s.id, i]));
+    const total = slides.length;
 
     try {
+      // Slides ja vem ordenados por categoria/subcategoria/empresa do server
       for (let i = 0; i < total; i++) {
-        const slideOrdenado = slidesOrdemCategoria[i]!;
+        const slideAtual = slides[i]!;
         setExportando({ atual: i + 1, total });
-        const posOriginal = posOriginalPorId.get(slideOrdenado.id) ?? 0;
-        setIdx(posOriginal);
+        setIdx(i);
 
         // Aguarda o React renderizar + imagens carregarem
         await new Promise((r) => setTimeout(r, 600));
@@ -81,10 +67,10 @@ export function PlayerLed({
           style: { transform: "scale(1)" },
         });
         const base64 = dataUrl.split(",")[1] ?? "";
-        const catSafe = (slideOrdenado.categoria ?? "sem-categoria")
+        const catSafe = (slideAtual.categoria ?? "sem-categoria")
           .replace(/[^a-zA-Z0-9À-ú ]/g, "")
           .trim() || "sem-categoria";
-        const empresaSafe = slideOrdenado.empresa
+        const empresaSafe = slideAtual.empresa
           .replace(/[^a-zA-Z0-9À-ú ]/g, "")
           .trim();
         const nome = `${String(i + 1).padStart(3, "0")} - ${catSafe} - ${empresaSafe}.png`;

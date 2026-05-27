@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
 import { Tv, Play } from "lucide-react";
+import { ordenarPorCategoria } from "@/lib/cerimonia/ordenar";
 import { SlidesManager, type SlideRow, type CatOption } from "./SlidesManager";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,9 @@ export default async function CerimoniaLedPage() {
       : Promise.resolve({ data: [] }),
   ]);
 
-  const slides = (data ?? []) as SlideRow[];
+  // Ordena por categoria → subcategoria → empresa pra bater com a ordem
+  // de execucao do /play (sem categoria vai pro final).
+  const slides = ordenarPorCategoria((data ?? []) as SlideRow[]);
 
   type SubRow = {
     nome: string;
