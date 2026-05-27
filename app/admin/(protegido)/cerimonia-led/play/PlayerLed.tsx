@@ -245,13 +245,17 @@ export function PlayerLed({
             </p>
           </div>
 
-          {/* COLUNA ESQUERDA: textos do vencedor */}
+          {/* COLUNA ESQUERDA: textos do vencedor — area segura ate antes do rodape */}
           <div
             style={{
               position: "absolute",
               left: "120px",
               top: "230px",
               width: "1100px",
+              maxHeight: "470px",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
             {/* Linha curta dourada */}
@@ -261,6 +265,7 @@ export function PlayerLed({
                 height: "2px",
                 background: "#d4a537",
                 marginBottom: "16px",
+                flexShrink: 0,
               }}
             />
             {/* CATEGORIA kicker */}
@@ -273,35 +278,45 @@ export function PlayerLed({
                 fontWeight: 600,
                 margin: 0,
                 marginBottom: "26px",
+                flexShrink: 0,
               }}
             >
               CATEGORIA
             </p>
-            {/* Subcategoria em creme italic */}
-            <p
-              style={{
-                fontFamily: "var(--font-fraunces), Georgia, serif",
-                fontStyle: "italic",
-                fontWeight: 500,
-                fontSize: "60px",
-                lineHeight: 1.0,
-                color: "#fbf8f1",
-                margin: 0,
-                marginBottom: "60px",
-              }}
-            >
-              {slide.subcategoria ?? slide.empresa}
-            </p>
-            {/* Nome da empresa em dourado italic GRANDE */}
+            {/* Subcategoria em creme italic — so renderiza quando existe */}
+            {slide.subcategoria && (
+              <p
+                style={{
+                  fontFamily: "var(--font-fraunces), Georgia, serif",
+                  fontStyle: "italic",
+                  fontWeight: 500,
+                  fontSize: "60px",
+                  lineHeight: 1.0,
+                  color: "#fbf8f1",
+                  margin: 0,
+                  marginBottom: "50px",
+                  flexShrink: 0,
+                }}
+              >
+                {slide.subcategoria}
+              </p>
+            )}
+            {/* Nome da empresa em dourado italic GRANDE — auto-scale por length */}
             <p
               style={{
                 fontFamily: "var(--font-fraunces), Georgia, serif",
                 fontStyle: "italic",
                 fontWeight: 700,
-                fontSize: slide.empresa.length > 24 ? "82px" : "104px",
+                fontSize:
+                  slide.empresa.length > 40
+                    ? "62px"
+                    : slide.empresa.length > 24
+                      ? "82px"
+                      : "104px",
                 lineHeight: 1.0,
                 margin: 0,
                 marginBottom: "30px",
+                flexShrink: 0,
                 background:
                   "linear-gradient(180deg, #f3dfa3 0%, #e6bf5f 30%, #d4a537 60%, #b88a2a 100%)",
                 WebkitBackgroundClip: "text",
@@ -312,15 +327,24 @@ export function PlayerLed({
             >
               {slide.empresa}
             </p>
-            {/* @ Instagram */}
+            {/* @ Instagram — auto-scale + word-break pra nao colidir com rodape */}
             {slide.instagram && (
               <p
                 style={{
                   fontFamily: "var(--font-sora), system-ui, sans-serif",
-                  fontSize: "26px",
+                  fontSize:
+                    slide.instagram.length > 60
+                      ? "18px"
+                      : slide.instagram.length > 40
+                        ? "22px"
+                        : "26px",
                   color: "#fbf8f1",
                   fontWeight: 400,
                   margin: 0,
+                  lineHeight: 1.3,
+                  wordBreak: "break-word",
+                  flexShrink: 1,
+                  minHeight: 0,
                 }}
               >
                 {slide.instagram}
