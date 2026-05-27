@@ -245,17 +245,31 @@ export function PlayerLed({
             </p>
           </div>
 
-          {/* COLUNA ESQUERDA: textos do vencedor — area segura ate antes do rodape */}
+          {/* AREA CENTRAL: flex row centralizado com texto + circulo, entre header e rodape */}
           <div
             style={{
               position: "absolute",
-              left: "120px",
-              top: "230px",
-              width: "1100px",
-              maxHeight: "470px",
+              top: "170px",
+              bottom: "100px",
+              left: "0",
+              right: "0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "100px",
+              padding: "0 120px",
+            }}
+          >
+          {/* COLUNA ESQUERDA: textos do vencedor */}
+          <div
+            style={{
+              flex: "1 1 0",
+              maxWidth: "1000px",
+              maxHeight: "100%",
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
+              justifyContent: "center",
             }}
           >
             {/* Linha curta dourada */}
@@ -355,26 +369,20 @@ export function PlayerLed({
           {/* COLUNA DIREITA: circulo branco GRANDE com logo da empresa */}
           <div
             style={{
-              position: "absolute",
-              right: "100px",
-              top: "150px",
+              flexShrink: 0,
+              width: "500px",
+              height: "500px",
+              borderRadius: "50%",
+              background: "#fbf8f1",
+              border: "4px solid #d4a537",
+              boxShadow: "0 0 0 1px #8a6516",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+              padding: "100px",
             }}
           >
-            <div
-              style={{
-                width: "560px",
-                height: "560px",
-                borderRadius: "50%",
-                background: "#fbf8f1",
-                border: "4px solid #d4a537",
-                boxShadow: "0 0 0 1px #8a6516",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "hidden",
-                padding: "110px",
-              }}
-            >
               {slide.logo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -409,6 +417,7 @@ export function PlayerLed({
               )}
             </div>
           </div>
+          {/* /AREA CENTRAL flex */}
 
           {/* FOOTER: "CERIMONIA DE PREMIACAO · ARACAJU/SE" + contador */}
           <div
