@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { Play, Pause, ArrowLeft, ArrowRight, Settings } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Play, Pause, ArrowLeft, ArrowRight, Settings, Download, Loader2 } from "lucide-react";
+import { toPng } from "html-to-image";
+import JSZip from "jszip";
 
 export type SlidePlayer = {
   id: string;
@@ -36,6 +38,78 @@ export function PlayerLed({
   const [configAberto, setConfigAberto] = useState(false);
   // Scale dinamica pra preview na tela do laptop (LED real e 2048x768).
   const [scale, setScale] = useState(1);
+  const [exportando, setExportando] = useState<{ atual: number; total: number } | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  // Slides reordenados por categoria > subcategoria > empresa pro export
+  const slidesOrdemCategoria = [...slides].sort((a, b) => {
+    const ca = (a.categoria ?? "zzz").toLowerCase();
+    const cb = (b.categoria ?? "zzz").toLowerCase();
+    if (ca !== cb) return ca.localeCompare(cb, "pt-BR");
+    const sa = (a.subcategoria ?? "").toLowerCase();
+    const sb = (b.subcategoria ?? "").toLowerCase();
+    if (sa !== sb) return sa.localeCompare(sb, "pt-BR");
+    return a.empresa.localeCompare(b.empresa, "pt-BR");
+  });
+
+  async function exportarPNGs() {
+    if (exportando) return;
+    setTocando(false); // pausa auto-advance
+    const idxOriginal = idx;
+    const zip = new JSZip();
+    const total = slidesOrdemCategoria.length;
+
+    // Map id → posicao na lista ordenada (pra setIdx achar pelo id na lista original)
+    const posOriginalPorId = new Map(slides.map((s, i) => [s.id, i]));
+
+    try {
+      for (let i = 0; i < total; i++) {
+        const slideOrdenado = slidesOrdemCategoria[i]!;
+        setExportando({ atual: i + 1, total });
+        const posOriginal = posOriginalPorId.get(slideOrdenado.id) ?? 0;
+        setIdx(posOriginal);
+
+        // Aguarda o React renderizar + imagens carregarem
+        await new Promise((r) => setTimeout(r, 600));
+
+        if (!canvasRef.current) continue;
+        const dataUrl = await toPng(canvasRef.current, {
+          width: LED_W,
+          height: LED_H,
+          pixelRatio: 1,
+          cacheBust: true,
+          style: { transform: "scale(1)" },
+        });
+        const base64 = dataUrl.split(",")[1] ?? "";
+        const catSafe = (slideOrdenado.categoria ?? "sem-categoria")
+          .replace(/[^a-zA-Z0-9À-ú ]/g, "")
+          .trim() || "sem-categoria";
+        const empresaSafe = slideOrdenado.empresa
+          .replace(/[^a-zA-Z0-9À-ú ]/g, "")
+          .trim();
+        const nome = `${String(i + 1).padStart(3, "0")} - ${catSafe} - ${empresaSafe}.png`;
+        zip.file(nome, base64, { base64: true });
+      }
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `melhores-do-ano-${ano}-slides.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("[exportar] falhou:", e);
+      alert(
+        `Falha ao exportar: ${e instanceof Error ? e.message : "?"}\n\nDica: se os logos das empresas estão em outro domínio, o navegador pode bloquear a captura. Tente subir as logos pelo /admin/cerimonia-led.`
+      );
+    } finally {
+      setExportando(null);
+      setIdx(idxOriginal);
+    }
+  }
 
   const ir = useCallback(
     (delta: number) => {
@@ -117,7 +191,7 @@ export function PlayerLed({
           transformOrigin: "center center",
         }}
       >
-        <div className="led-canvas" style={{ width: LED_W, height: LED_H }}>
+        <div ref={canvasRef} className="led-canvas" style={{ width: LED_W, height: LED_H }}>
           {/* Moldura dourada fina */}
           <div
             style={{
@@ -274,7 +348,7 @@ export function PlayerLed({
                 alignItems: "center",
                 justifyContent: "center",
                 overflow: "hidden",
-                padding: "40px",
+                padding: "110px",
               }}
             >
               {slide.logo_url ? (
@@ -287,6 +361,7 @@ export function PlayerLed({
                     maxHeight: "100%",
                     objectFit: "contain",
                   }}
+                  crossOrigin="anonymous"
                 />
               ) : (
                 <span
@@ -381,6 +456,21 @@ export function PlayerLed({
           className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10"
         >
           <Settings className="w-4 h-4" />
+        </button>
+        <button
+          onClick={exportarPNGs}
+          disabled={!!exportando}
+          title="Exportar todas as telas como PNGs em ordem de categoria (zip)"
+          className="h-9 px-3 rounded-full flex items-center gap-2 hover:bg-white/10 disabled:opacity-50"
+        >
+          {exportando ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4" />
+          )}
+          <span className="text-xs whitespace-nowrap">
+            {exportando ? `${exportando.atual}/${exportando.total}` : "Exportar"}
+          </span>
         </button>
       </div>
 
