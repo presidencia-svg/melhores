@@ -330,7 +330,7 @@ export function PlayerLed({
           </div>
 
           {/* COLUNA DIREITA: circulo branco GRANDE com logo da empresa.
-              Padding 43px = logo +15% (area util ~414px no circulo de 500px). */}
+              Padding 49px = logo -3% (area util ~402px no circulo de 500px). */}
           <div
             style={{
               flexShrink: 0,
@@ -344,7 +344,7 @@ export function PlayerLed({
               alignItems: "center",
               justifyContent: "center",
               overflow: "hidden",
-              padding: "43px",
+              padding: "49px",
             }}
           >
               {slide.logo_url ? (
