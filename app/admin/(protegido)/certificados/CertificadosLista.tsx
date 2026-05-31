@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Printer, Loader2, FileText, Pencil } from "lucide-react";
+import { Printer, Loader2, FileText, Pencil, Check } from "lucide-react";
 import type { TenantBranding } from "@/lib/tenant/branding";
 import {
   CERT_W,
@@ -35,6 +35,30 @@ export function CertificadosLista({
   const [edicao, setEdicao] = useState("34ª edição");
   const [ano, setAno] = useState<number>(branding.ano);
   const [imprimindo, setImprimindo] = useState(false);
+  // Por default todos selecionados. Admin desmarca os que NAO quer imprimir.
+  const [selecionados, setSelecionados] = useState<Set<string>>(
+    () => new Set(vencedores.map((v) => v.subcategoria_id))
+  );
+
+  function toggle(id: string) {
+    setSelecionados((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function marcarTodos() {
+    setSelecionados(new Set(vencedores.map((v) => v.subcategoria_id)));
+  }
+  function desmarcarTodos() {
+    setSelecionados(new Set());
+  }
+  function apenasEste(id: string) {
+    setSelecionados(new Set([id]));
+  }
+
+  const qtdSelecionados = selecionados.size;
 
   const Comp = VARIANTES[variante].Componente;
   const nomeOrgao = `Câmara de Dirigentes Lojistas · ${branding.cidade}`;
@@ -172,21 +196,39 @@ export function CertificadosLista({
             </div>
             <div className="min-w-0">
               <p className="font-display-bold text-cdl-blue text-lg leading-tight">
-                Imprimir 1 PDF com {vencedores.length}{" "}
+                Imprimir {qtdSelecionados} de {vencedores.length}{" "}
                 {vencedores.length === 1 ? "certificado" : "certificados"}
               </p>
               <p className="text-xs text-muted leading-snug mt-0.5">
-                No diálogo de impressão escolha <b>Salvar como PDF</b>, papel{" "}
-                <b>Carta paisagem</b>, margens <b>Nenhuma</b> e{" "}
-                <b>Gráficos de fundo: ativado</b>. Texto e ornamentos saem
-                vetoriais.
+                Use os <b>checkboxes</b> abaixo pra escolher só algumas
+                pessoas. No diálogo de impressão: <b>Salvar como PDF</b>,
+                papel <b>Carta paisagem</b>, margens <b>Nenhuma</b>,{" "}
+                <b>Gráficos de fundo: ativado</b>.
               </p>
+              <div className="mt-2 flex gap-3 text-xs">
+                <button
+                  type="button"
+                  onClick={marcarTodos}
+                  disabled={qtdSelecionados === vencedores.length}
+                  className="text-cdl-blue hover:underline disabled:opacity-40 disabled:no-underline"
+                >
+                  Marcar todos
+                </button>
+                <button
+                  type="button"
+                  onClick={desmarcarTodos}
+                  disabled={qtdSelecionados === 0}
+                  className="text-muted hover:text-cdl-blue hover:underline disabled:opacity-40 disabled:no-underline"
+                >
+                  Desmarcar todos
+                </button>
+              </div>
             </div>
           </div>
           <button
             type="button"
             onClick={imprimir}
-            disabled={imprimindo}
+            disabled={imprimindo || qtdSelecionados === 0}
             className="inline-flex items-center gap-2 h-12 px-5 rounded-lg bg-cdl-blue text-white text-sm font-semibold hover:bg-cdl-blue-dark transition-colors disabled:opacity-50"
           >
             {imprimindo ? (
@@ -194,7 +236,11 @@ export function CertificadosLista({
             ) : (
               <Printer className="w-5 h-5" />
             )}
-            {imprimindo ? "preparando…" : "Imprimir / Salvar PDF"}
+            {imprimindo
+              ? "preparando…"
+              : qtdSelecionados === 1
+                ? "Imprimir 1 certificado"
+                : `Imprimir ${qtdSelecionados} certificados`}
           </button>
         </div>
       </div>
@@ -241,42 +287,74 @@ export function CertificadosLista({
                 {grupo} · {lista.length}
               </div>
               <ul className="divide-y divide-cdl-blue/5">
-                {lista.map((v) => (
-                  <li
-                    key={v.subcategoria_id}
-                    className="flex items-center gap-3 px-4 py-2 text-sm"
-                  >
-                    <span className="font-mono text-xs text-muted w-20 shrink-0">
-                      {v.numero.split(" / ")[0]}
-                    </span>
-                    <span className="text-cdl-blue font-medium flex-1 min-w-0 truncate">
-                      {v.vencedor}
-                    </span>
-                    <span className="text-muted text-xs italic flex-1 min-w-0 truncate text-right">
-                      {v.categoria}
-                    </span>
-                  </li>
-                ))}
+                {lista.map((v) => {
+                  const marcado = selecionados.has(v.subcategoria_id);
+                  return (
+                    <li
+                      key={v.subcategoria_id}
+                      className={`flex items-center gap-3 px-4 py-2 text-sm transition-opacity ${
+                        marcado ? "" : "opacity-40"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggle(v.subcategoria_id)}
+                        aria-label={marcado ? "Desmarcar" : "Marcar"}
+                        className={`w-5 h-5 rounded border-2 shrink-0 flex items-center justify-center transition-colors ${
+                          marcado
+                            ? "bg-cdl-blue border-cdl-blue text-white"
+                            : "bg-white border-cdl-blue/30 text-transparent hover:border-cdl-blue"
+                        }`}
+                      >
+                        <Check className="w-3 h-3" />
+                      </button>
+                      <span className="font-mono text-xs text-muted w-16 shrink-0">
+                        {v.numero.split(" / ")[0]}
+                      </span>
+                      <span className="text-cdl-blue font-medium flex-1 min-w-0 truncate">
+                        {v.vencedor}
+                      </span>
+                      <span className="text-muted text-xs italic flex-1 min-w-0 truncate text-right">
+                        {v.categoria}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => apenasEste(v.subcategoria_id)}
+                        title="Imprimir só este (desmarca os outros)"
+                        className="text-[10px] text-cdl-blue hover:underline shrink-0"
+                      >
+                        só este
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Stack escondido no screen — UM cert por pagina no print */}
+      {/* Stack escondido no screen — UM cert por pagina no print.
+          Paginas com .cert-print-skip somem no print (desmarcadas). */}
       <div className="cert-print-stack" aria-hidden="true">
-        {vencedores.map((v) => (
-          <div key={v.subcategoria_id} className="cert-print-page">
-            <div className="cert-scaled">
-              <Comp
-                {...propsBase}
-                vencedor={v.vencedor}
-                categoria={v.categoria}
-                numero={v.numero}
-              />
+        {vencedores.map((v) => {
+          const marcado = selecionados.has(v.subcategoria_id);
+          return (
+            <div
+              key={v.subcategoria_id}
+              className={`cert-print-page ${marcado ? "" : "cert-print-skip"}`}
+            >
+              <div className="cert-scaled">
+                <Comp
+                  {...propsBase}
+                  vencedor={v.vencedor}
+                  categoria={v.categoria}
+                  numero={v.numero}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <style>{`
@@ -302,6 +380,7 @@ export function CertificadosLista({
             page-break-after: auto;
             break-after: auto;
           }
+          .cert-print-page.cert-print-skip { display: none !important; }
           .cert-print-page > .cert-scaled {
             transform: scale(0.8);
             transform-origin: top left;
