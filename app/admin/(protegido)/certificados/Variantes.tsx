@@ -24,7 +24,15 @@ export type CertificadoProps = {
   nomeOrgao: string; // ex: "Câmara de Dirigentes Lojistas · Aracaju"
   dominio: string;
   logoSrc?: string;
+  posicao?: 1 | 2 | 3; // default 1 — define o kicker "vencedor"/"2º colocado"/"3º colocado"
 };
+
+// Texto do kicker acima da categoria, baseado na posicao do podio
+export function kickerPosicao(posicao: 1 | 2 | 3 = 1): string {
+  if (posicao === 1) return "vencedor da categoria";
+  if (posicao === 2) return "2º colocado da categoria";
+  return "3º colocado da categoria";
+}
 
 export const VARIANTES: Record<Variante, { nome: string; Componente: React.ComponentType<CertificadoProps> }> = {
   navy: { nome: "A · Navy moderno luxo", Componente: CertificadoNavy },
@@ -83,6 +91,7 @@ function CornerOrnament({
 export function CertificadoNavy({
   vencedor,
   categoria,
+  posicao = 1,
   numero,
   signatario,
   cargo,
@@ -316,7 +325,7 @@ export function CertificadoNavy({
             textTransform: "uppercase",
           }}
         >
-          vencedor da categoria
+          {kickerPosicao(posicao)}
         </div>
         <div
           style={{
@@ -540,6 +549,7 @@ export function CertificadoNavy({
 export function CertificadoCream({
   vencedor,
   categoria,
+  posicao = 1,
   numero,
   signatario,
   cargo,
@@ -734,7 +744,7 @@ export function CertificadoCream({
               textTransform: "uppercase",
             }}
           >
-            vencedor da categoria
+            {kickerPosicao(posicao)}
           </div>
           <div style={{ width: 50, height: 1, background: "#0a2a5e" }} />
         </div>
@@ -959,6 +969,7 @@ export function CertificadoCream({
 export function CertificadoGala({
   vencedor,
   categoria,
+  posicao = 1,
   numero,
   signatario,
   cargo,
@@ -1244,7 +1255,7 @@ export function CertificadoGala({
             textTransform: "uppercase",
           }}
         >
-          vencedor da categoria
+          {kickerPosicao(posicao)}
         </div>
         <div
           style={{

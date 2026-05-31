@@ -23,9 +23,11 @@ const PREVIEW_SCALE = 0.5;
 export function CertificadosLista({
   vencedores,
   branding,
+  posicao = 1,
 }: {
   vencedores: Vencedor[];
   branding: TenantBranding;
+  posicao?: 1 | 2 | 3;
 }) {
   const [variante, setVariante] = useState<Variante>("navy");
   const [signatario, setSignatario] = useState("Elison do Bomfim");
@@ -49,8 +51,9 @@ export function CertificadosLista({
       nomeOrgao,
       dominio,
       logoSrc: branding.logoUrl ?? "/cdl-logo.png",
+      posicao,
     }),
-    [signatario, cargo, branding.cidade, ano, edicao, nomeOrgao, dominio, branding.logoUrl]
+    [signatario, cargo, branding.cidade, ano, edicao, nomeOrgao, dominio, branding.logoUrl, posicao]
   );
 
   // Agrupa pra mostrar lista de vencedores ordenada por categoria pai.
