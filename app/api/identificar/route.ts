@@ -15,6 +15,7 @@ import {
 } from "@/lib/sessao";
 import { getClientIp, mascararWhatsapp } from "@/lib/utils";
 import { verifyTurnstile } from "@/lib/turnstile";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
 
 const Body = z.object({
   cpf: z.string(),
@@ -101,10 +102,14 @@ async function handleIdentificar(req: Request) {
 
   await supabase.from("rate_limit_ip").insert({ ip, acao: "identificar" });
 
-  // Edição ativa
+  // Edição ativa DO TENANT ATUAL (resolve por host). Sem filtrar por
+  // tenant_id, em multi-tenant a query pegava edicao de outro CDL e
+  // mostrava "votação encerrada" no votante de uma edicao recem criada.
+  const tenantAtual = await getCurrentTenant();
   const { data: edicao } = await supabase
     .from("edicao")
     .select("id, fim_votacao, inicio_votacao")
+    .eq("tenant_id", tenantAtual.id)
     .eq("ativa", true)
     .order("ano", { ascending: false })
     .limit(1)

@@ -9,6 +9,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { CandidatosLista } from "./CandidatosLista";
 import { SmallCaps } from "@/components/brand/Marks";
 import { isSugestoesPublicasLigadas } from "@/lib/sugestoes/mode";
+import { getCurrentTenant } from "@/lib/tenant/resolver";
 
 type Params = { params: Promise<{ categoria: string; subcategoria: string }> };
 
@@ -21,9 +22,12 @@ export default async function VotarSubcategoriaPage({ params }: Params) {
 
   const supabase = createSupabaseAdminClient();
 
+  // Edicao ATIVA do tenant atual (multi-tenant fix).
+  const tenantAtual = await getCurrentTenant();
   const { data: edicao } = await supabase
     .from("edicao")
     .select("id")
+    .eq("tenant_id", tenantAtual.id)
     .eq("ativa", true)
     .order("ano", { ascending: false })
     .limit(1)
