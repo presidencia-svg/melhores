@@ -4,6 +4,12 @@ import { VotacaoEncerrada } from "@/components/voto/VotacaoEncerrada";
 // Layout server-side de /votar/* — bloqueia qualquer rota da votacao
 // quando fim_votacao ja passou e mostra a pagina de "Encerrada".
 // Tambem cobre os endpoints da fluxo (selfie, categorias, c/[..], finalizar).
+//
+// force-dynamic: status muda com o relogio (nao_iniciada → aberta → encerrada),
+// nao pode cachear estatico. Vercel CDN tava mantendo "Encerrada" servido apos
+// transicao pra "aberta".
+export const dynamic = "force-dynamic";
+
 export default async function VotarLayout({
   children,
 }: {
