@@ -9,6 +9,9 @@ import { SmallCaps } from "@/components/brand/Marks";
 import { tryGetCurrentTenant } from "@/lib/tenant/resolver";
 import { getSaldo } from "@/lib/creditos";
 
+// Saldo do tenant + estado de sessao mudam em runtime — nunca cachear.
+export const dynamic = "force-dynamic";
+
 export default async function VotarPage() {
   const sessao = await getVotanteSessao();
   if (sessao) {

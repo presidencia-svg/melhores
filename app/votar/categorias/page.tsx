@@ -11,6 +11,9 @@ import { seededShuffle } from "@/lib/utils";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
 
+// Estado dos votos do votante muda em runtime — nunca cachear.
+export const dynamic = "force-dynamic";
+
 export default async function CategoriasPage() {
   const sessao = await getVotanteSessao();
   if (!sessao) redirect("/votar");

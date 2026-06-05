@@ -8,6 +8,9 @@ import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { isWhatsAppValidacaoLigada } from "@/lib/whatsapp/mode";
 import { WhatsAppForm } from "./WhatsAppForm";
+
+// Sessao do votante muda em runtime — nunca cachear.
+export const dynamic = "force-dynamic";
 import { SmallCaps, TrophyMark, Divider } from "@/components/brand/Marks";
 
 export default async function FinalizarPage() {
