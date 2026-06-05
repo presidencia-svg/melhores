@@ -3,6 +3,16 @@ import { isAdmin, getAdminTenantOuNull } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { normalizarNome } from "@/lib/utils";
 
+// Hardening upload: limite tamanho + mime types aceitos (so CSV).
+const MAX_BYTES = 5 * 1024 * 1024; // 5MB
+const TIPOS_OK = new Set([
+  "text/csv",
+  "application/csv",
+  "application/vnd.ms-excel", // alguns browsers mandam isso pra CSV
+  "application/octet-stream",
+  "", // alguns browsers nao mandam type
+]);
+
 type Linha = { categoria: string; subcategoria: string; nome: string; descricao?: string; foto_url?: string };
 
 function parseCSV(text: string): Linha[] {
@@ -67,6 +77,18 @@ export async function POST(req: Request) {
   const file = formData.get("file");
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Arquivo não enviado" }, { status: 400 });
+  }
+  if (file.size > MAX_BYTES) {
+    return NextResponse.json(
+      { error: `Arquivo maior que ${MAX_BYTES / 1024 / 1024}MB` },
+      { status: 400 }
+    );
+  }
+  if (!TIPOS_OK.has(file.type)) {
+    return NextResponse.json(
+      { error: `Formato não suportado (${file.type || "desconhecido"}). Use .csv` },
+      { status: 400 }
+    );
   }
 
   const text = await file.text();

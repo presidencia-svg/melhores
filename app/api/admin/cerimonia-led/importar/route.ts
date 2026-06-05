@@ -5,6 +5,18 @@ import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
+// Hardening upload: limite tamanho + mime types aceitos. Admin trusted
+// mas defesa em profundidade evita DoS por arquivo enorme ou parser
+// de bytes binarios em tentativas erradas.
+const MAX_BYTES = 5 * 1024 * 1024; // 5MB
+const TIPOS_OK = new Set([
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // xlsx
+  "application/vnd.ms-excel", // xls
+  "text/csv",
+  "application/octet-stream", // alguns browsers mandam isso
+  "", // alguns browsers nao mandam type
+]);
+
 // Le primeira sheet do xlsx via ExcelJS e converte pra array de objetos
 // {header: value} igual o sheet_to_json do antigo SheetJS. Usado pra
 // preservar o resto da logica de mapeamento de colunas (case+acento).
@@ -137,6 +149,19 @@ export async function POST(req: Request) {
   const file = formData.get("planilha");
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Planilha não enviada" }, { status: 400 });
+  }
+
+  if (file.size > MAX_BYTES) {
+    return NextResponse.json(
+      { error: `Arquivo maior que ${MAX_BYTES / 1024 / 1024}MB` },
+      { status: 400 }
+    );
+  }
+  if (!TIPOS_OK.has(file.type)) {
+    return NextResponse.json(
+      { error: `Formato não suportado (recebido: ${file.type || "desconhecido"}). Use .xlsx, .xls ou .csv` },
+      { status: 400 }
+    );
   }
 
   const arrayBuffer = await file.arrayBuffer();
