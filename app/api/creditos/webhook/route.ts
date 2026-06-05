@@ -148,6 +148,18 @@ export async function POST(req: Request) {
         pagamentoId: pagamento.id,
       });
     } catch (e) {
+      // Postgres 23505 = unique_violation. Defesa contra dupla creditagem
+      // por webhook duplicado/race — migration 055 cria unique partial em
+      // transacoes_credito.pagamento_id WHERE motivo='recarga'. Se ja foi
+      // creditado, e' idempotente: retorna ok sem creditar de novo.
+      const code = (e as { code?: string } | null)?.code;
+      const msg = (e as Error | null)?.message ?? "";
+      if (code === "23505" || msg.includes("ux_transacoes_recarga_pagamento")) {
+        console.log(
+          `[creditos/webhook] recarga ${pagamento.id} ja' processada (idempotente)`
+        );
+        return NextResponse.json({ ok: true, already_credited: true });
+      }
       console.error("[creditos/webhook] creditarCredito falhou:", e);
     }
 
