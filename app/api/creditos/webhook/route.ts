@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { creditarCredito } from "@/lib/creditos";
 import { consultarPagamento } from "@/lib/mercadopago/client";
@@ -9,6 +10,40 @@ import { consultarPagamento } from "@/lib/mercadopago/client";
 //
 // MP chama esse endpoint via POST. external_reference no MP e' nosso
 // pagamento.id, que vem em payment.external_reference depois de consultar.
+//
+// Validacao de assinatura: MP envia x-signature: "ts=...,v1=hash" + x-request-id.
+// Manifesto: id:<data.id>;request-id:<x-request-id>;ts:<ts>;
+// Hash: HMAC-SHA256(manifesto, MERCADOPAGO_WEBHOOK_SECRET) === v1
+//
+// Sem MERCADOPAGO_WEBHOOK_SECRET configurado: aceita sem validar (dev/legacy).
+
+function verifySignature(
+  secret: string,
+  signatureHeader: string,
+  requestId: string,
+  dataId: string
+): boolean {
+  // x-signature: "ts=1704908010,v1=abc123..."
+  const parts = signatureHeader.split(",").map((p) => p.trim());
+  const tsPart = parts.find((p) => p.startsWith("ts="))?.slice(3);
+  const v1Part = parts.find((p) => p.startsWith("v1="))?.slice(3);
+  if (!tsPart || !v1Part) return false;
+
+  // Anti-replay janela 5min
+  const ts = parseInt(tsPart, 10);
+  if (!Number.isFinite(ts)) return false;
+  const ageMs = Math.abs(Date.now() - ts * 1000);
+  if (ageMs > 5 * 60_000) return false;
+
+  const manifesto = `id:${dataId};request-id:${requestId};ts:${tsPart};`;
+  const expected = createHmac("sha256", secret).update(manifesto).digest("hex");
+
+  // timing-safe compare
+  const a = Buffer.from(v1Part, "hex");
+  const b = Buffer.from(expected, "hex");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
 
 export async function POST(req: Request) {
   let body: Record<string, unknown> = {};
@@ -16,6 +51,35 @@ export async function POST(req: Request) {
     body = await req.json();
   } catch {
     return NextResponse.json({ ok: false, error: "json inválido" }, { status: 400 });
+  }
+
+  // Valida assinatura HMAC. Se nao tem secret no env, pula a checagem
+  // (preserva ambientes dev). Em prod a env deve estar setada.
+  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET?.trim() ?? "";
+  if (secret) {
+    const sigHeader = req.headers.get("x-signature") ?? "";
+    const requestId = req.headers.get("x-request-id") ?? "";
+    const data = body.data as { id?: string | number } | undefined;
+    const dataIdForSig = data?.id ? String(data.id) : "";
+
+    if (!sigHeader || !requestId || !dataIdForSig) {
+      console.warn("[creditos/webhook] headers de assinatura ausentes");
+      return NextResponse.json(
+        { ok: false, error: "headers de assinatura ausentes" },
+        { status: 401 }
+      );
+    }
+
+    const valid = verifySignature(secret, sigHeader, requestId, dataIdForSig);
+    if (!valid) {
+      console.warn(
+        `[creditos/webhook] assinatura invalida pra payment_id=${dataIdForSig}`
+      );
+      return NextResponse.json(
+        { ok: false, error: "assinatura inválida" },
+        { status: 401 }
+      );
+    }
   }
 
   // MP manda dois tipos de evento; ambos com data.id
