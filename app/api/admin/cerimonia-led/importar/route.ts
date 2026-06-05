@@ -1,9 +1,59 @@
 import { NextResponse } from "next/server";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { isAdmin } from "@/lib/admin/auth";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
+
+// Le primeira sheet do xlsx via ExcelJS e converte pra array de objetos
+// {header: value} igual o sheet_to_json do antigo SheetJS. Usado pra
+// preservar o resto da logica de mapeamento de colunas (case+acento).
+async function readSheetAsObjects(
+  arrayBuffer: ArrayBuffer
+): Promise<Array<Record<string, string>>> {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(arrayBuffer);
+  const ws = wb.worksheets[0];
+  if (!ws || ws.rowCount === 0) return [];
+
+  // Linha 1 = header. Salva como array de strings.
+  const headerRow = ws.getRow(1);
+  const headers: string[] = [];
+  headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+    headers[colNumber - 1] = String(cell.value ?? "").trim();
+  });
+
+  const rows: Array<Record<string, string>> = [];
+  for (let r = 2; r <= ws.rowCount; r++) {
+    const row = ws.getRow(r);
+    const obj: Record<string, string> = {};
+    let temConteudo = false;
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      const key = headers[colNumber - 1];
+      if (!key) return;
+      const v = cell.value;
+      // Trata ricos (rich text), formulas, datas, numeros e strings
+      let str = "";
+      if (v == null) str = "";
+      else if (typeof v === "object" && "richText" in v) {
+        str = (v as { richText: Array<{ text: string }> }).richText
+          .map((r) => r.text)
+          .join("");
+      } else if (typeof v === "object" && "result" in v) {
+        str = String((v as { result: unknown }).result ?? "");
+      } else if (v instanceof Date) {
+        str = v.toISOString();
+      } else {
+        str = String(v);
+      }
+      str = str.trim();
+      obj[key] = str;
+      if (str) temConteudo = true;
+    });
+    if (temConteudo) rows.push(obj);
+  }
+  return rows;
+}
 
 // Mapa empresa→{categoria, subcategoria} dos top1 do podio.
 // Usado pra auto-preencher slides na importacao.
@@ -89,10 +139,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Planilha não enviada" }, { status: 400 });
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  let wb: XLSX.WorkBook;
+  const arrayBuffer = await file.arrayBuffer();
+  let rows: Array<Record<string, string>>;
   try {
-    wb = XLSX.read(buffer, { type: "buffer" });
+    rows = await readSheetAsObjects(arrayBuffer);
   } catch (e) {
     return NextResponse.json(
       { error: `Falha ao ler xlsx: ${e instanceof Error ? e.message : "?"}` },
@@ -100,16 +150,11 @@ export async function POST(req: Request) {
     );
   }
 
-  const sheetName = wb.SheetNames[0];
-  if (!sheetName) {
-    return NextResponse.json({ error: "Planilha vazia" }, { status: 400 });
-  }
-  const sheet = wb.Sheets[sheetName]!;
-  type Row = Record<string, string | number | undefined>;
-  const rows = XLSX.utils.sheet_to_json<Row>(sheet, { defval: "" });
-
   if (rows.length === 0) {
-    return NextResponse.json({ error: "Planilha sem linhas" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Planilha sem linhas válidas" },
+      { status: 400 }
+    );
   }
 
   // Mapeia colunas case-insensitive sem acento
