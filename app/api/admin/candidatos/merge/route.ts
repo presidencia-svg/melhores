@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isAdmin } from "@/lib/admin/auth";
+import { getAdminTenantOuNull } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 const Body = z.object({
@@ -11,7 +11,8 @@ const Body = z.object({
 // Mescla dois candidatos: move votos do origem pro destino e apaga origem.
 // Lida com conflito: se um votante já votou nos dois, mantém o voto do destino.
 export async function POST(req: Request) {
-  if (!(await isAdmin())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  const tenant = await getAdminTenantOuNull();
+  if (!tenant) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
   const json = await req.json().catch(() => ({}));
   const parsed = Body.safeParse(json);
@@ -22,11 +23,15 @@ export async function POST(req: Request) {
 
   const supabase = createSupabaseAdminClient();
 
-  // Valida que ambos existem e estão na mesma subcategoria
+  // Valida que ambos existem, estao na mesma subcategoria E pertencem ao
+  // tenant do admin logado. Sem o join com edicao!inner(tenant_id) +
+  // .eq("edicao.tenant_id", ...), admin do tenant A podia passar UUIDs
+  // de candidatos do tenant B e mesclar/deletar registros alheios.
   const { data: cands } = await supabase
     .from("candidatos")
-    .select("id, subcategoria_id, sugestoes_count")
-    .in("id", [parsed.data.origemId, parsed.data.destinoId]);
+    .select("id, subcategoria_id, sugestoes_count, edicao!inner(tenant_id)")
+    .in("id", [parsed.data.origemId, parsed.data.destinoId])
+    .eq("edicao.tenant_id", tenant.id);
 
   if (!cands || cands.length !== 2) {
     return NextResponse.json({ error: "Candidatos não encontrados" }, { status: 404 });
