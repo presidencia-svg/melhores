@@ -44,6 +44,23 @@ export async function POST(req: Request) {
   const nomeFormatado = tituloPT(nomeOriginal);
   const nomeNorm = normalizarNome(nomeFormatado);
 
+  // Cross-tenant guard: subcategoria precisa ser da MESMA edicao que o
+  // votante (sessao.edicao_id). Sem isso, votante do tenant A poderia
+  // sugerir candidatos pra subcategorias de outros tenants e poluir
+  // catalogos alheios. Lookup antecipado da subcategoria pra cobrir
+  // ambos os caminhos (match + insert).
+  const { data: subcat } = await supabase
+    .from("subcategorias")
+    .select("edicao_id")
+    .eq("id", parsed.data.subcategoriaId)
+    .maybeSingle();
+  if (!subcat) {
+    return NextResponse.json({ error: "Subcategoria não encontrada" }, { status: 404 });
+  }
+  if (subcat.edicao_id !== sessao.edicao_id) {
+    return NextResponse.json({ error: "Subcategoria inválida" }, { status: 400 });
+  }
+
   // 1) Fuzzy match — se já existe candidato parecido na mesma subcategoria, reutiliza
   const { data: similares } = await supabase.rpc("match_candidato_por_nome", {
     p_subcategoria_id: parsed.data.subcategoriaId,
@@ -59,16 +76,7 @@ export async function POST(req: Request) {
   }
 
   // 2) Não tem match — cria novo candidato JÁ APROVADO (atômico, sem update posterior)
-  // edicao_id herda da subcategoria pai (denorm — schema 035).
-  const { data: subcat } = await supabase
-    .from("subcategorias")
-    .select("edicao_id")
-    .eq("id", parsed.data.subcategoriaId)
-    .maybeSingle();
-  if (!subcat) {
-    return NextResponse.json({ error: "Subcategoria não encontrada" }, { status: 404 });
-  }
-
+  // edicao_id herda da subcategoria pai (denorm — schema 035; ja' validado acima).
   const { data: novo, error } = await supabase
     .from("candidatos")
     .insert({

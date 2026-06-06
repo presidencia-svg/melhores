@@ -57,6 +57,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Candidato inválido" }, { status: 400 });
   }
 
+  // Cross-tenant guard: candidato precisa ser da MESMA edicao que o votante.
+  // Sem isso, votante de tenant A podia votar em candidato de tenant B
+  // passando o UUID (UUIDs nao sao secretos — aparecem em URLs publicas).
+  if (cand.edicao_id !== sessao.edicao_id) {
+    return NextResponse.json({ error: "Candidato inválido" }, { status: 400 });
+  }
+
   // INSERT puro, sem upsert — voto é definitivo. Se ja existe linha pra
   // (votante_id, subcategoria_id), o unique constraint do banco impede
   // duplicacao e o erro vira 409. Nao permite trocar voto ja registrado.

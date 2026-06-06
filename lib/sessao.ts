@@ -15,6 +15,7 @@ export type VotanteSessao = {
   selfie_url: string | null;
   whatsapp: string | null;
   whatsapp_validado: boolean;
+  edicao_id: string;
 };
 
 // Dados coletados em /api/identificar e mantidos em cookie httpOnly até a
@@ -104,7 +105,7 @@ export async function getVotanteSessao(): Promise<VotanteSessao | null> {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("votantes")
-    .select("id, cpf, nome, selfie_url, whatsapp, whatsapp_validado")
+    .select("id, cpf, nome, selfie_url, whatsapp, whatsapp_validado, edicao_id")
     .eq("id", id)
     .maybeSingle();
 
