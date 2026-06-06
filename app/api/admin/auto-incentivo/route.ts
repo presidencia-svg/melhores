@@ -16,6 +16,10 @@ export async function GET() {
   const umaHoraAtras = new Date(Date.now() - 60 * 60_000).toISOString();
   const umDiaAtras = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
 
+  // incentivo_envios_log nao tem tenant_id direto — vincula via
+  // votante_id → votantes.edicao_id → edicao.tenant_id. Filtra com
+  // join inner-join + .eq("votantes.edicao.tenant_id", ...) pra evitar
+  // vazamento de contagem cross-tenant.
   const [{ data: cfg }, { count: hora }, { count: dia }, { count: autoDia }] =
     await Promise.all([
       supabase
@@ -26,15 +30,27 @@ export async function GET() {
         .maybeSingle(),
       supabase
         .from("incentivo_envios_log")
-        .select("*", { head: true, count: "exact" })
+        .select("id, votantes!inner(edicao!inner(tenant_id))", {
+          head: true,
+          count: "exact",
+        })
+        .eq("votantes.edicao.tenant_id", tenant.id)
         .gte("criado_em", umaHoraAtras),
       supabase
         .from("incentivo_envios_log")
-        .select("*", { head: true, count: "exact" })
+        .select("id, votantes!inner(edicao!inner(tenant_id))", {
+          head: true,
+          count: "exact",
+        })
+        .eq("votantes.edicao.tenant_id", tenant.id)
         .gte("criado_em", umDiaAtras),
       supabase
         .from("incentivo_envios_log")
-        .select("*", { head: true, count: "exact" })
+        .select("id, votantes!inner(edicao!inner(tenant_id))", {
+          head: true,
+          count: "exact",
+        })
+        .eq("votantes.edicao.tenant_id", tenant.id)
         .gte("criado_em", umDiaAtras)
         .eq("motivo", "auto_empate"),
     ]);
