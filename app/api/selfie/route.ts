@@ -29,10 +29,17 @@ export async function POST(req: Request) {
   }
 
   const dataUrl = parsed.data.image;
-  const match = dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
-  if (!match) return NextResponse.json({ error: "Formato inválido" }, { status: 400 });
+  // Restringe a png/jpeg/webp. SVG aceito anteriormente pelo regex frouxo
+  // image/\w+ permitia XSS (SVG executa script no browser).
+  const match = dataUrl.match(/^data:(image\/(png|jpe?g|webp));base64,(.+)$/);
+  if (!match) {
+    return NextResponse.json(
+      { error: "Formato inválido — envie PNG, JPG ou WebP" },
+      { status: 400 }
+    );
+  }
   const mime = match[1]!;
-  const base64 = match[2]!;
+  const base64 = match[3]!;
   const bytes = Buffer.from(base64, "base64");
 
   if (bytes.length > 3_000_000) {
