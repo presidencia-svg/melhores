@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isAdmin } from "@/lib/admin/auth";
+import { getAdminTenantOuNull } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 const Body = z.object({
@@ -11,7 +11,8 @@ const Body = z.object({
 });
 
 export async function POST(req: Request) {
-  if (!(await isAdmin())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  const tenant = await getAdminTenantOuNull();
+  if (!tenant) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
   const json = await req.json().catch(() => ({}));
   const parsed = Body.safeParse(json);
@@ -20,11 +21,14 @@ export async function POST(req: Request) {
   const supabase = createSupabaseAdminClient();
 
   // edicao_id da subcategoria herda da categoria pai (denorm necessario
-  // pelo schema 035 — coluna NOT NULL).
+  // pelo schema 035 — coluna NOT NULL). Cross-tenant guard: categoria
+  // precisa ser do tenant logado, senao admin de A poderia anexar
+  // subcategorias em categorias de B.
   const { data: categoria } = await supabase
     .from("categorias")
-    .select("edicao_id")
+    .select("edicao_id, edicao!inner(tenant_id)")
     .eq("id", parsed.data.categoriaId)
+    .eq("edicao.tenant_id", tenant.id)
     .maybeSingle();
   if (!categoria) {
     return NextResponse.json({ error: "Categoria não encontrada" }, { status: 404 });

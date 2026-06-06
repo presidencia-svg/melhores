@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isAdmin } from "@/lib/admin/auth";
+import { getAdminTenantOuNull } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 const PatchBody = z.object({
@@ -10,16 +10,21 @@ const PatchBody = z.object({
 });
 
 export async function GET() {
-  if (!(await isAdmin())) {
+  const tenant = await getAdminTenantOuNull();
+  if (!tenant) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
   const supabase = createSupabaseAdminClient();
+  // Cross-tenant guard: filtra ativa=true SOMENTE no tenant logado. Sem
+  // .eq("tenant_id"), admin de A podia ver datas de edicao de B se A nao
+  // tivesse edicao ativa.
   const { data: edicao } = await supabase
     .from("edicao")
     .select(
       "id, ano, nome, inicio_votacao, fim_votacao, divulgacao_resultado, ativa"
     )
     .eq("ativa", true)
+    .eq("tenant_id", tenant.id)
     .order("ano", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -31,7 +36,8 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  if (!(await isAdmin())) {
+  const tenant = await getAdminTenantOuNull();
+  if (!tenant) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
@@ -51,10 +57,13 @@ export async function PATCH(req: Request) {
   }
 
   const supabase = createSupabaseAdminClient();
+  // Mesmo guard do GET: scopa por tenant_id pra impedir admin de A de
+  // alterar datas de votacao da edicao de B (encerrar/abrir alheio).
   const { data: edicao } = await supabase
     .from("edicao")
     .select("id")
     .eq("ativa", true)
+    .eq("tenant_id", tenant.id)
     .order("ano", { ascending: false })
     .limit(1)
     .maybeSingle();

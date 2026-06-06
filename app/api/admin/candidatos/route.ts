@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isAdmin } from "@/lib/admin/auth";
+import { getAdminTenantOuNull } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { normalizarNome, nomeCandidatoValido, tituloPT } from "@/lib/utils";
 
@@ -12,7 +12,8 @@ const Body = z.object({
 });
 
 export async function POST(req: Request) {
-  if (!(await isAdmin())) {
+  const tenant = await getAdminTenantOuNull();
+  if (!tenant) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
@@ -35,10 +36,13 @@ export async function POST(req: Request) {
   const nomeNorm = normalizarNome(nomeFormatado);
 
   // edicao_id herda da subcategoria pai (denorm — schema 035).
+  // Cross-tenant guard: subcategoria precisa pertencer ao tenant logado,
+  // senao admin de A poderia criar candidatos no catalogo de B.
   const { data: subcat } = await supabase
     .from("subcategorias")
-    .select("edicao_id")
+    .select("edicao_id, edicao!inner(tenant_id)")
     .eq("id", parsed.data.subcategoria_id)
+    .eq("edicao.tenant_id", tenant.id)
     .maybeSingle();
   if (!subcat) {
     return NextResponse.json({ error: "Subcategoria não encontrada" }, { status: 404 });

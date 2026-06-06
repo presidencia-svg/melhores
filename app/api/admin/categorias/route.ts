@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isAdmin } from "@/lib/admin/auth";
+import { getAdminTenantOuNull } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 const Body = z.object({
@@ -11,13 +11,27 @@ const Body = z.object({
 });
 
 export async function POST(req: Request) {
-  if (!(await isAdmin())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  const tenant = await getAdminTenantOuNull();
+  if (!tenant) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
   const json = await req.json().catch(() => ({}));
   const parsed = Body.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
 
   const supabase = createSupabaseAdminClient();
+
+  // Cross-tenant guard: edicao precisa pertencer ao tenant logado, senao
+  // admin de A pode criar categoria na edicao de B.
+  const { data: edicao } = await supabase
+    .from("edicao")
+    .select("id")
+    .eq("id", parsed.data.edicaoId)
+    .eq("tenant_id", tenant.id)
+    .maybeSingle();
+  if (!edicao) {
+    return NextResponse.json({ error: "Edição não encontrada" }, { status: 404 });
+  }
+
   const { count } = await supabase
     .from("categorias")
     .select("*", { head: true, count: "exact" })
