@@ -27,6 +27,12 @@ export default async function Home() {
               Como funciona
             </Link>
             <Link
+              href="/cadastrar"
+              className="hover:text-navy-800 hidden sm:inline"
+            >
+              Para sua CDL
+            </Link>
+            <Link
               href="/admin/login"
               className="kicker text-navy-800/40 hover:text-navy-800"
               style={{ fontSize: 9 }}
@@ -190,6 +196,52 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Para outras CDLs — faixa institucional */}
+      <section className="bg-navy-800 text-cream-100 py-12 sm:py-16">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+            <div className="max-w-xl">
+              <SmallCaps color="#d4a537" size={11}>
+                para entidades · cdls · associações
+              </SmallCaps>
+              <h3
+                className="font-display text-cream-100 mt-2 sm:mt-3"
+                style={{
+                  fontSize: "clamp(24px, 5vw, 36px)",
+                  lineHeight: 1.1,
+                  fontWeight: 300,
+                }}
+              >
+                Sua CDL também pode ter o seu{" "}
+                <span className="font-display-bold text-gold-400">
+                  Melhores do Ano
+                </span>
+                .
+              </h3>
+              <p className="text-cream-100/70 text-sm sm:text-base mt-3 leading-relaxed">
+                Plataforma pronta, votação 100% online, validação por CPF e
+                selfie, painel administrativo e troféus. Pronta para rodar em
+                até 24h, com 14 dias de avaliação grátis.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 w-full md:w-auto">
+              <Link href="/cadastrar" className="w-full md:w-auto">
+                <Button
+                  variant="gold"
+                  size="lg"
+                  className="w-full md:w-auto px-8 sm:px-10"
+                >
+                  Quero para minha cidade
+                </Button>
+              </Link>
+              <p className="text-xs text-cream-100/50 text-center">
+                sem cartão · cancele quando quiser
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-navy-900 text-cream-100/70 py-8 mt-auto">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 flex flex-col md:grid md:grid-cols-3 gap-5 items-center text-center md:text-left">
@@ -198,6 +250,7 @@ export default async function Home() {
           </div>
           <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm">
             <Link href="/regulamento" className="hover:text-cream-100">Como funciona</Link>
+            <Link href="/cadastrar" className="hover:text-cream-100">Para sua CDL</Link>
             <Link href="/termos" className="hover:text-cream-100">Termos</Link>
             <Link href="/privacidade" className="hover:text-cream-100">Privacidade</Link>
           </div>
