@@ -2,6 +2,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { ResultadosFiltrados } from "./ResultadosFiltrados";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
+import { getEdicaoSelecionada } from "@/lib/edicao-selecionada";
+import { HistoricoBanner } from "@/components/admin/HistoricoBanner";
 
 type Resultado = {
   candidato_id: string;
@@ -25,13 +27,20 @@ type Resultado = {
 // pro usuario.
 export const dynamic = "force-dynamic";
 
-export default async function ResultadosPage() {
+export default async function ResultadosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ edicao?: string }>;
+}) {
   const tenant = await getCurrentTenant();
   const status = await getEdicaoStatus(tenant.id);
   if (status.status === "sem_edicao") {
     return <div className="p-8 text-red-600">Crie uma edição ativa primeiro.</div>;
   }
-  const edicao = status.edicao;
+  const sp = await searchParams;
+  const sel = await getEdicaoSelecionada(tenant.id, sp.edicao);
+  const edicao = sel?.edicao ?? status.edicao;
+  const isHistorico = sel?.isHistorico ?? false;
   const supabase = createSupabaseAdminClient();
 
   // Paginacao manual: PostgREST default trunca em 1000 linhas.
@@ -90,13 +99,21 @@ export default async function ResultadosPage() {
 
   return (
     <div className="p-8">
+      {isHistorico && (
+        <HistoricoBanner
+          edicaoNome={edicao.nome}
+          ano={edicao.ano}
+          voltarHref="/admin/resultados"
+        />
+      )}
       <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-3xl font-bold text-cdl-blue">
             Resultados
           </h1>
           <p className="text-muted mt-1">
-            {gruposOrdenados.length} subcategorias · atualizado ao vivo
+            {edicao.nome} · {gruposOrdenados.length} subcategorias
+            {isHistorico ? "" : " · atualizado ao vivo"}
           </p>
           {viewWarning && (
             <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">

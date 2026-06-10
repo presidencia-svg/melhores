@@ -24,6 +24,8 @@ import { LinkVotacaoCard } from "./LinkVotacaoCard";
 import { VotosPorDiaCard } from "./VotosPorDiaCard";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
+import { getEdicaoSelecionada } from "@/lib/edicao-selecionada";
+import { HistoricoBanner } from "@/components/admin/HistoricoBanner";
 
 // Dinamico: durante votacao os totais mudam constantemente. Cada acesso ao
 // dashboard re-fetcha do banco. Antes era cache 1h + botao manual.
@@ -48,7 +50,11 @@ type VotanteRecente = {
 
 type VotosPorDiaRow = { dia: string; total: number };
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ edicao?: string }>;
+}) {
   // Tenant sem edicao = primeiro acesso. Manda pro wizard antes do dashboard.
   const tenant = await getCurrentTenant();
   const status = await getEdicaoStatus(tenant.id);
@@ -56,7 +62,12 @@ export default async function AdminDashboard() {
     redirect("/admin/onboarding");
   }
 
-  const edicao = status.edicao;
+  // Suporta ?edicao=<uuid> pra ver dashboard de edicoes anteriores
+  // (ex: 2025 ja' encerrada). Default e' a edicao ativa.
+  const sp = await searchParams;
+  const sel = await getEdicaoSelecionada(tenant.id, sp.edicao);
+  const edicao = sel?.edicao ?? status.edicao;
+  const isHistorico = sel?.isHistorico ?? false;
   const supabase = createSupabaseAdminClient();
 
   // Tudo escopado em edicao_id. Tabelas via denorm (035), views projetam
@@ -228,6 +239,13 @@ export default async function AdminDashboard() {
 
   return (
     <div className="p-8">
+      {isHistorico && (
+        <HistoricoBanner
+          edicaoNome={edicao.nome}
+          ano={edicao.ano}
+          voltarHref="/admin"
+        />
+      )}
       {/* Header */}
       <header className="mb-6 flex items-start justify-between flex-wrap gap-4">
         <div>

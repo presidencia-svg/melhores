@@ -4,6 +4,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { fetchMetaInsights } from "@/lib/meta-whatsapp/insights";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
+import { getEdicaoSelecionada } from "@/lib/edicao-selecionada";
+import { HistoricoBanner } from "@/components/admin/HistoricoBanner";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -124,7 +126,7 @@ type OrigemRow = { origem: string; total: number };
 export default async function WhatsAppInsightsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ periodo?: string }>;
+  searchParams: Promise<{ periodo?: string; edicao?: string }>;
 }) {
   const sp = await searchParams;
   const days = clampDays(sp.periodo);
@@ -133,9 +135,10 @@ export default async function WhatsAppInsightsPage({
   const cutoff = new Date(nowMs - days * 86_400_000).toISOString();
 
   const tenant = await getCurrentTenant();
-  const edicaoStatus = await getEdicaoStatus(tenant.id);
-  const edicaoId =
-    edicaoStatus.status !== "sem_edicao" ? edicaoStatus.edicao.id : "";
+  const sel = await getEdicaoSelecionada(tenant.id, sp.edicao);
+  const edicao = sel?.edicao ?? null;
+  const edicaoId = edicao?.id ?? "";
+  const isHistorico = sel?.isHistorico ?? false;
   const supabase = createSupabaseAdminClient();
 
   const [
@@ -320,6 +323,13 @@ export default async function WhatsAppInsightsPage({
 
   return (
     <div className="p-8 space-y-6">
+      {isHistorico && edicao && (
+        <HistoricoBanner
+          edicaoNome={edicao.nome}
+          ano={edicao.ano}
+          voltarHref="/admin/whatsapp/insights"
+        />
+      )}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-3xl font-bold text-cdl-blue flex items-center gap-2">
@@ -334,7 +344,7 @@ export default async function WhatsAppInsightsPage({
           {PERIODOS.map((p) => (
             <Link
               key={p}
-              href={`/admin/whatsapp/insights?periodo=${p}`}
+              href={`/admin/whatsapp/insights?periodo=${p}${isHistorico && edicao ? `&edicao=${edicao.id}` : ""}`}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 p === days ? "bg-cdl-blue text-white" : "text-cdl-blue hover:bg-cdl-blue/10"
               }`}

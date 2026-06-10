@@ -5,6 +5,8 @@ import { Medal } from "lucide-react";
 import { PodiumLista, type Podium } from "./PodiumLista";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
+import { getEdicaoSelecionada } from "@/lib/edicao-selecionada";
+import { HistoricoBanner } from "@/components/admin/HistoricoBanner";
 import { montarBranding } from "@/lib/tenant/branding";
 
 // Dinamico: refletir mudancas ao vivo (ex: mesclagem de candidatos, votos
@@ -16,7 +18,7 @@ const ORDENS = ["votos", "alfabetica"] as const;
 export default async function PodiumPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ordem?: string }>;
+  searchParams: Promise<{ ordem?: string; edicao?: string }>;
 }) {
   const sp = await searchParams;
   const ordem = (ORDENS.includes(sp.ordem as (typeof ORDENS)[number])
@@ -24,9 +26,9 @@ export default async function PodiumPage({
     : "votos") as "votos" | "alfabetica";
 
   const tenant = await getCurrentTenant();
-  const edicaoStatus = await getEdicaoStatus(tenant.id);
-  const edicao =
-    edicaoStatus.status !== "sem_edicao" ? edicaoStatus.edicao : null;
+  const sel = await getEdicaoSelecionada(tenant.id, sp.edicao);
+  const edicao = sel?.edicao ?? null;
+  const isHistorico = sel?.isHistorico ?? false;
   const branding = montarBranding(tenant, edicao);
 
   const supabase = createSupabaseAdminClient();
@@ -65,6 +67,13 @@ export default async function PodiumPage({
 
   return (
     <div className="p-8 space-y-6">
+      {isHistorico && edicao && (
+        <HistoricoBanner
+          edicaoNome={edicao.nome}
+          ano={edicao.ano}
+          voltarHref="/admin/podium"
+        />
+      )}
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-3xl font-bold text-cdl-blue flex items-center gap-2">
@@ -81,7 +90,7 @@ export default async function PodiumPage({
             {ORDENS.map((o) => (
               <Link
                 key={o}
-                href={`/admin/podium?ordem=${o}`}
+                href={`/admin/podium?ordem=${o}${isHistorico && edicao ? `&edicao=${edicao.id}` : ""}`}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   o === ordem ? "bg-cdl-blue text-white" : "text-cdl-blue hover:bg-cdl-blue/10"
                 }`}

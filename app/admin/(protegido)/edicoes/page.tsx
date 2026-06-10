@@ -2,7 +2,16 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
-import { CalendarRange, CheckCircle2, Clock, Hourglass } from "lucide-react";
+import {
+  CalendarRange,
+  CheckCircle2,
+  Clock,
+  Hourglass,
+  BarChart3,
+  Trophy,
+  Users,
+  MessageSquare,
+} from "lucide-react";
 import { NovaEdicaoForm } from "./NovaEdicaoForm";
 
 export const dynamic = "force-dynamic";
@@ -103,8 +112,19 @@ function EdicaoRowCard({ e }: { e: EdicaoRow }) {
     },
   }[status];
 
+  // Pra edicao ativa, os atalhos linkam pras paginas sem parametro
+  // (compor.atual). Pra edicoes nao-ativas, passa ?edicao=<id> pra
+  // forcar visualizacao do historico.
+  const qs = e.ativa ? "" : `?edicao=${e.id}`;
+  const atalhos: { href: string; label: string; icon: React.ReactNode }[] = [
+    { href: `/admin${qs}`, label: "Dashboard", icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { href: `/admin/resultados${qs}`, label: "Resultados", icon: <Trophy className="w-3.5 h-3.5" /> },
+    { href: `/admin/votantes${qs}`, label: "Votantes", icon: <Users className="w-3.5 h-3.5" /> },
+    { href: `/admin/whatsapp/insights${qs}`, label: "WhatsApp", icon: <MessageSquare className="w-3.5 h-3.5" /> },
+  ];
+
   return (
-    <Card className={!e.ativa ? "opacity-70" : ""}>
+    <Card className={!e.ativa ? "opacity-90" : ""}>
       <CardContent>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -143,6 +163,18 @@ function EdicaoRowCard({ e }: { e: EdicaoRow }) {
           >
             {statusBadge.icon} {statusBadge.label}
           </span>
+        </div>
+
+        <div className="mt-3 pt-3 border-t border-[rgba(10,42,94,0.08)] flex flex-wrap gap-2">
+          {atalhos.map((a) => (
+            <Link
+              key={a.href}
+              href={a.href}
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md border border-[rgba(10,42,94,0.15)] text-cdl-blue hover:bg-cdl-blue hover:text-white transition-colors"
+            >
+              {a.icon} {a.label}
+            </Link>
+          ))}
         </div>
       </CardContent>
     </Card>

@@ -4,6 +4,8 @@ import { maskCpf } from "@/lib/cpf";
 import { Camera, MessageSquare, MapPin, Clock } from "lucide-react";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
+import { getEdicaoSelecionada } from "@/lib/edicao-selecionada";
+import { HistoricoBanner } from "@/components/admin/HistoricoBanner";
 
 // Dinamico: novos votantes entram o tempo todo durante a votacao.
 // Antes era cache 1h + botao manual.
@@ -13,7 +15,7 @@ const PAGE_SIZE = 50;
 const SIGNED_URL_TTL = 60 * 60; // 1h
 
 type Props = {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; edicao?: string }>;
 };
 
 export default async function VotantesPage({ searchParams }: Props) {
@@ -26,7 +28,9 @@ export default async function VotantesPage({ searchParams }: Props) {
   if (status.status === "sem_edicao") {
     return <div className="p-8 text-red-600">Crie uma edição ativa primeiro.</div>;
   }
-  const edicao = status.edicao;
+  const sel = await getEdicaoSelecionada(tenant.id, params.edicao);
+  const edicao = sel?.edicao ?? status.edicao;
+  const isHistorico = sel?.isHistorico ?? false;
   const supabase = createSupabaseAdminClient();
 
   // RPC traz votantes paginados ja com count de votos no banco — sem
@@ -98,11 +102,18 @@ export default async function VotantesPage({ searchParams }: Props) {
 
   return (
     <div className="p-8">
+      {isHistorico && (
+        <HistoricoBanner
+          edicaoNome={edicao.nome}
+          ano={edicao.ano}
+          voltarHref="/admin/votantes"
+        />
+      )}
       <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-3xl font-bold text-cdl-blue">Votantes</h1>
           <p className="text-muted mt-1">
-            {(count ?? 0).toLocaleString("pt-BR")} pessoas identificadas · página {page} de {totalPages || 1}
+            {edicao.nome} · {(count ?? 0).toLocaleString("pt-BR")} pessoas identificadas · página {page} de {totalPages || 1}
           </p>
         </div>
       </header>
@@ -202,7 +213,7 @@ export default async function VotantesPage({ searchParams }: Props) {
         <div className="mt-6 flex items-center justify-center gap-2">
           {page > 1 && (
             <a
-              href={`?page=${page - 1}`}
+              href={`?page=${page - 1}${isHistorico ? `&edicao=${edicao.id}` : ""}`}
               className="px-4 py-2 rounded-lg border border-border hover:bg-cdl-blue/5 text-sm"
             >
               ← Anterior
@@ -213,7 +224,7 @@ export default async function VotantesPage({ searchParams }: Props) {
           </span>
           {page < totalPages && (
             <a
-              href={`?page=${page + 1}`}
+              href={`?page=${page + 1}${isHistorico ? `&edicao=${edicao.id}` : ""}`}
               className="px-4 py-2 rounded-lg border border-border hover:bg-cdl-blue/5 text-sm"
             >
               Próxima →
