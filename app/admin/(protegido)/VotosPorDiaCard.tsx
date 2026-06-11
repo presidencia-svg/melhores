@@ -1,8 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Smartphone, Monitor, X } from "lucide-react";
+
+const PERIODOS: { value: number | "tudo"; label: string }[] = [
+  { value: 7, label: "7d" },
+  { value: 14, label: "14d" },
+  { value: 30, label: "30d" },
+  { value: 60, label: "60d" },
+  { value: 90, label: "90d" },
+  { value: "tudo", label: "Tudo" },
+];
 
 type Dia = { iso: string; label: string; count: number };
 
@@ -37,13 +47,34 @@ function fmt(n: number): string {
   return n.toLocaleString("pt-BR");
 }
 
-export function VotosPorDiaCard({ dias, maxDia }: { dias: Dia[]; maxDia: number }) {
+export function VotosPorDiaCard({
+  dias,
+  maxDia,
+  periodo,
+  edicaoId,
+}: {
+  dias: Dia[];
+  maxDia: number;
+  periodo: number | "tudo";
+  edicaoId: string | null;
+}) {
   const [selecionado, setSelecionado] = useState<string | null>(null);
   const [detalhe, setDetalhe] = useState<Detalhe | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  const total14 = dias.reduce((a, d) => a + d.count, 0);
+  const totalPeriodo = dias.reduce((a, d) => a + d.count, 0);
+  const periodoLabel =
+    periodo === "tudo" ? `todo o periodo (${dias.length} dias)` : `últimos ${periodo} dias`;
+
+  // Monta o href de cada periodo, preservando ?edicao=<id> quando
+  // estamos vendo uma edicao historica.
+  function hrefPeriodo(p: number | "tudo"): string {
+    const sp = new URLSearchParams();
+    sp.set("periodo", String(p));
+    if (edicaoId) sp.set("edicao", edicaoId);
+    return `/admin?${sp.toString()}`;
+  }
 
   async function abrir(iso: string, count: number) {
     if (count === 0) return;
@@ -71,13 +102,31 @@ export function VotosPorDiaCard({ dias, maxDia }: { dias: Dia[]; maxDia: number 
   return (
     <Card className="lg:col-span-2">
       <CardContent>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
           <h2 className="font-display text-lg font-bold text-cdl-blue">Votos por dia</h2>
           <div className="flex items-center gap-3 text-xs text-muted">
-            <span>últimos 14 dias</span>
-            <span>·</span>
+            <nav className="flex gap-0.5 bg-cream-100 border border-[rgba(10,42,94,0.15)] rounded-md p-0.5">
+              {PERIODOS.map((p) => {
+                const ativo = p.value === periodo;
+                return (
+                  <Link
+                    key={String(p.value)}
+                    href={hrefPeriodo(p.value)}
+                    className={`px-2.5 py-1 rounded text-[11px] font-semibold transition-colors ${
+                      ativo
+                        ? "bg-cdl-blue text-white"
+                        : "text-cdl-blue hover:bg-cdl-blue/10"
+                    }`}
+                  >
+                    {p.label}
+                  </Link>
+                );
+              })}
+            </nav>
+            <span className="hidden sm:inline">·</span>
             <span>
-              total <strong className="text-cdl-blue">{fmt(total14)}</strong>
+              <span className="hidden sm:inline">{periodoLabel} · </span>
+              total <strong className="text-cdl-blue">{fmt(totalPeriodo)}</strong>
             </span>
           </div>
         </div>

@@ -50,10 +50,21 @@ type VotanteRecente = {
 
 type VotosPorDiaRow = { dia: string; total: number };
 
+const PERIODOS_VOTOS = [7, 14, 30, 60, 90] as const;
+type PeriodoVotos = (typeof PERIODOS_VOTOS)[number] | "tudo";
+
+function parsePeriodoVotos(input: string | undefined): PeriodoVotos {
+  if (input === "tudo") return "tudo";
+  const n = parseInt(input ?? "14", 10);
+  return (PERIODOS_VOTOS as readonly number[]).includes(n)
+    ? (n as PeriodoVotos)
+    : 14;
+}
+
 export default async function AdminDashboard({
   searchParams,
 }: {
-  searchParams: Promise<{ edicao?: string }>;
+  searchParams: Promise<{ edicao?: string; periodo?: string }>;
 }) {
   // Tenant sem edicao = primeiro acesso. Manda pro wizard antes do dashboard.
   const tenant = await getCurrentTenant();
@@ -68,6 +79,7 @@ export default async function AdminDashboard({
   const sel = await getEdicaoSelecionada(tenant.id, sp.edicao);
   const edicao = sel?.edicao ?? status.edicao;
   const isHistorico = sel?.isHistorico ?? false;
+  const periodoVotos = parsePeriodoVotos(sp.periodo);
   const supabase = createSupabaseAdminClient();
 
   // Tudo escopado em edicao_id. Tabelas via denorm (035), views projetam
@@ -186,9 +198,22 @@ export default async function AdminDashboard({
   };
   const totalDisp = dispositivos.mobile + dispositivos.desktop;
 
-  // Votos por dia (últimos 14) — view ja agrega no Postgres
-  const dias14 = bucketDaysFromView((votosPorDia ?? []) as VotosPorDiaRow[], 14);
-  const maxDia = Math.max(1, ...dias14.map((d) => d.count));
+  // Votos por dia — view ja agrega no Postgres. Periodo selecionavel
+  // (7/14/30/60/90/tudo). Pra edicao historica, ancora no ultimo dia
+  // em que houve voto pra grafico nao ficar todo zerado.
+  const votosPorDiaRows = (votosPorDia ?? []) as VotosPorDiaRow[];
+  const anchorIso = isHistorico
+    ? (votosPorDiaRows
+        .map((r) => r.dia)
+        .sort()
+        .at(-1) ?? undefined)
+    : undefined;
+  const diasGrafico = bucketDaysFromView(
+    votosPorDiaRows,
+    periodoVotos,
+    anchorIso
+  );
+  const maxDia = Math.max(1, ...diasGrafico.map((d) => d.count));
 
   // Top 8 candidatos (ja sort+limit no Postgres via v_top_candidatos)
   const topCandidatos = (topCandsRaw ?? []) as Resultado[];
@@ -444,7 +469,12 @@ export default async function AdminDashboard({
 
       <div className="grid lg:grid-cols-3 gap-4 mb-6">
         {/* Gráfico: votos por dia (com drill-down por hora + SO) */}
-        <VotosPorDiaCard dias={dias14} maxDia={maxDia} />
+        <VotosPorDiaCard
+          dias={diasGrafico}
+          maxDia={maxDia}
+          periodo={periodoVotos}
+          edicaoId={isHistorico ? edicao.id : null}
+        />
 
         {/* Donut: dispositivos */}
         <Card>
@@ -757,16 +787,54 @@ function pct(part: number, total: number): number {
   return Math.round((part / total) * 100);
 }
 
-function bucketDaysFromView(rows: VotosPorDiaRow[], days: number) {
+// Monta buckets de dias pra renderizar o grafico "Votos por dia".
+//
+// - `periodo` define o range: numero de dias OU "tudo" (range total da
+//   edicao, clampado em MAX_DIAS_TUDO).
+// - `anchorIso` ancora a janela: data do dia MAIS RECENTE a mostrar
+//   (YYYY-MM-DD em fuso America/Sao_Paulo). Pra edicao ativa, e' "hoje".
+//   Pra edicao historica, idealmente e' o ultimo dia em que houve voto
+//   (senao o grafico fica todo zerado num futuro distante da edicao).
+function bucketDaysFromView(
+  rows: VotosPorDiaRow[],
+  periodo: number | "tudo",
+  anchorIso?: string
+) {
+  const MAX_DIAS_TUDO = 365;
   const byDate = new Map<string, number>();
   for (const r of rows) byDate.set(r.dia, (byDate.get(r.dia) ?? 0) + r.total);
 
+  let days: number;
+  if (periodo === "tudo") {
+    if (byDate.size === 0) {
+      days = 14;
+    } else {
+      const isos = Array.from(byDate.keys()).sort();
+      const min = new Date(isos[0]!);
+      const max = new Date(isos[isos.length - 1]!);
+      const diffMs = max.getTime() - min.getTime();
+      days = Math.min(
+        MAX_DIAS_TUDO,
+        Math.max(7, Math.ceil(diffMs / 86_400_000) + 1)
+      );
+    }
+  } else {
+    days = periodo;
+  }
+
+  let anchor: Date;
+  if (anchorIso && /^\d{4}-\d{2}-\d{2}$/.test(anchorIso)) {
+    const [y, m, d] = anchorIso.split("-").map(Number);
+    anchor = new Date(y!, m! - 1, d!);
+  } else {
+    anchor = new Date();
+  }
+  anchor.setHours(0, 0, 0, 0);
+
   const buckets: { iso: string; label: string; count: number }[] = [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
+    const d = new Date(anchor);
+    d.setDate(anchor.getDate() - i);
     const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     buckets.push({
       iso,
