@@ -4,6 +4,7 @@ import { Wallet, ArrowDownToLine, ArrowUpFromLine, Plus, TrendingDown, Vote, Mes
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getSaldo, formatarReais } from "@/lib/creditos";
+import { PRECOS } from "@/lib/creditos/precos";
 import { AplicarCupom } from "./AplicarCupom";
 import { ReconsultarBotao } from "./ReconsultarBotao";
 
@@ -184,36 +185,68 @@ export default async function CreditosPage() {
         </CardContent>
       </Card>
 
-      {/* Tabela de precos rapida */}
+      {/* Tabela de precos rapida — le de lib/creditos/precos.ts (fonte unica) */}
       <Card className="mb-6">
         <CardContent>
-          <h2 className="font-display text-lg font-bold text-cdl-blue mb-3">
+          <h2 className="font-display text-lg font-bold text-cdl-blue mb-1">
             O que cada coisa custa
           </h2>
+          <p className="text-xs text-muted mb-4">
+            Cobrança é <strong>por eleitor cadastrado</strong> (1x na entrada
+            da votação). Cada mensagem extra de marketing é debitada à parte.
+          </p>
+
+          <h3 className="text-[11px] uppercase tracking-wider text-muted font-bold mb-2">
+            Por eleitor (1x no cadastro)
+          </h3>
+          <div className="grid sm:grid-cols-2 gap-3 text-sm mb-4">
+            <div className="flex justify-between items-center py-1 border-b border-border/50">
+              <span>Eleitor sem SPC</span>
+              <span className="font-mono font-bold">
+                {formatarReais(PRECOS.voto_minimo)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-1 border-b border-border/50">
+              <span>Eleitor com validação SPC</span>
+              <span className="font-mono font-bold">
+                {formatarReais(PRECOS.voto_spc)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center py-1 border-b border-border/50">
+              <span>+ OTP WhatsApp (opcional, por envio)</span>
+              <span className="font-mono font-bold">
+                {formatarReais(PRECOS.whatsapp_confirmacao)}
+              </span>
+            </div>
+          </div>
+
+          <h3 className="text-[11px] uppercase tracking-wider text-muted font-bold mb-2">
+            Mensagens extras (por disparo)
+          </h3>
+          <div className="grid sm:grid-cols-2 gap-3 text-sm mb-4">
+            <div className="flex justify-between items-center py-1 border-b border-border/50">
+              <span>Parcial / Incentivo / Empate</span>
+              <span className="font-mono font-bold">
+                {formatarReais(PRECOS.marketing)}
+              </span>
+            </div>
+          </div>
+
+          <h3 className="text-[11px] uppercase tracking-wider text-muted font-bold mb-2">
+            Plataforma
+          </h3>
           <div className="grid sm:grid-cols-2 gap-3 text-sm">
             <div className="flex justify-between items-center py-1 border-b border-border/50">
-              <span>Voto sem SPC e sem WhatsApp</span>
-              <span className="font-mono font-bold">R$ 0,20</span>
+              <span>Taxa por campanha (1x na criação)</span>
+              <span className="font-mono font-bold">
+                {formatarReais(PRECOS.taxa_campanha)}
+              </span>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-border/50">
-              <span>Voto validado por SPC</span>
-              <span className="font-mono font-bold">R$ 0,25</span>
-            </div>
-            <div className="flex justify-between items-center py-1 border-b border-border/50">
-              <span>Voto SPC + WhatsApp/mailing</span>
-              <span className="font-mono font-bold">R$ 0,60</span>
-            </div>
-            <div className="flex justify-between items-center py-1 border-b border-border/50">
-              <span>Marketing extra (parcial/incentivo)</span>
-              <span className="font-mono font-bold">R$ 0,80</span>
-            </div>
-            <div className="flex justify-between items-center py-1 border-b border-border/50">
-              <span>Taxa por campanha (1x)</span>
-              <span className="font-mono font-bold">R$ 500,00</span>
-            </div>
-            <div className="flex justify-between items-center py-1 border-b border-border/50">
-              <span>Manutenção pós-campanha</span>
-              <span className="font-mono font-bold">R$ 200/mês</span>
+              <span>Manutenção pós-campanha (mensal)</span>
+              <span className="font-mono font-bold">
+                {formatarReais(PRECOS.manutencao)}/mês
+              </span>
             </div>
           </div>
         </CardContent>
