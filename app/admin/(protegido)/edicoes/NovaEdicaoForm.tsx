@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Loader2, Plus } from "lucide-react";
+import { PRECOS, formatarReais } from "@/lib/creditos/precos";
 
 export function NovaEdicaoForm({
   tenantNome,
@@ -92,7 +93,7 @@ export function NovaEdicaoForm({
               </h2>
               <p className="text-xs text-muted mt-1">
                 Ao criar, esta edição vira a ativa e as anteriores são
-                arquivadas. Cobra a taxa de campanha (R$ 500) se houver
+                arquivadas. Cobra a taxa de campanha ({formatarReais(PRECOS.taxa_campanha)}) se houver
                 saldo — sem saldo, fica pendente e cria mesmo assim.
               </p>
             </div>
