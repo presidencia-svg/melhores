@@ -10,9 +10,9 @@ export const PRECOS = {
   voto_minimo: 20,             // R$ 0,20 — votante: CPF + selfie sem SPC
   voto_spc: 25,                // R$ 0,25 — votante: CPF + selfie + SPC Brasil
   whatsapp_confirmacao: 25,    // R$ 0,25 — cada envio de OTP no WhatsApp
-  marketing: 80,               // R$ 0,80 — cada msg de parcial/incentivo/empate
-  taxa_campanha: 50000,        // R$ 500,00 — 1x por edicao
-  manutencao: 20000,           // R$ 200,00/mes pos-campanha
+  marketing: 59,               // R$ 0,59 — cada msg de parcial/incentivo/empate
+  taxa_campanha: 300000,        // R$ 3000,00 — 1x por edicao
+  manutencao: 20000,           // R$ 200,00/mes pós-campanha
   // legacy — nao usar mais. Mantido pra leitura de transacoes antigas.
   voto_spc_whatsapp: 60,
 } as const;
