@@ -5,11 +5,14 @@ import { TrophyMark, LaurelHalf, SmallCaps, Divider } from "@/components/brand/M
 import { SafariAviso } from "@/components/voto/SafariAviso";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
+import { listarPatrocinadores } from "@/lib/patrocinadores";
+import { PatrocinadoresSection } from "@/components/patrocinadores/PatrocinadoresSection";
 
 export default async function Home() {
   const tenant = await getCurrentTenant();
   const status = await getEdicaoStatus(tenant.id);
   const edicao = status.status !== "sem_edicao" ? status.edicao : null;
+  const patrocinadores = edicao ? await listarPatrocinadores(edicao.id) : [];
   const cidade = tenant.nome.replace(/^CDL\s+/i, "");
   const ano = edicao?.ano ?? new Date().getFullYear();
   const dominio = tenant.dominio ?? "";
@@ -156,6 +159,13 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* Patrocinadores (se houver) */}
+      <PatrocinadoresSection
+        patrocinadores={patrocinadores}
+        variante="claro"
+        titulo="Patrocinadores oficiais"
+      />
 
       {/* CTA editorial */}
       <section className="bg-cream-200 py-16 sm:py-24 relative overflow-hidden">

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { isAdmin } from "@/lib/admin/auth";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
-import { LayoutDashboard, FolderTree, Users, Trophy, MessageSquare, Inbox, LogOut, UserCheck, ShieldCheck, BarChart3, Swords, Medal, Newspaper, Award, Wallet, Palette, MailOpen, CalendarRange, Rocket, Tv, Plug } from "lucide-react";
+import { LayoutDashboard, FolderTree, Users, Trophy, MessageSquare, Inbox, LogOut, UserCheck, ShieldCheck, BarChart3, Swords, Medal, Newspaper, Award, Wallet, Palette, MailOpen, CalendarRange, Rocket, Tv, Plug, Heart } from "lucide-react";
 
 export default async function AdminProtectedLayout({
   children,
@@ -96,6 +96,9 @@ export default async function AdminProtectedLayout({
           <SectionLabel>Conta</SectionLabel>
           <NavLink href="/admin/marca" icon={<Palette className="w-4 h-4" />}>
             Marca
+          </NavLink>
+          <NavLink href="/admin/patrocinadores" icon={<Heart className="w-4 h-4" />}>
+            Patrocinadores
           </NavLink>
           <NavLink href="/admin/creditos" icon={<Wallet className="w-4 h-4" />}>
             Créditos
