@@ -1,30 +1,25 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { isAdmin } from "@/lib/admin/auth";
+import { getAdminTenantOuNull } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getModoSugestoes, type ModoSugestoes } from "@/lib/sugestoes/mode";
 
-const Body = z.object({ ligadas: z.boolean() });
+const Body = z.object({
+  modo: z.enum(["livre", "aprovacao", "desligadas"]),
+});
 
 export async function GET() {
-  if (!(await isAdmin())) {
+  const tenant = await getAdminTenantOuNull();
+  if (!tenant) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
-  const tenant = await getCurrentTenant();
-  const supabase = createSupabaseAdminClient();
-  const { data } = await supabase
-    .from("app_config")
-    .select("valor")
-    .eq("tenant_id", tenant.id)
-    .eq("chave", "sugestoes_publicas")
-    .maybeSingle();
-  return NextResponse.json({
-    ligadas: (data?.valor ?? "ligadas") !== "desligadas",
-  });
+  const modo = await getModoSugestoes(tenant.id);
+  return NextResponse.json({ modo });
 }
 
 export async function POST(req: Request) {
-  if (!(await isAdmin())) {
+  const tenant = await getAdminTenantOuNull();
+  if (!tenant) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
   const json = await req.json().catch(() => ({}));
@@ -32,16 +27,16 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   }
-  const tenant = await getCurrentTenant();
+  const modo: ModoSugestoes = parsed.data.modo;
   const supabase = createSupabaseAdminClient();
   await supabase.from("app_config").upsert(
     {
       tenant_id: tenant.id,
       chave: "sugestoes_publicas",
-      valor: parsed.data.ligadas ? "ligadas" : "desligadas",
+      valor: modo,
       atualizado_em: new Date().toISOString(),
     },
     { onConflict: "tenant_id,chave" }
   );
-  return NextResponse.json({ ok: true, ligadas: parsed.data.ligadas });
+  return NextResponse.json({ ok: true, modo });
 }

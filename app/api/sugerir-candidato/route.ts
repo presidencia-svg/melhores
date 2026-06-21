@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getVotanteSessao } from "@/lib/sessao";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { normalizarNome, nomeCandidatoValido, tituloPT } from "@/lib/utils";
-import { isSugestoesPublicasLigadas } from "@/lib/sugestoes/mode";
+import { getModoSugestoes } from "@/lib/sugestoes/mode";
 
 const Body = z.object({
   subcategoriaId: z.string().uuid(),
@@ -25,12 +25,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Requisição inválida" }, { status: 400 });
   }
 
-  if (!(await isSugestoesPublicasLigadas())) {
+  const modoSugestoes = await getModoSugestoes();
+  if (modoSugestoes === "desligadas") {
     return NextResponse.json(
       { error: "Sugestão pública de candidato está desligada pelo admin" },
       { status: 403 }
     );
   }
+  // "livre" → entra aprovado direto
+  // "aprovacao" → entra pendente, admin libera depois em /admin/sugestoes
+  const statusInicial = modoSugestoes === "aprovacao" ? "pendente" : "aprovado";
 
   const supabase = createSupabaseAdminClient();
   const nomeOriginal = parsed.data.nome.trim();
@@ -75,7 +79,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, candidatoId: top.id, match: true });
   }
 
-  // 2) Não tem match — cria novo candidato JÁ APROVADO (atômico, sem update posterior)
+  // 2) Não tem match — cria novo candidato com status conforme modo:
+  //    livre → "aprovado" (aparece na votacao imediatamente)
+  //    aprovacao → "pendente" (so' aparece depois que admin liberar)
   // edicao_id herda da subcategoria pai (denorm — schema 035; ja' validado acima).
   const { data: novo, error } = await supabase
     .from("candidatos")
@@ -85,7 +91,7 @@ export async function POST(req: Request) {
       nome: nomeFormatado,
       nome_normalizado: nomeNorm,
       origem: "sugerido",
-      status: "aprovado",
+      status: statusInicial,
       sugestoes_count: 1,
     })
     .select("id")
@@ -96,13 +102,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Falha ao registrar sugestão" }, { status: 500 });
   }
 
-  // Invalida cache da página de votação dessa subcategoria pra próximos votantes verem
-  try {
-    revalidatePath("/votar/c/[categoria]/[subcategoria]", "page");
-    revalidatePath("/votar/categorias", "page");
-  } catch {
-    // ignore
+  // Invalida cache da página de votação dessa subcategoria pra próximos
+  // votantes verem (so' faz sentido pra modo livre — em "aprovacao" o
+  // candidato vai aparecer so' apos a aprovacao do admin, que ja revalida).
+  if (statusInicial === "aprovado") {
+    try {
+      revalidatePath("/votar/c/[categoria]/[subcategoria]", "page");
+      revalidatePath("/votar/categorias", "page");
+    } catch {
+      // ignore
+    }
   }
 
-  return NextResponse.json({ ok: true, candidatoId: novo.id, match: false });
+  return NextResponse.json({
+    ok: true,
+    candidatoId: novo.id,
+    match: false,
+    pendente: statusInicial === "pendente",
+  });
 }
