@@ -4,21 +4,15 @@ import {
 } from "@/lib/patrocinadores/types";
 
 // Altura do logo varia por nivel — efeito visual de hierarquia.
-// Master AINDA maior pra ser inequivocamente o apresentador.
+// Modelo simplificado: patrocinio (dominante) + apoio (apoiadores).
 const ALTURA_PX: Record<string, number> = {
-  master: 220,
-  ouro: 130,
-  prata: 90,
-  bronze: 70,
-  apoio: 56,
+  patrocinio: 220,
+  apoio: 100,
 };
 
 const MAX_WIDTH_MULT: Record<string, number> = {
-  master: 4,
-  ouro: 3.5,
-  prata: 3,
-  bronze: 3,
-  apoio: 2.5,
+  patrocinio: 4,
+  apoio: 3,
 };
 
 type Props = {
@@ -35,8 +29,8 @@ export function PatrocinadoresSection({
   if (patrocinadores.length === 0) return null;
 
   const grupos = agruparPorNivel(patrocinadores);
-  const grupoMaster = grupos.find((g) => g.nivel === "master");
-  const grupoDemais = grupos.filter((g) => g.nivel !== "master");
+  const grupoMaster = grupos.find((g) => g.nivel === "patrocinio");
+  const grupoDemais = grupos.filter((g) => g.nivel !== "patrocinio");
 
   const bgClass = variante === "escuro" ? "bg-navy-900" : "bg-cream-100";
   const textClass = variante === "escuro" ? "text-cream-100" : "text-navy-800";
@@ -48,8 +42,8 @@ export function PatrocinadoresSection({
       ? "rgba(212,165,55,0.3)"
       : "rgba(10,42,94,0.12)";
 
-  function renderLogo(p: Patrocinador, isMaster = false) {
-    const h = ALTURA_PX[p.nivel] ?? 48;
+  function renderLogo(p: Patrocinador, isPatrocinio = false) {
+    const h = ALTURA_PX[p.nivel] ?? 100;
     const mw = (MAX_WIDTH_MULT[p.nivel] ?? 3) * h;
     const conteudo = (
       // eslint-disable-next-line @next/next/no-img-element
@@ -59,7 +53,7 @@ export function PatrocinadoresSection({
         title={p.nome}
         style={{ height: h, width: "auto", maxWidth: mw }}
         className={`object-contain transition-opacity ${
-          isMaster
+          isPatrocinio
             ? "opacity-100"
             : variante === "escuro"
               ? "brightness-0 invert opacity-85 hover:opacity-100"
@@ -105,7 +99,7 @@ export function PatrocinadoresSection({
           </h2>
         </div>
 
-        {/* MASTER em destaque dominante */}
+        {/* PATROCINIO em destaque dominante */}
         {grupoMaster && (
           <div
             className="text-center pb-12 mb-12"
@@ -114,9 +108,7 @@ export function PatrocinadoresSection({
             <p
               className={`text-[12px] uppercase tracking-[0.3em] font-bold ${goldClass} mb-6`}
             >
-              {grupoMaster.itens.length === 1
-                ? "apresentado por"
-                : "patrocinadores master"}
+              apresentado por
             </p>
             <div className="flex flex-wrap items-center justify-center gap-10 sm:gap-16">
               {grupoMaster.itens.map((p) => renderLogo(p, true))}

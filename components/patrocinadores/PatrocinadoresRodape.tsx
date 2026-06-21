@@ -8,11 +8,8 @@ import {
 // ainda com hierarquia clara.
 
 const ALTURA_PX: Record<string, number> = {
-  master: 130,
-  ouro: 80,
-  prata: 60,
-  bronze: 48,
-  apoio: 38,
+  patrocinio: 130,
+  apoio: 64,
 };
 
 export function PatrocinadoresRodape({
@@ -23,11 +20,11 @@ export function PatrocinadoresRodape({
   if (patrocinadores.length === 0) return null;
 
   const grupos = agruparPorNivel(patrocinadores);
-  const grupoMaster = grupos.find((g) => g.nivel === "master");
-  const grupoDemais = grupos.filter((g) => g.nivel !== "master");
+  const grupoMaster = grupos.find((g) => g.nivel === "patrocinio");
+  const grupoDemais = grupos.filter((g) => g.nivel !== "patrocinio");
 
-  function renderLogo(p: Patrocinador, isMaster = false) {
-    const h = ALTURA_PX[p.nivel] ?? 32;
+  function renderLogo(p: Patrocinador, isPatrocinio = false) {
+    const h = ALTURA_PX[p.nivel] ?? 64;
     const conteudo = (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -40,7 +37,7 @@ export function PatrocinadoresRodape({
           maxWidth: h * 3.5,
         }}
         className={`object-contain transition-opacity ${
-          isMaster ? "opacity-100" : "opacity-80 hover:opacity-100"
+          isPatrocinio ? "opacity-100" : "opacity-80 hover:opacity-100"
         }`}
       />
     );
@@ -64,15 +61,13 @@ export function PatrocinadoresRodape({
   return (
     <section className="bg-cream-100/60 border-t border-[rgba(10,42,94,0.1)] py-10 sm:py-12">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
-        {/* MASTER em destaque dominante */}
+        {/* PATROCINIO em destaque dominante */}
         {grupoMaster && (
           <div
             className={`text-center ${grupoDemais.length > 0 ? "pb-8 mb-8 border-b border-[rgba(10,42,94,0.08)]" : ""}`}
           >
             <p className="text-[11px] uppercase tracking-[0.3em] font-bold text-gold-700 mb-4">
-              {grupoMaster.itens.length === 1
-                ? "apresentado por"
-                : "master"}
+              apresentado por
             </p>
             <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-12">
               {grupoMaster.itens.map((p) => renderLogo(p, true))}

@@ -1,8 +1,7 @@
 // Tipos + helpers puros client-safe. Sem import de @/lib/supabase/server
-// pra evitar quebra de build quando importado de "use client" components
-// (mesmo padrao do split lib/creditos/precos.ts).
+// pra evitar quebra de build quando importado de "use client" components.
 
-export type NivelPatrocinio = "master" | "ouro" | "prata" | "bronze" | "apoio";
+export type NivelPatrocinio = "patrocinio" | "apoio";
 
 export type Patrocinador = {
   id: string;
@@ -13,20 +12,19 @@ export type Patrocinador = {
   ordem: number;
 };
 
-export const ORDEM_NIVEIS: NivelPatrocinio[] = [
-  "master",
-  "ouro",
-  "prata",
-  "bronze",
-  "apoio",
-];
+export const ORDEM_NIVEIS: NivelPatrocinio[] = ["patrocinio", "apoio"];
 
 export const LABEL_NIVEIS: Record<NivelPatrocinio, string> = {
-  master: "Master",
-  ouro: "Ouro",
-  prata: "Prata",
-  bronze: "Bronze",
+  patrocinio: "Patrocínio",
   apoio: "Apoio",
+};
+
+// Cotas: quantos podem existir simultaneamente por edicao.
+// patrocinio: 1 cota (forcado por unique partial no banco)
+// apoio:      4 cotas (validado na API antes do INSERT)
+export const COTAS: Record<NivelPatrocinio, number> = {
+  patrocinio: 1,
+  apoio: 4,
 };
 
 // Agrupa por nivel — util pra renderizar secoes separadas com tamanhos

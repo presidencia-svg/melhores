@@ -7,7 +7,7 @@ const PatchBody = z.object({
   nome: z.string().trim().min(2).max(120).optional(),
   logo_url: z.string().url().optional(),
   link: z.string().url().nullable().optional(),
-  nivel: z.enum(["master", "ouro", "prata", "bronze", "apoio"]).optional(),
+  nivel: z.enum(["patrocinio", "apoio"]).optional(),
   ordem: z.number().int().min(0).max(9999).optional(),
   ativo: z.boolean().optional(),
 });

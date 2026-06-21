@@ -12,6 +12,7 @@ import {
 export {
   ORDEM_NIVEIS,
   LABEL_NIVEIS,
+  COTAS,
   agruparPorNivel,
   type NivelPatrocinio,
   type Patrocinador,

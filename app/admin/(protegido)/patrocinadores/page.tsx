@@ -28,9 +28,9 @@ export default async function PatrocinadoresPage() {
           Patrocinadores
         </h1>
         <p className="text-muted mt-1 text-sm leading-relaxed">
-          Quem apoia a edição <strong>{status.edicao.nome}</strong>. Aparecem
-          em ordem por nível: <em>Master → Ouro → Prata → Bronze → Apoio</em>.
-          O tamanho do logo na home varia conforme o nível.
+          Quem apoia a edição <strong>{status.edicao.nome}</strong>. Duas cotas
+          disponíveis: <em>Patrocínio</em> (1 cota — logo gigante, apresentador
+          da campanha) e <em>Apoio</em> (4 cotas — logos menores agrupados).
         </p>
       </header>
 

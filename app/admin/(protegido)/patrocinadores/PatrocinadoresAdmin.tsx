@@ -11,24 +11,16 @@ import {
   ExternalLink,
 } from "lucide-react";
 import {
+  COTAS,
   LABEL_NIVEIS,
   type Patrocinador,
   type NivelPatrocinio,
 } from "@/lib/patrocinadores/types";
 
-const NIVEIS: NivelPatrocinio[] = [
-  "master",
-  "ouro",
-  "prata",
-  "bronze",
-  "apoio",
-];
+const NIVEIS: NivelPatrocinio[] = ["patrocinio", "apoio"];
 
 const CORES_NIVEL: Record<NivelPatrocinio, string> = {
-  master: "bg-purple-100 text-purple-800",
-  ouro: "bg-yellow-100 text-yellow-800",
-  prata: "bg-slate-200 text-slate-800",
-  bronze: "bg-orange-100 text-orange-800",
+  patrocinio: "bg-yellow-100 text-yellow-800",
   apoio: "bg-zinc-100 text-zinc-700",
 };
 
@@ -45,7 +37,7 @@ export function PatrocinadoresAdmin({
   const [aberto, setAberto] = useState(false);
   const [nome, setNome] = useState("");
   const [link, setLink] = useState("");
-  const [nivel, setNivel] = useState<NivelPatrocinio>("ouro");
+  const [nivel, setNivel] = useState<NivelPatrocinio>("apoio");
   const [logoUrl, setLogoUrl] = useState("");
   const [enviandoLogo, setEnviandoLogo] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -100,7 +92,7 @@ export function PatrocinadoresAdmin({
       setNome("");
       setLink("");
       setLogoUrl("");
-      setNivel("ouro");
+      setNivel("apoio");
       setAberto(false);
       router.refresh();
     } catch (e) {
@@ -231,26 +223,24 @@ export function PatrocinadoresAdmin({
           </label>
 
           <label className="text-sm font-medium text-cdl-blue">
-            Nível
+            Cota
             <select
               value={nivel}
               onChange={(e) => setNivel(e.target.value as NivelPatrocinio)}
               className="mt-1 w-full h-11 rounded-md border border-border bg-white px-3"
             >
-              {NIVEIS.map((n) => (
-                <option key={n} value={n}>
-                  {LABEL_NIVEIS[n]}{" "}
-                  {n === "master"
-                    ? "(logo gigante)"
-                    : n === "ouro"
-                      ? "(logo grande)"
-                      : n === "prata"
-                        ? "(logo médio)"
-                        : n === "bronze"
-                          ? "(logo pequeno)"
-                          : "(logo discreto)"}
-                </option>
-              ))}
+              {NIVEIS.map((n) => {
+                const usados = lista.filter((p) => p.nivel === n).length;
+                const limite = COTAS[n];
+                const cheio = usados >= limite;
+                return (
+                  <option key={n} value={n} disabled={cheio}>
+                    {LABEL_NIVEIS[n]} ({usados}/{limite})
+                    {n === "patrocinio" ? " — logo gigante" : " — logo médio"}
+                    {cheio ? " · ESGOTADO" : ""}
+                  </option>
+                );
+              })}
             </select>
           </label>
 
