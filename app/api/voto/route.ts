@@ -53,7 +53,14 @@ export async function POST(req: Request) {
     .eq("id", candidatoId)
     .maybeSingle();
 
-  if (!cand || cand.subcategoria_id !== subcategoriaId || cand.status !== "aprovado") {
+  // Aceita 'aprovado' OU 'pendente'. Pendente acontece no fluxo de
+  // sugestao quando o modo "aprovacao" esta ativo: votante sugere +
+  // vota, o voto fica registrado mas as views de resultado (v_resultados,
+  // v_votos_por_dia, etc) filtram por candidato aprovado — entao o voto
+  // so' passa a contar quando admin aprovar o candidato em /admin/sugestoes.
+  // Se admin REJEITAR (delete), o CASCADE leva o voto junto.
+  if (!cand || cand.subcategoria_id !== subcategoriaId ||
+      (cand.status !== "aprovado" && cand.status !== "pendente")) {
     return NextResponse.json({ error: "Candidato inválido" }, { status: 400 });
   }
 

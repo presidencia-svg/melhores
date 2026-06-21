@@ -85,18 +85,12 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual, sugesto
         return;
       }
 
-      // Modo "aprovacao": candidato entrou como pendente. Nao registra
-      // voto agora — o admin precisa aprovar antes. Mostra mensagem e
-      // volta pra lista de categorias sem registrar voto.
-      if (data.pendente) {
-        alert(
-          `Sua sugestão "${novoNome.trim()}" foi enviada para análise. Quando o admin aprovar, você poderá votar nesta categoria.`
-        );
-        router.push(`/votar/categorias#sub-${subcategoriaId}`);
-        return;
-      }
-
-      // Modo "livre": candidato ja entrou aprovado, registra voto na sequencia.
+      // Registra voto na sequencia da sugestao, independente do modo:
+      //   - Modo "livre": candidato ja entrou aprovado, voto conta direto.
+      //   - Modo "aprovacao": candidato esta pendente. O voto fica
+      //     gravado mas so' conta nas views de resultado quando admin
+      //     aprovar (em /admin/sugestoes). Se admin rejeitar (delete),
+      //     o CASCADE leva o voto junto.
       const votoRes = await fetch("/api/voto", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -107,6 +101,11 @@ export function CandidatosLista({ subcategoriaId, candidatos, votoAtual, sugesto
         setError(errData.error ?? "Falha ao registrar voto");
         setSubmitting(false);
         return;
+      }
+      if (data.pendente) {
+        alert(
+          `Seu voto em "${novoNome.trim()}" foi registrado! O candidato está em análise — quando aprovado, seu voto será contabilizado. Se rejeitado, o voto não conta.`
+        );
       }
       router.push(`/votar/categorias#sub-${subcategoriaId}`);
     } catch {

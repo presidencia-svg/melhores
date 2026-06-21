@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getAdminTenantOuNull } from "@/lib/admin/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
@@ -30,5 +31,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   const { error } = await supabase.from("candidatos").update({ status: parsed.data.status }).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Quando admin aprova candidato pendente, ele passa a aparecer na
+  // votacao e os votos pendentes vinculados a ele passam a contar nas
+  // views. Invalida cache das paginas publicas pra refletir imediato.
+  if (parsed.data.status === "aprovado") {
+    try {
+      revalidatePath("/votar/c/[categoria]/[subcategoria]", "page");
+      revalidatePath("/votar/categorias", "page");
+    } catch {
+      // ignore
+    }
+  }
   return NextResponse.json({ ok: true });
 }

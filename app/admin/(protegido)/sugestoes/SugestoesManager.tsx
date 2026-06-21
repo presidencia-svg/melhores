@@ -20,11 +20,22 @@ export function SugestoesManager({ sugestoes }: { sugestoes: Sugestao[] }) {
 
   async function decidir(id: string, decisao: "aprovado" | "rejeitado") {
     setLoading(id);
-    await fetch(`/api/admin/candidatos/${id}/status`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: decisao }),
-    });
+    // Aprovado: muda status pra "aprovado" — candidato passa a aparecer
+    // na votacao e os votos pendentes (modo aprovacao) passam a contar.
+    //
+    // Rejeitado: DELETE no candidato. O ON DELETE CASCADE em
+    // votos.candidato_id leva junto qualquer voto que estava pendente
+    // nele (e era exatamente isso que o votante esperava: "voto so'
+    // conta se candidato for aprovado, senao perde").
+    if (decisao === "aprovado") {
+      await fetch(`/api/admin/candidatos/${id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "aprovado" }),
+      });
+    } else {
+      await fetch(`/api/admin/candidatos/${id}`, { method: "DELETE" });
+    }
     setLoading(null);
     router.refresh();
   }
