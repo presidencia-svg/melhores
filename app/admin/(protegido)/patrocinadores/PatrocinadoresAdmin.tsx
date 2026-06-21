@@ -33,12 +33,15 @@ const CORES_NIVEL: Record<NivelPatrocinio, string> = {
 };
 
 export function PatrocinadoresAdmin({
-  patrocinadores: inicial,
+  patrocinadores: lista,
 }: {
   patrocinadores: Patrocinador[];
 }) {
+  // NAO usar useState(lista) aqui — congelaria a prop no primeiro render
+  // e router.refresh() depois do salvar nao atualizaria a UI (o que
+  // causou o bug "salvei mas nao apareceu"). A prop ja' vem fresca do
+  // server quando re-renderiza.
   const router = useRouter();
-  const [lista] = useState(inicial);
   const [aberto, setAberto] = useState(false);
   const [nome, setNome] = useState("");
   const [link, setLink] = useState("");
