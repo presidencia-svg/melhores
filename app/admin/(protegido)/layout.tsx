@@ -2,7 +2,14 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { isAdmin } from "@/lib/admin/auth";
 import { getCurrentTenant } from "@/lib/tenant/resolver";
+import { getEdicaoStatus } from "@/lib/edicao-status";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { LayoutDashboard, FolderTree, Users, Trophy, MessageSquare, Inbox, LogOut, UserCheck, ShieldCheck, BarChart3, Swords, Medal, Newspaper, Award, Wallet, Palette, MailOpen, CalendarRange, Rocket, Tv, Plug, Heart } from "lucide-react";
+
+// Nao pode cachear: contagem de sugestoes pendentes muda em tempo real
+// conforme votantes sugerem candidatos. Sem isso, o badge ficaria preso
+// no valor da primeira renderizacao.
+export const dynamic = "force-dynamic";
 
 export default async function AdminProtectedLayout({
   children,
@@ -14,6 +21,21 @@ export default async function AdminProtectedLayout({
   }
 
   const tenant = await getCurrentTenant();
+
+  // Conta candidatos pendentes (sugestoes que aguardam aprovacao do admin)
+  // da edicao ativa do tenant. Usado pra mostrar badge no menu lateral.
+  const edicaoStatus = await getEdicaoStatus(tenant.id);
+  let sugestoesPendentes = 0;
+  if (edicaoStatus.status !== "sem_edicao") {
+    const supabase = createSupabaseAdminClient();
+    const { count } = await supabase
+      .from("candidatos")
+      .select("id", { head: true, count: "exact" })
+      .eq("edicao_id", edicaoStatus.edicao.id)
+      .eq("status", "pendente")
+      .eq("origem", "sugerido");
+    sugestoesPendentes = count ?? 0;
+  }
 
   return (
     <div className="min-h-screen flex bg-background">
@@ -52,7 +74,11 @@ export default async function AdminProtectedLayout({
           <NavLink href="/admin/candidatos" icon={<Users className="w-4 h-4" />}>
             Candidatos
           </NavLink>
-          <NavLink href="/admin/sugestoes" icon={<Inbox className="w-4 h-4" />}>
+          <NavLink
+            href="/admin/sugestoes"
+            icon={<Inbox className="w-4 h-4" />}
+            badge={sugestoesPendentes}
+          >
             Sugestões recebidas
           </NavLink>
 
@@ -131,18 +157,35 @@ function NavLink({
   href,
   icon,
   children,
+  badge,
 }: {
   href: string;
   icon: React.ReactNode;
   children: React.ReactNode;
+  badge?: number;
 }) {
+  const temBadge = typeof badge === "number" && badge > 0;
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/80 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors"
+      className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/80 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors relative"
     >
-      {icon}
-      {children}
+      <span className="relative inline-flex items-center justify-center shrink-0">
+        {icon}
+        {temBadge && (
+          // Bolinha pulsante no canto do icone — efeito de "tem coisa nova"
+          <span className="absolute -top-1 -right-1 inline-flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
+          </span>
+        )}
+      </span>
+      <span className="flex-1">{children}</span>
+      {temBadge && (
+        <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-400 text-cdl-blue-dark text-[11px] font-bold leading-none">
+          {badge! > 99 ? "99+" : badge}
+        </span>
+      )}
     </Link>
   );
 }
