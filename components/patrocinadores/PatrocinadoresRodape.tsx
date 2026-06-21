@@ -1,6 +1,5 @@
 import {
   agruparPorNivel,
-  LABEL_NIVEIS,
   type Patrocinador,
 } from "@/lib/patrocinadores/types";
 
@@ -9,11 +8,11 @@ import {
 // ainda com hierarquia clara.
 
 const ALTURA_PX: Record<string, number> = {
-  master: 96,
-  ouro: 64,
-  prata: 48,
-  bronze: 40,
-  apoio: 32,
+  master: 130,
+  ouro: 80,
+  prata: 60,
+  bronze: 48,
+  apoio: 38,
 };
 
 export function PatrocinadoresRodape({
@@ -81,17 +80,15 @@ export function PatrocinadoresRodape({
           </div>
         )}
 
-        {/* Demais níveis agrupados */}
+        {/* Demais niveis — sem rotulo, tamanho do logo ja' comunica hierarquia */}
         {grupoDemais.length > 0 && (
           <div className="flex flex-col gap-6">
             {grupoDemais.map(({ nivel, itens }) => (
-              <div key={nivel}>
-                <p className="text-[9px] uppercase tracking-[0.3em] font-bold text-navy-800/50 text-center mb-3">
-                  {LABEL_NIVEIS[nivel]}
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:gap-x-10">
-                  {itens.map((p) => renderLogo(p))}
-                </div>
+              <div
+                key={nivel}
+                className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:gap-x-10"
+              >
+                {itens.map((p) => renderLogo(p))}
               </div>
             ))}
           </div>

@@ -1,17 +1,16 @@
 import {
   agruparPorNivel,
-  LABEL_NIVEIS,
   type Patrocinador,
 } from "@/lib/patrocinadores/types";
 
 // Altura do logo varia por nivel — efeito visual de hierarquia.
-// Master ficou MUITO maior pra ser dominante (apresentador da campanha).
+// Master AINDA maior pra ser inequivocamente o apresentador.
 const ALTURA_PX: Record<string, number> = {
-  master: 160,
-  ouro: 110,
-  prata: 78,
-  bronze: 60,
-  apoio: 48,
+  master: 220,
+  ouro: 130,
+  prata: 90,
+  bronze: 70,
+  apoio: 56,
 };
 
 const MAX_WIDTH_MULT: Record<string, number> = {
@@ -125,19 +124,15 @@ export function PatrocinadoresSection({
           </div>
         )}
 
-        {/* Demais níveis */}
+        {/* Demais niveis — sem rotulo, hierarquia visual de tamanho ja' comunica */}
         {grupoDemais.length > 0 && (
           <div className="flex flex-col gap-10">
             {grupoDemais.map(({ nivel, itens }) => (
-              <div key={nivel}>
-                <p
-                  className={`text-[10px] uppercase tracking-[0.3em] font-bold text-center mb-5 ${mutedClass}`}
-                >
-                  {LABEL_NIVEIS[nivel]}
-                </p>
-                <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-14">
-                  {itens.map((p) => renderLogo(p))}
-                </div>
+              <div
+                key={nivel}
+                className="flex flex-wrap items-center justify-center gap-8 sm:gap-14"
+              >
+                {itens.map((p) => renderLogo(p))}
               </div>
             ))}
           </div>
