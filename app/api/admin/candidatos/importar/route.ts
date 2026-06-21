@@ -9,8 +9,8 @@ import { normalizarNome } from "@/lib/utils";
 // insensitive via normalizarNome). Anti-dup de candidato dentro da
 // mesma subcategoria.
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5MB
-const MAX_LINHAS = 5000;
+const MAX_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_LINHAS = 15000;
 
 type Linha = {
   categoria: string;
