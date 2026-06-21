@@ -14,7 +14,7 @@ import {
   LABEL_NIVEIS,
   type Patrocinador,
   type NivelPatrocinio,
-} from "@/lib/patrocinadores";
+} from "@/lib/patrocinadores/types";
 
 const NIVEIS: NivelPatrocinio[] = [
   "master",

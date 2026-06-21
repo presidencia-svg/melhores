@@ -2,7 +2,7 @@ import {
   agruparPorNivel,
   LABEL_NIVEIS,
   type Patrocinador,
-} from "@/lib/patrocinadores";
+} from "@/lib/patrocinadores/types";
 
 // Altura do logo varia por nivel — efeito visual de hierarquia.
 const ALTURA_PX: Record<string, number> = {
