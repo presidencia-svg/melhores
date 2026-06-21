@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Upload, FileText, UserPlus, Check, X, AlertTriangle, FolderTree } from "lucide-react";
+import { Upload, FileText, UserPlus, Check, X, AlertTriangle, FolderTree, Download } from "lucide-react";
 
 type Sub = { id: string; nome: string; categoria: { nome: string } };
 
@@ -15,7 +15,13 @@ export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
 
   const router = useRouter();
   const [arquivo, setArquivo] = useState<File | null>(null);
-  const [resultado, setResultado] = useState<{ inseridos: number; ignorados: number; erros: string[] } | null>(null);
+  const [resultado, setResultado] = useState<{
+    inseridos: number;
+    ignorados: number;
+    categoriasCriadas?: number;
+    subcategoriasCriadas?: number;
+    erros: string[];
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Criar candidato individual
@@ -102,13 +108,15 @@ export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="font-display text-lg font-bold text-amber-900">
-                  Cadastre subcategorias primeiro
+                  Cadastre subcategorias primeiro (ou importe tudo de uma vez)
                 </h2>
                 <p className="text-sm text-amber-900/80 mt-1 leading-relaxed">
                   Todo candidato precisa pertencer a uma subcategoria (ex:
                   &ldquo;Melhor pizzaria&rdquo;, &ldquo;Melhor academia&rdquo;).
-                  Hoje você ainda não tem nenhuma — sem isso não dá pra
-                  cadastrar candidato individual nem importar CSV.
+                  Hoje você ainda não tem nenhuma — pra cadastrar candidato
+                  individual, crie subcategorias antes. Ou{" "}
+                  <strong>use o importador abaixo com XLSX/CSV</strong> que
+                  cria categorias, subcategorias e candidatos numa só passada.
                 </p>
                 <Link
                   href="/admin/categorias"
@@ -259,29 +267,45 @@ export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
         </CardContent>
       </Card>
 
-      <Card className={semSubcategorias ? "opacity-60" : ""}>
+      <Card>
         <CardContent>
-          <div className="flex items-start gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-cdl-blue/10 flex items-center justify-center">
-              <Upload className="w-5 h-5 text-cdl-blue" />
+          <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-cdl-blue/10 flex items-center justify-center shrink-0">
+                <Upload className="w-5 h-5 text-cdl-blue" />
+              </div>
+              <div>
+                <h2 className="font-display text-lg font-bold text-cdl-blue">
+                  Importar candidatos em lote
+                </h2>
+                <p className="text-sm text-muted mt-1">
+                  Aceita <strong>XLSX</strong> e <strong>CSV</strong>. Categorias e
+                  subcategorias são <strong>criadas automaticamente</strong> se ainda não existirem.
+                </p>
+                <p className="text-xs text-muted mt-1">
+                  Colunas: <code className="bg-zinc-100 px-1 rounded">categoria · subcategoria · nome</code>{" "}
+                  (e opcionais <code className="bg-zinc-100 px-1 rounded">descricao · foto_url</code>)
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-display text-lg font-bold text-cdl-blue">Importar candidatos via CSV</h2>
-              <p className="text-sm text-muted">
-                Formato esperado: <code className="bg-zinc-100 px-1 rounded">categoria,subcategoria,nome,descricao,foto_url</code>
-              </p>
-            </div>
+            <a
+              href="/api/admin/candidatos/importar/template"
+              download
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-cdl-blue/30 text-cdl-blue hover:bg-cdl-blue hover:text-white text-sm font-semibold transition-colors shrink-0"
+            >
+              <Download className="w-4 h-4" />
+              Baixar modelo XLSX
+            </a>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="file"
-              accept=".csv,text/csv"
-              disabled={semSubcategorias}
+              accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
-              className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-cdl-blue file:text-white hover:file:bg-cdl-blue-dark file:cursor-pointer cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-cdl-blue file:text-white hover:file:bg-cdl-blue-dark file:cursor-pointer cursor-pointer"
             />
-            <Button onClick={importar} disabled={!arquivo || semSubcategorias} loading={loading}>
+            <Button onClick={importar} disabled={!arquivo} loading={loading}>
               Importar
             </Button>
           </div>
@@ -289,8 +313,12 @@ export function CandidatosManager({ subcategorias }: { subcategorias: Sub[] }) {
           {resultado && (
             <div className="mt-4 p-3 rounded-xl bg-cdl-green/10 border border-cdl-green/30 text-sm">
               <p className="font-semibold text-cdl-green-dark">
-                ✓ {resultado.inseridos} candidatos inseridos
-                {resultado.ignorados > 0 && ` · ${resultado.ignorados} ignorados`}
+                ✓ {resultado.inseridos} candidato(s) inserido(s)
+                {!!resultado.categoriasCriadas &&
+                  ` · ${resultado.categoriasCriadas} categoria(s) nova(s)`}
+                {!!resultado.subcategoriasCriadas &&
+                  ` · ${resultado.subcategoriasCriadas} subcategoria(s) nova(s)`}
+                {resultado.ignorados > 0 && ` · ${resultado.ignorados} ignorado(s)`}
               </p>
               {resultado.erros.length > 0 && (
                 <ul className="mt-2 text-xs text-muted list-disc pl-4">
