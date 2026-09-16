@@ -1,0 +1,131 @@
+# Orçamento · Melhores do Ano — 200 mil eleitores / 500 mil votos
+
+Levantamento de custo para uma campanha no **mesmo formato** da edição
+CDL Aracaju 2025 (CPF + selfie + validação SPC + OTP WhatsApp + disparos de
+parcial/incentivo/cerimônia), escalada para **200.000 eleitores** e
+**~500.000 votos**.
+
+Data: setembro/2026. Preços por unidade vêm de `lib/creditos/precos.ts`
+(fonte única da tabela cobrada em `/admin/creditos`).
+
+---
+
+## 1. Base real: edição CDL Aracaju 2025
+
+Números lidos direto do banco (projeto Supabase "Melhores do ano",
+edição `602eea78…`, votação 25/04 a 03/05/2026):
+
+| Métrica | Valor | Por eleitor |
+|---|---:|---:|
+| Eleitores cadastrados | 48.775 | — |
+| Votos registrados | 216.707 | 4,44 |
+| Eleitores que votaram em ≥ 1 subcategoria | 45.601 (93,5%) | — |
+| Validados no SPC | 44.544 (91,3%) | — |
+| Com selfie | 48.741 (99,9%) | — |
+| WhatsApp validado (OTP concluído) | 10.511 (21,5%) | — |
+| OTPs enviados (`whatsapp_codigos`) | 27.229 | 0,56 |
+| Parcial enviada | 10.383 | 0,21 |
+| Incentivo (empate) enviado | 9.438 | 0,19 |
+| Aviso de cerimônia enviado | 500 | 0,01 |
+| **Total mensagens de marketing** | **20.321** | **0,42** |
+| Subcategorias ativas | 103 | — |
+| Candidatos aprovados | 9.282 | — |
+
+Os índices "por eleitor" são os multiplicadores usados na projeção abaixo.
+
+---
+
+## 2. Projeção para 200.000 eleitores
+
+Fator de escala: **4,1x** em eleitores. O cliente estima ~500 mil votos
+(2,5 votos/eleitor); em Aracaju a média foi 4,44, então 200 mil eleitores
+tendem a gerar **~890 mil votos**. Como a cobrança é **por eleitor**, e não
+por voto, o total abaixo não muda se os votos ficarem entre 500 mil e
+900 mil — só a infraestrutura (seção 4) é afetada.
+
+### 2.1 Volumes projetados
+
+| Item | Índice (Aracaju) | Volume projetado |
+|---|---:|---:|
+| Eleitores cadastrados | 1,00 | 200.000 |
+| OTPs WhatsApp enviados | 0,56 | 112.000 |
+| Mensagens de parcial | 0,21 | 42.600 |
+| Mensagens de incentivo | 0,19 | 38.700 |
+| Mensagens de cerimônia | 0,01 | 2.100 |
+| **Total marketing** | **0,42** | **83.400** |
+
+### 2.2 Orçamento (tabela de preços da plataforma)
+
+| Item | Qtd | Unitário | Subtotal |
+|---|---:|---:|---:|
+| Eleitor cadastrado — CPF + selfie + SPC Brasil | 200.000 | R$ 0,25 | **R$ 50.000,00** |
+| OTP WhatsApp (por envio) | 112.000 | R$ 0,25 | **R$ 28.000,00** |
+| Disparos parcial / incentivo / cerimônia | 83.400 | R$ 0,59 | **R$ 49.206,00** |
+| Taxa de campanha (1x por edição) | 1 | R$ 3.000,00 | **R$ 3.000,00** |
+| **Total da campanha** | | | **R$ 130.206,00** |
+| Manutenção pós-campanha (opcional) | por mês | R$ 200,00 | R$ 200,00/mês |
+
+**Custo efetivo por eleitor: R$ 0,65** · **por voto (500 mil): R$ 0,26**.
+
+### 2.3 Cenários
+
+| Cenário | O que muda | Total |
+|---|---|---:|
+| **Completo** (mesmo formato Aracaju) | tudo acima | **R$ 130.206** |
+| Sem SPC | eleitor a R$ 0,20 | R$ 120.206 |
+| Sem disparos de marketing | só cadastro + OTP + taxa | R$ 81.000 |
+| Mínimo (CPF + selfie, sem SPC, sem OTP, sem marketing) | 200.000 × R$ 0,20 + taxa | R$ 43.000 |
+| Completo com engajamento alto (0,80 msg marketing/eleitor) | 160.000 disparos | R$ 175.400 |
+
+Recomendação comercial: apresentar o cenário **Completo** com faixa de
+**R$ 125 mil a R$ 135 mil**, e a taxa de campanha à parte na assinatura.
+
+---
+
+## 3. Como o valor é cobrado
+
+- Cobrança **por eleitor, uma vez no cadastro** (não por voto).
+- OTP e marketing debitam do saldo de créditos a cada envio
+  (`whatsapp_confirmacao` e `marketing` em `transacoes_credito`).
+- O cliente recarrega créditos em `/admin/creditos/comprar` (Pix ou cartão,
+  Mercado Pago). Alerta automático de saldo baixo (`/api/cron/alertas-saldo`).
+- Sugestão de recarga inicial: **R$ 60 mil** (cobre cadastro + OTP), e
+  segunda recarga de **R$ 50 mil** antes dos disparos de parcial.
+
+---
+
+## 4. Custo interno estimado (uso interno, não enviar ao cliente)
+
+Estimativas para checar margem. Confirmar tarifas vigentes com cada
+fornecedor antes de fechar.
+
+| Fornecedor | Base | Estimativa |
+|---|---|---:|
+| Meta WhatsApp — autenticação (OTP) | 112.000 × ~US$ 0,0315 (BR) ≈ R$ 0,17 | ~R$ 19.000 |
+| Meta WhatsApp — marketing | 83.400 × ~US$ 0,0625 (BR) ≈ R$ 0,34 | ~R$ 28.400 |
+| SPC Brasil — consulta por CPF novo | 200.000 × tarifa contratual (assumido R$ 0,10) | ~R$ 20.000 |
+| Supabase Pro + compute (2 meses) | plano Pro + upgrade de compute no pico | ~R$ 1.500 |
+| Storage de selfies | 200.000 × ~150 KB ≈ 30 GB | incluso/≈ R$ 100 |
+| Vercel Pro (2 meses) | plano + banda | ~R$ 500 |
+| Cloudflare Turnstile / DNS | — | R$ 0 |
+| **Total interno estimado** | | **~R$ 69.500** |
+
+Margem bruta estimada no cenário Completo: **~R$ 60 mil (≈ 47%)**.
+O item mais sensível é a tarifa SPC: a R$ 0,25/consulta o custo interno sobe
+para ~R$ 99 mil e a margem cai para ~24%. O cache (`spc_cache`, 61.455 CPFs)
+evita reconsulta de quem já votou em outra edição.
+
+---
+
+## 5. Observações operacionais para 200 mil eleitores
+
+- **Pico**: Aracaju teve 48 mil cadastros em 8 dias. Para 200 mil, prever
+  janela de votação de 3 a 4 semanas ou reforçar compute do Supabase e
+  os phone_number_ids da Meta (round-robin já suportado em
+  `lib/meta-whatsapp/client.ts`).
+- **Números WhatsApp**: 112 mil OTPs + 83 mil disparos exigem 3 a 4
+  números verificados na Meta para não estourar o tier de mensagens.
+- **Rate limit por IP** (`rate_limit_ip` teve 369 mil linhas): rodar
+  `/api/cron/manutencao-mensal` semanalmente durante a campanha.
+- **Bucket `selfies`**: limites atuais (migração 058) comportam o volume;
+  monitorar quota de storage do plano.
