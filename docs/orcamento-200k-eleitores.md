@@ -54,15 +54,15 @@ por voto, o total abaixo não muda se os votos ficarem entre 500 mil e
 | Mensagens de cerimônia | 0,01 | 2.100 |
 | **Total marketing** | **0,42** | **83.400** |
 
-### 2.2 Orçamento acordado (proposta ao cliente)
+### 2.2 Orçamento acordado (proposta ao cliente) — 100 mil eleitores
 
 Preços negociados para esta proposta (diferentes da tabela padrão de
 `lib/creditos/precos.ts`, ver anexo 2.4):
 
 | Item | Qtd | Unitário | Subtotal |
 |---|---:|---:|---:|
-| Eleitor com validação pela aplicação (CPF + selfie com prova de vida) | 100.000 | R$ 0,13 | **R$ 13.000,00** |
-| Validação por WhatsApp (OTP) | 100.000 | R$ 0,18 | **R$ 18.000,00** |
+| Cadastro com validação SPC Brasil (CPF + selfie + consulta SPC) | 100.000 | R$ 0,13 | **R$ 13.000,00** |
+| Cadastro com validação WhatsApp (OTP) | 100.000 | R$ 0,18 | **R$ 18.000,00** |
 | **Total da campanha** | | | **R$ 31.000,00** |
 
 **Opcional de marketing (fora do total):**
@@ -75,7 +75,8 @@ Preços negociados para esta proposta (diferentes da tabela padrão de
 Outros opcionais: taxa de campanha R$ 3.000 (1x), disparos de
 incentivo/cerimônia R$ 0,45 por envio, manutenção R$ 200/mês.
 
-Custo por voto (base 500 mil): **R$ 0,06**.
+São **100 mil pessoas**: cada cadastro passa pelas duas validações,
+**R$ 0,31 por eleitor**.
 
 ### 2.3 Cenários de recarga
 
