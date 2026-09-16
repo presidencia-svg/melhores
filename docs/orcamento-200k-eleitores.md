@@ -65,8 +65,15 @@ Preços negociados para esta proposta (diferentes da tabela padrão de
 | Validação por WhatsApp (OTP) | 100.000 | R$ 0,18 | **R$ 18.000,00** |
 | **Total da campanha** | | | **R$ 31.000,00** |
 
-Opcionais, fora do total: taxa de campanha R$ 3.000 (1x), disparos de
-parcial/incentivo/cerimônia R$ 0,59 por envio, manutenção R$ 200/mês.
+**Opcional de marketing (fora do total):**
+
+| Item | Qtd | Unitário | Subtotal |
+|---|---:|---:|---:|
+| Disparo de parcial por WhatsApp (posicionamento dos candidatos) | 20.000 | R$ 0,45 | **R$ 9.000,00** |
+| **Total com o opcional** | | | **R$ 40.000,00** |
+
+Outros opcionais: taxa de campanha R$ 3.000 (1x), disparos de
+incentivo/cerimônia R$ 0,45 por envio, manutenção R$ 200/mês.
 
 Custo por voto (base 500 mil): **R$ 0,06**.
 
@@ -102,20 +109,21 @@ fornecedor antes de fechar.
 | Fornecedor | Base | Estimativa |
 |---|---|---:|
 | Meta WhatsApp — autenticação (OTP) | 100.000 × ~US$ 0,0315 (BR) ≈ R$ 0,17 | ~R$ 17.000 |
-| Meta WhatsApp — marketing | opcional, cobrado à parte a R$ 0,59/envio | R$ 0 |
+| Meta WhatsApp — marketing (opcional de parcial) | 20.000 × ~US$ 0,0625 (BR) ≈ R$ 0,34 | ~R$ 6.800 |
 | SPC Brasil — consulta por CPF novo (se ligado) | 100.000 × tarifa contratual (assumido R$ 0,10) | ~R$ 10.000 |
 | Supabase Pro + compute (2 meses) | plano Pro + upgrade de compute no pico | ~R$ 1.500 |
 | Storage de selfies | 200.000 × ~150 KB ≈ 30 GB | incluso/≈ R$ 100 |
 | Vercel Pro (2 meses) | plano + banda | ~R$ 500 |
 | Cloudflare Turnstile / DNS | — | R$ 0 |
-| **Total interno estimado** | | **~R$ 29.100** |
+| **Total interno estimado** | | **~R$ 35.900** (com o opcional) |
 
 Margem bruta estimada no orçamento acordado (R$ 31.000): **~R$ 1.900 (≈ 6%)**
 com SPC ligado a R$ 0,10; **~R$ 11.900 (≈ 38%)** se a validação da
 aplicação for só CPF + selfie, sem consulta SPC. A R$ 0,13 por eleitor,
 qualquer tarifa SPC acima de R$ 0,12 torna a linha de validação deficitária.
 O OTP a R$ 0,18 cobre a tarifa Meta (~R$ 0,17) com margem mínima; a cotação
-do dólar é o risco. O cache (`spc_cache`, 61.455 CPFs)
+do dólar é o risco. O opcional de parcial a R$ 0,45 tem custo Meta de
+~R$ 0,34 por envio: margem de ~R$ 2.200 (≈ 24%) nos 20 mil disparos. O cache (`spc_cache`, 61.455 CPFs)
 evita reconsulta de quem já votou em outra edição.
 
 ---
