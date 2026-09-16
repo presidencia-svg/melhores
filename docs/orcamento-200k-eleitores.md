@@ -54,33 +54,33 @@ por voto, o total abaixo não muda se os votos ficarem entre 500 mil e
 | Mensagens de cerimônia | 0,01 | 2.100 |
 | **Total marketing** | **0,42** | **83.400** |
 
-### 2.2 Orçamento (tabela de preços da plataforma)
+### 2.2 Orçamento acordado (proposta ao cliente)
+
+Preços negociados para esta proposta (diferentes da tabela padrão de
+`lib/creditos/precos.ts`, ver anexo 2.4):
 
 | Item | Qtd | Unitário | Subtotal |
 |---|---:|---:|---:|
-| Eleitor cadastrado — CPF + selfie + SPC Brasil | 200.000 | R$ 0,25 | **R$ 50.000,00** |
-| OTP WhatsApp (por envio) | 112.000 | R$ 0,25 | **R$ 28.000,00** |
-| Disparos parcial / incentivo / cerimônia | 83.400 | R$ 0,59 | **R$ 49.206,00** |
-| Taxa de campanha (1x por edição) | 1 | R$ 3.000,00 | **R$ 3.000,00** |
-| **Total da campanha** | | | **R$ 130.206,00** |
-| Manutenção pós-campanha (opcional) | por mês | R$ 200,00 | R$ 200,00/mês |
+| Eleitor com validação pela aplicação (CPF + selfie com prova de vida) | 100.000 | R$ 0,13 | **R$ 13.000,00** |
+| Validação por WhatsApp (OTP) | 100.000 | R$ 0,18 | **R$ 18.000,00** |
+| **Total da campanha** | | | **R$ 31.000,00** |
 
-**Custo efetivo por eleitor: R$ 0,65** · **por voto (500 mil): R$ 0,26**.
+Opcionais, fora do total: taxa de campanha R$ 3.000 (1x), disparos de
+parcial/incentivo/cerimônia R$ 0,59 por envio, manutenção R$ 200/mês.
 
-### 2.3 Cenários
+Custo por voto (base 500 mil): **R$ 0,06**.
 
-| Cenário | O que muda | Total |
-|---|---|---:|
-| **Completo** (mesmo formato Aracaju) | tudo acima | **R$ 130.206** |
-| Sem SPC | eleitor a R$ 0,20 | R$ 120.206 |
-| Sem disparos de marketing | só cadastro + OTP + taxa | R$ 81.000 |
-| Mínimo (CPF + selfie, sem SPC, sem OTP, sem marketing) | 200.000 × R$ 0,20 + taxa | R$ 43.000 |
-| Completo com engajamento alto (0,80 msg marketing/eleitor) | 160.000 disparos | R$ 175.400 |
+### 2.3 Cenários de recarga
 
-Recomendação comercial: apresentar o cenário **Completo** com faixa de
-**R$ 125 mil a R$ 135 mil**, e a taxa de campanha à parte na assinatura.
+Recarga inicial sugerida de R$ 16 mil na abertura e R$ 15 mil na metade da
+votação. Os débitos ocorrem por eleitor validado, então o cliente paga só
+pelo que for efetivamente realizado.
 
----
+### 2.4 Anexo: referência pela tabela padrão da plataforma
+
+Para comparação, o mesmo formato a preço de tabela (R$ 0,25 eleitor com SPC,
+R$ 0,25 OTP, R$ 0,59 marketing) em 200 mil eleitores ficaria em
+R$ 130.206 (R$ 50.000 + R$ 28.000 + R$ 49.206 + R$ 3.000 de taxa).
 
 ## 3. Como o valor é cobrado
 
@@ -101,18 +101,21 @@ fornecedor antes de fechar.
 
 | Fornecedor | Base | Estimativa |
 |---|---|---:|
-| Meta WhatsApp — autenticação (OTP) | 112.000 × ~US$ 0,0315 (BR) ≈ R$ 0,17 | ~R$ 19.000 |
-| Meta WhatsApp — marketing | 83.400 × ~US$ 0,0625 (BR) ≈ R$ 0,34 | ~R$ 28.400 |
-| SPC Brasil — consulta por CPF novo | 200.000 × tarifa contratual (assumido R$ 0,10) | ~R$ 20.000 |
+| Meta WhatsApp — autenticação (OTP) | 100.000 × ~US$ 0,0315 (BR) ≈ R$ 0,17 | ~R$ 17.000 |
+| Meta WhatsApp — marketing | opcional, cobrado à parte a R$ 0,59/envio | R$ 0 |
+| SPC Brasil — consulta por CPF novo (se ligado) | 100.000 × tarifa contratual (assumido R$ 0,10) | ~R$ 10.000 |
 | Supabase Pro + compute (2 meses) | plano Pro + upgrade de compute no pico | ~R$ 1.500 |
 | Storage de selfies | 200.000 × ~150 KB ≈ 30 GB | incluso/≈ R$ 100 |
 | Vercel Pro (2 meses) | plano + banda | ~R$ 500 |
 | Cloudflare Turnstile / DNS | — | R$ 0 |
-| **Total interno estimado** | | **~R$ 69.500** |
+| **Total interno estimado** | | **~R$ 29.100** |
 
-Margem bruta estimada no cenário Completo: **~R$ 60 mil (≈ 47%)**.
-O item mais sensível é a tarifa SPC: a R$ 0,25/consulta o custo interno sobe
-para ~R$ 99 mil e a margem cai para ~24%. O cache (`spc_cache`, 61.455 CPFs)
+Margem bruta estimada no orçamento acordado (R$ 31.000): **~R$ 1.900 (≈ 6%)**
+com SPC ligado a R$ 0,10; **~R$ 11.900 (≈ 38%)** se a validação da
+aplicação for só CPF + selfie, sem consulta SPC. A R$ 0,13 por eleitor,
+qualquer tarifa SPC acima de R$ 0,12 torna a linha de validação deficitária.
+O OTP a R$ 0,18 cobre a tarifa Meta (~R$ 0,17) com margem mínima; a cotação
+do dólar é o risco. O cache (`spc_cache`, 61.455 CPFs)
 evita reconsulta de quem já votou em outra edição.
 
 ---
