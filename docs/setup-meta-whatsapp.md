@@ -60,6 +60,16 @@ Não usar o token temporário de 24h do painel.
 
 ## 5. Templates (precisam ser aprovados antes de usar)
 
+Atalho: o script `scripts/meta-criar-templates.mjs` cria os 5 templates
+abaixo pela API, já com os textos sugeridos. Rodar no seu computador:
+
+```bash
+META_WHATSAPP_TOKEN=<token> META_WABA_ID=<waba id> node scripts/meta-criar-templates.mjs
+```
+
+Ele pula o que já existe. Se preferir criar à mão, siga a tabela.
+
+
 Criar em **WhatsApp Manager → Ferramentas da conta → Modelos de mensagem**,
 idioma **Português (BR)**. Os nomes abaixo são os defaults do código; se
 usar outro nome, ajuste a env correspondente.
