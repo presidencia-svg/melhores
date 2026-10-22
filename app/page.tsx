@@ -7,12 +7,17 @@ import { getCurrentTenant } from "@/lib/tenant/resolver";
 import { getEdicaoStatus } from "@/lib/edicao-status";
 import { listarPatrocinadores } from "@/lib/patrocinadores";
 import { PatrocinadoresSection } from "@/components/patrocinadores/PatrocinadoresSection";
+import { listarEdicoesComResultado } from "@/lib/resultados-publicos";
 
 export default async function Home() {
   const tenant = await getCurrentTenant();
   const status = await getEdicaoStatus(tenant.id);
   const edicao = status.status !== "sem_edicao" ? status.edicao : null;
-  const patrocinadores = edicao ? await listarPatrocinadores(edicao.id) : [];
+  const [patrocinadores, edicoesComResultado] = await Promise.all([
+    edicao ? listarPatrocinadores(edicao.id) : Promise.resolve([]),
+    listarEdicoesComResultado(tenant.id),
+  ]);
+  const temResultados = edicoesComResultado.length > 0;
   const cidade = tenant.nome.replace(/^CDL\s+/i, "");
   const ano = edicao?.ano ?? new Date().getFullYear();
   const dominio = tenant.dominio ?? "";
@@ -26,6 +31,11 @@ export default async function Home() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 sm:px-6 py-3">
           <Logo />
           <div className="flex items-center gap-4 sm:gap-5 text-sm text-navy-800/60">
+            {temResultados && (
+              <Link href="/resultados" className="hover:text-navy-800 font-medium text-navy-800/80">
+                Resultados
+              </Link>
+            )}
             <Link href="/regulamento" className="hover:text-navy-800 hidden sm:inline">
               Como funciona
             </Link>
@@ -108,6 +118,17 @@ export default async function Home() {
                   Quero votar agora
                 </Button>
               </Link>
+              {temResultados && (
+                <Link href="/resultados" className="w-full sm:w-auto">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto border-gold-400/60 text-gold-400 hover:bg-gold-400 hover:text-navy-900"
+                  >
+                    Resultados anteriores
+                  </Button>
+                </Link>
+              )}
               <Link href="/regulamento" className="w-full sm:w-auto">
                 <Button
                   size="lg"
@@ -260,6 +281,7 @@ export default async function Home() {
           </div>
           <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm">
             <Link href="/regulamento" className="hover:text-cream-100">Como funciona</Link>
+            {temResultados && <Link href="/resultados" className="hover:text-cream-100">Resultados</Link>}
             <Link href="/cadastrar" className="hover:text-cream-100">Para sua CDL</Link>
             <Link href="/termos" className="hover:text-cream-100">Termos</Link>
             <Link href="/privacidade" className="hover:text-cream-100">Privacidade</Link>
