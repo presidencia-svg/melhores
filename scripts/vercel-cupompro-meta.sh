@@ -8,7 +8,7 @@
 # Pede o token da Casa do Fio (nao aparece ao digitar).
 set -euo pipefail
 
-SCOPE="prainhatur-lang"
+SCOPE="prainhatur-langs-projects"
 PROJECT="cupompro"
 WABA="1340396284764555"
 PHONE="1346961145176922"
