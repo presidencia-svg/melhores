@@ -131,6 +131,8 @@ WABA acessível pelo mesmo token).
 | Portfólio empresarial | Casa do Fio (business_id 567604273921587) |
 | Conta WhatsApp Business (WABA) | 1340396284764555 |
 | Número | +55 79 9864-2350 · phone id 1413455248515887 |
+| Número Cupom Pro (mesma WABA) | +55 79 9848-1024 · phone id 1346961145176922 |
+| WABA antiga do Cupom Pro (origem dos templates) | 2025900991469947 |
 | Conta de teste (só para experimentar) | WABA 1993595001322052 · phone id 1346119968590605 |
 
 ## 7. Testar

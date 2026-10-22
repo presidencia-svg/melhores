@@ -7,6 +7,10 @@
 //   ORIGEM_WABA_ID=<waba antiga> DESTINO_WABA_ID=<waba nova> \
 //   node scripts/meta-clonar-templates.mjs [--so nome1,nome2] [--dry-run]
 //
+// Se as contas estao em portfolios diferentes (um token nao le as duas),
+// passe um token por conta:
+//   ORIGEM_TOKEN=<token do portfolio antigo> DESTINO_TOKEN=<token do novo> ...
+//
 // - Copia nome, idioma, categoria e componentes (header/body/footer/buttons).
 // - Pula o que ja existe no destino (mesmo nome + idioma).
 // - So clona templates APPROVED na origem.
@@ -14,12 +18,13 @@
 // - Se o token nao enxergar a origem, gere um token no Business que e' dono
 //   dela, ou adicione a WABA de origem aos ativos do usuario do sistema.
 
-const TOKEN = process.env.META_WHATSAPP_TOKEN;
 const ORIGEM = process.env.ORIGEM_WABA_ID;
 const DESTINO = process.env.DESTINO_WABA_ID;
+const TOKEN_ORIGEM = process.env.ORIGEM_TOKEN ?? process.env.META_WHATSAPP_TOKEN;
+const TOKEN_DESTINO = process.env.DESTINO_TOKEN ?? process.env.META_WHATSAPP_TOKEN;
 const V = process.env.META_API_VERSION ?? "v21.0";
-if (!TOKEN || !ORIGEM || !DESTINO) {
-  console.error("Defina META_WHATSAPP_TOKEN, ORIGEM_WABA_ID e DESTINO_WABA_ID");
+if (!TOKEN_ORIGEM || !TOKEN_DESTINO || !ORIGEM || !DESTINO) {
+  console.error("Defina ORIGEM_WABA_ID, DESTINO_WABA_ID e o(s) token(s): META_WHATSAPP_TOKEN ou ORIGEM_TOKEN + DESTINO_TOKEN");
   process.exit(1);
 }
 const args = process.argv.slice(2);
@@ -27,10 +32,11 @@ const DRY = args.includes("--dry-run");
 const soIdx = args.indexOf("--so");
 const SO = soIdx >= 0 ? new Set((args[soIdx + 1] ?? "").split(",").map((s) => s.trim()).filter(Boolean)) : null;
 
-const auth = { Authorization: `Bearer ${TOKEN}` };
+const authOrigem = { Authorization: `Bearer ${TOKEN_ORIGEM}` };
+const authDestino = { Authorization: `Bearer ${TOKEN_DESTINO}` };
 const fields = "id,name,status,category,language,components";
 
-async function listar(waba) {
+async function listar(waba, auth) {
   const out = [];
   let url = `https://graph.facebook.com/${V}/${waba}/message_templates?fields=${fields}&limit=100`;
   while (url) {
@@ -94,8 +100,8 @@ function limparComponentes(components, category) {
   });
 }
 
-const origem = (await listar(ORIGEM)).filter((t) => t.status === "APPROVED");
-const destino = await listar(DESTINO);
+const origem = (await listar(ORIGEM, authOrigem)).filter((t) => t.status === "APPROVED");
+const destino = await listar(DESTINO, authDestino);
 const jaTem = new Set(destino.map((t) => `${t.name}:${t.language}`));
 
 console.log(`origem ${ORIGEM}: ${origem.length} aprovados · destino ${DESTINO}: ${destino.length} existentes${DRY ? " · DRY RUN" : ""}`);
@@ -119,7 +125,7 @@ for (const t of origem) {
   }
   const r = await fetch(`https://graph.facebook.com/${V}/${DESTINO}/message_templates`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...auth },
+    headers: { "Content-Type": "application/json", ...authDestino },
     body: JSON.stringify(body),
   });
   const j = await r.json();
