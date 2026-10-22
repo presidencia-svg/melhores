@@ -39,7 +39,7 @@ echo "== Gravando variaveis (Production)"
 set_env META_WABA_ID "$WABA"
 set_env META_WHATSAPP_PHONE_IDS "$PHONE"
 set_env META_WHATSAPP_TOKEN "$DESTINO_TOKEN"
-set_env META_TEMPLATE_OTP codigo_verificacao_2025
+set_env META_TEMPLATE_OTP "${OTP_TEMPLATE:-codigo_verificacao_2026}"
 set_env META_TEMPLATE_ACCESS acesso_cupompro
 set_env META_TEMPLATE_VOUCHER voucher_premio
 set_env META_TEMPLATE_PIX premio_pix_2025
