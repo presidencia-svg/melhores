@@ -50,7 +50,7 @@ const templates = [
     components: [
       {
         type: "BODY",
-        text: `{{1}}, *{{2}}* está perdendo em *{{3}}* para {{4}} por {{5}}. Já são {{6}} votos na disputa e faltam {{7}} para o fim da votação. Chame seus amigos para votar!`,
+        text: `Olá {{1}}! *{{2}}* está perdendo em *{{3}}* para {{4}} por {{5}}. Já são {{6}} votos na disputa e faltam {{7}} para o fim da votação. Chame seus amigos para votar!`,
         example: { body_text: [["Maria", "Cacique Chá", "Restaurante", "Cariri Cabaña", "3 votos", "120", "2 dias"]] },
       },
       FOOTER,
@@ -63,7 +63,7 @@ const templates = [
     components: [
       {
         type: "BODY",
-        text: `{{1}}, *{{2}}* está empatado em *{{3}}* com {{4}}! Já são {{5}} votos na disputa e faltam {{6}} para o fim da votação. Cada voto decide.`,
+        text: `Olá {{1}}! *{{2}}* está empatado em *{{3}}* com {{4}}! Já são {{5}} votos na disputa e faltam {{6}} para o fim da votação. Cada voto decide.`,
         example: { body_text: [["Maria", "Cacique Chá", "Restaurante", "Cariri Cabaña", "120", "2 dias"]] },
       },
       FOOTER,
@@ -76,7 +76,7 @@ const templates = [
     components: [
       {
         type: "BODY",
-        text: `{{1}}, você votou em campeão! {{2}} venceu no ${ORGAO}. A entrega dos certificados será na cerimônia de premiação. Confira data e local no site.`,
+        text: `Olá {{1}}! Você votou em campeão. {{2}} venceu no ${ORGAO}. A entrega dos certificados será na cerimônia de premiação. Confira data e local no site.`,
         example: { body_text: [["Maria", "Cariri Cabaña (Restaurante)"]] },
       },
       FOOTER,
