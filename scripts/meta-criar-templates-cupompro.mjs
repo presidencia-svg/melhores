@@ -53,7 +53,7 @@ const templates = [
   {
     name: "pesquisa_cupompro", category: "MARKETING", language: "pt_BR",
     components: [
-      body("📋 Olá, {{1}}! Sua opinião vale muito para nós. Responda à nossa pesquisa rápida, leva menos de 2 minutos: {{2}}", ["Maria", "https://cupompro.com/p/abc123"]),
+      body("📋 Olá, {{1}}! Sua opinião vale muito para nós. Responda à nossa pesquisa rápida, leva menos de 2 minutos: {{2}}\n\nObrigado por participar!", ["Maria", "https://cupompro.com/p/abc123"]),
       FOOTER,
     ],
   },
@@ -77,7 +77,7 @@ const templates = [
   {
     name: "meta_template_supplier_broadcast", category: "MARKETING", language: "pt_BR",
     components: [
-      body("📣 A campanha {{1}} da {{2}} está no ar! Cadastre sua loja e comece a emitir cupons para seus clientes: {{3}}\n\nDúvidas? Fale com a gente: {{4}}", ["Liquida Aju 2026", "CDL Aracaju", "https://cupompro.com/c/liquida", "(79) 99999-0000"]),
+      body("📣 A campanha {{1}} da {{2}} está no ar! Cadastre sua loja e comece a emitir cupons para seus clientes: {{3}}\n\nDúvidas? Fale com a gente pelo WhatsApp {{4}} e participe!", ["Liquida Aju 2026", "CDL Aracaju", "https://cupompro.com/c/liquida", "(79) 99999-0000"]),
       FOOTER,
     ],
   },
@@ -94,7 +94,7 @@ const templates = [
     name: "boas_vindas_campanha", category: "MARKETING", language: "pt_BR",
     components: [
       body("Olá {{1}}! Cadastro confirmado na campanha *{{2}}*. A cada compra nas lojas participantes você ganha cupons para o sorteio. Chame seus amigos pelo botão abaixo!", ["Maria", "Liquida Aju 2026"]),
-      urlBtn("Convidar amigos", "https://wa.me/?text={{1}}", "https://wa.me/?text=Participe"),
+      urlBtn("Convidar amigos", `${SITE}/compartilhar?c={{1}}`, `${SITE}/compartilhar?c=liquida`),
       FOOTER,
     ],
   },
@@ -110,7 +110,7 @@ const templates = [
   {
     name: "aviso_consumidores", category: "MARKETING", language: "pt_BR",
     components: [
-      body("Olá, {{1}}! Novidade da campanha *{{2}}*: {{3}}", ["Maria", "Liquida Aju 2026", "últimos dias para trocar suas notas por cupons"]),
+      body("Olá, {{1}}! Temos uma novidade da campanha *{{2}}* para você: {{3}}\n\nAproveite e continue cadastrando suas notas fiscais nas lojas participantes para ganhar mais cupons e aumentar suas chances no sorteio.", ["Maria", "Liquida Aju 2026", "últimos dias para trocar suas notas por cupons"]),
       FOOTER,
     ],
   },
