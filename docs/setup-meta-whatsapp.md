@@ -102,9 +102,9 @@ variável no início ou no fim do corpo.
 ## 6. Variáveis de ambiente (Vercel → Settings → Environment Variables)
 
 ```bash
-META_WHATSAPP_TOKEN=            # token do System User (passo 4)
-META_WHATSAPP_PHONE_IDS=        # phone number id(s), separados por vírgula
-META_WABA_ID=                   # WhatsApp Business Account ID (insights)
+META_WHATSAPP_TOKEN=            # token do System User (passo 4) — nunca commitar
+META_WHATSAPP_PHONE_IDS=1413455248515887   # +55 79 9864-2350, registrado em 21/10/2026
+META_WABA_ID=1340396284764555              # conta de producao (app 989965946709612)
 META_API_VERSION=v21.0
 META_CURRENCY=BRL               # se a cobrança foi configurada em reais
 META_TEMPLATE_LANG=pt_BR
@@ -122,6 +122,16 @@ Multi-tenant: hoje todos os tenants usam o número default das envs. Para dar
 um número próprio a um cliente, preencher `tenants.meta_phone_number_id`
 com o Phone number ID dele (o número precisa estar na mesma WABA, ou em
 WABA acessível pelo mesmo token).
+
+### Valores já obtidos (produção)
+
+| Item | Valor |
+|---|---|
+| App Meta | Melhores do ano · id 989965946709612 |
+| Portfólio empresarial | Casa do Fio (business_id 567604273921587) |
+| Conta WhatsApp Business (WABA) | 1340396284764555 |
+| Número | +55 79 9864-2350 · phone id 1413455248515887 |
+| Conta de teste (só para experimentar) | WABA 1993595001322052 · phone id 1346119968590605 |
 
 ## 7. Testar
 
