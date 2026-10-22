@@ -46,9 +46,9 @@ set_env META_API_VERSION "v21.0"
 set_env META_TEMPLATE_LANG "pt_BR"
 set_env META_CURRENCY "BRL"
 
-echo "== Criando templates na WABA $WABA_ID"
+echo "== Criando/atualizando templates na WABA $WABA_ID"
 META_WHATSAPP_TOKEN="$META_WHATSAPP_TOKEN" META_WABA_ID="$WABA_ID" \
-  node "$(dirname "$0")/meta-criar-templates.mjs"
+  node "$(dirname "$0")/meta-criar-templates.mjs" --sobrescrever
 
 echo "== Redeploy de producao"
 npx --yes vercel@latest --prod --yes

@@ -1,8 +1,12 @@
 // Cria na WABA os 5 templates que o sistema usa (nomes default do codigo).
 // Uso:
 //   META_WHATSAPP_TOKEN=... META_WABA_ID=... node scripts/meta-criar-templates.mjs
-// Idempotente: se o template ja existe, pula. Aprovacao da Meta costuma
-// levar minutos; acompanhe em WhatsApp Manager > Modelos de mensagem.
+// Se o template ja existe, pula. Com --sobrescrever (ou META_SOBRESCREVER=1)
+// atualiza o conteudo do existente pela API (mantendo o mesmo nome e id) —
+// a Meta coloca o template de volta em analise. Templates PENDING nao podem
+// ser editados; esses sao pulados. Nao apaga nada: nome apagado fica
+// bloqueado por 30 dias na Meta.
+// Aprovacao costuma levar minutos; acompanhe em WhatsApp Manager > Modelos.
 
 const TOKEN = process.env.META_WHATSAPP_TOKEN;
 const WABA = process.env.META_WABA_ID;
@@ -82,13 +86,30 @@ const templates = [
 
 const base = `https://graph.facebook.com/${V}/${WABA}/message_templates`;
 const auth = { Authorization: `Bearer ${TOKEN}` };
-const existing = await fetch(`${base}?fields=name,status,language&limit=200`, { headers: auth }).then((r) => r.json());
-const have = new Map((existing.data ?? []).map((t) => [`${t.name}:${t.language}`, t.status]));
+const SOBRESCREVER = process.argv.includes("--sobrescrever") || process.env.META_SOBRESCREVER === "1";
+const existing = await fetch(`${base}?fields=id,name,status,language&limit=200`, { headers: auth }).then((r) => r.json());
+const have = new Map((existing.data ?? []).map((t) => [`${t.name}:${t.language}`, t]));
 
 for (const t of templates) {
   const key = `${t.name}:${t.language}`;
-  if (have.has(key)) {
-    console.log(`= ${t.name} já existe (${have.get(key)})`);
+  const cur = have.get(key);
+  if (cur && !SOBRESCREVER) {
+    console.log(`= ${t.name} já existe (${cur.status}) — use --sobrescrever para atualizar`);
+    continue;
+  }
+  if (cur) {
+    if (cur.status === "PENDING" || cur.status === "IN_APPEAL") {
+      console.log(`= ${t.name} está em análise (${cur.status}); não pode ser editado agora`);
+      continue;
+    }
+    const r = await fetch(`https://graph.facebook.com/${V}/${cur.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...auth },
+      body: JSON.stringify({ category: t.category, components: t.components }),
+    });
+    const j = await r.json();
+    if (j.error) console.log(`x ${t.name}: ${j.error.error_user_msg ?? j.error.message}`);
+    else console.log(`~ ${t.name}: atualizado (volta para análise) id=${cur.id}`);
     continue;
   }
   const r = await fetch(base, {
