@@ -22,9 +22,25 @@ echo "== Validando token"
 curl -sS "https://graph.facebook.com/v21.0/$WABA?fields=id" -H "Authorization: Bearer $DESTINO_TOKEN" | grep -q '"id"' \
   || { echo "token nao acessa a WABA $WABA"; exit 1; }
 
+# Descobre a equipe certa na conta logada (qualquer uma com "prainhatur" no id/nome).
+WHO="$(npx --yes vercel@latest whoami 2>/dev/null | tail -1)"
+TEAMS="$(npx --yes vercel@latest teams ls 2>/dev/null || true)"
+FOUND="$(printf '%s\n' "$TEAMS" | grep -i prainhatur | awk '{print $1}' | head -1 || true)"
+if [ -n "$FOUND" ]; then
+  SCOPE="$FOUND"
+else
+  echo "Conta logada na Vercel: $WHO"
+  echo "Equipes visiveis:"; printf '%s\n' "$TEAMS"
+  echo
+  echo "Nenhuma equipe 'prainhatur' nesta conta. Faca:"
+  echo "  npx --yes vercel@latest logout"
+  echo "  npx --yes vercel@latest login   (no navegador, escolha a conta do prainhatur-lang)"
+  exit 1
+fi
+
 # Vincula o projeto numa pasta temporaria (nao precisa do codigo do cupompro)
 LINK_DIR="$(mktemp -d)"
-echo "== Vinculando $SCOPE/$PROJECT"
+echo "== Vinculando $SCOPE/$PROJECT (conta: $WHO)"
 npx --yes vercel@latest link --yes --scope "$SCOPE" --project "$PROJECT" --cwd "$LINK_DIR" >/dev/null
 
 v() { npx --yes vercel@latest "$@" --cwd "$LINK_DIR"; }
