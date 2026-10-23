@@ -71,7 +71,7 @@ set_env META_TEMPLATE_CONSUMER_BROADCAST aviso_consumidores
 echo "== Redeploy do ultimo deploy de producao"
 URL="$(v ls --prod 2>/dev/null | grep -oE 'https://[^ ]+' | head -1 || true)"
 if [ -n "$URL" ]; then
-  v redeploy "$URL" --yes
+  v redeploy "$URL"
 else
   echo "   Nao achei o deploy; clique em Redeploy no painel da Vercel."
 fi
